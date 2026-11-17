@@ -119,6 +119,19 @@ export const en = {
     'Supports deepseek_data-*.zip exported from DeepSeek Settings -> Data Export. Preview the archive index first to merge selected chats without overwriting existing ones.',
   historyImportedOne: 'Imported 1 chat',
   historyImported: 'Imported {count} chats',
+  historyImportedKeptOnly: 'No overwrite: kept {kept} existing conflicting chat(s)',
+  historyImportedWithSkipped:
+    'Imported {imported} chat(s) (kept {kept} existing conflicting chat(s))',
+  historyImportedWithCopies: 'Imported {imported} chat(s) ({copied} saved as duplicate copies)',
+  historyImportConflictTag: 'Conflict',
+  historyImportConflictSummary:
+    '{count} selected chat(s) share an ID with local chats. Choose how to handle conflicts:',
+  historyImportConflictKeepExisting:
+    'Keep existing local chats (skip duplicates; prevents overwriting newer local turns)',
+  historyImportConflictKeepBoth: 'Keep both (save imported conflicting chats as separate copies)',
+  historyImportConflictOverwrite:
+    'Overwrite conflicting local chats with backup (keep local memory card if missing)',
+  historyImportCopySuffix: ' (Imported)',
   historyImportFailed:
     'File import failed. The file format may be invalid, or the ZIP file may use an older chat export format. Please export your chat history from DeepSeek again and retry the import.',
   historyExportFailed: 'Export failed: {message}',
@@ -250,4 +263,6 @@ export const en = {
   crashRecoveryReload: 'Reload App',
   crashRecoveryExport: 'Export Emergency Backup ZIP',
   crashRecoveryExported: 'Exported {count} local chat(s) to emergency ZIP',
+  crashRecoveryExportPartial:
+    'Warning: partial backup only — exported {exported} of {total} chats; {skipped} missing or corrupted chat(s) skipped ({ids}). Keep device data before clearing storage.',
 } satisfies Record<keyof typeof zh, string>

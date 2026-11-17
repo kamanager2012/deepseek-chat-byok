@@ -1,10 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { translate } from '../../i18n/index.js'
 import { redactApiSecrets } from '../../services/api/client.js'
-import * as db from '../../services/chat/db.js'
-import { exportArchive } from '../../services/chat/history/exportArchive.js'
-import type { Session } from '../../services/chat/types.js'
-import { formatDate } from '../../utils/format.js'
+import { exportEmergencyBackup } from '../../services/chat/backup.js'
 import styles from './ErrorBoundary.module.css'
 
 type Props = {
@@ -15,18 +12,7 @@ type State = {
   errorMessage: string | null
   exporting: boolean
   exportStatus: string | null
-}
-
-/** 顶层渲染异常兜底：避免极端畸形数据造成整页白屏，并允许直接从 IndexedDB 导出急救备份 */
-async function* readSessionsFromDb(
-  summaries: Awaited<ReturnType<typeof db.loadSessionSummaries>>
-): AsyncGenerator<Session> {
-  for (const summary of summaries) {
-    const loaded = await db.loadSession(summary.id)
-    if (loaded) {
-      yield { ...loaded, ...summary }
-    }
-  }
+  exportWarning: boolean
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -34,6 +20,7 @@ export class ErrorBoundary extends Component<Props, State> {
     errorMessage: null,
     exporting: false,
     exportStatus: null,
+    exportWarning: false,
   }
 
   static getDerivedStateFromError(error: unknown): Partial<State> {
@@ -55,33 +42,50 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.exporting) {
       return
     }
-    this.setState({ exporting: true, exportStatus: null })
+    this.setState({ exporting: true, exportStatus: null, exportWarning: false })
     try {
-      const summaries = await db.loadSessionSummaries()
-      const blob = await exportArchive(readSessionsFromDb(summaries))
-      const url = URL.createObjectURL(blob)
+      const result = await exportEmergencyBackup()
+      const url = URL.createObjectURL(result.blob)
       try {
         const a = document.createElement('a')
         a.href = url
-        a.download = `deepseek_emergency-${formatDate(new Date())}.zip`
+        a.download = result.name
         document.body.append(a)
         a.click()
         a.remove()
       } finally {
         setTimeout(() => URL.revokeObjectURL(url), 1000)
       }
+      if (result.skippedIds.length > 0) {
+        const idsPreview =
+          result.skippedIds.length > 3
+            ? `${result.skippedIds.slice(0, 3).join(', ')}...`
+            : result.skippedIds.join(', ')
+        this.setState({
+          exporting: false,
+          exportWarning: true,
+          exportStatus: translate('crashRecoveryExportPartial', {
+            exported: result.exportedCount,
+            total: result.totalCount,
+            skipped: result.skippedIds.length,
+            ids: idsPreview,
+          }),
+        })
+        return
+      }
       this.setState({
         exporting: false,
-        exportStatus: translate('crashRecoveryExported', { count: summaries.length }),
+        exportWarning: false,
+        exportStatus: translate('crashRecoveryExported', { count: result.exportedCount }),
       })
     } catch (err) {
       const msg = redactApiSecrets(err instanceof Error ? err.message : String(err))
-      this.setState({ exporting: false, exportStatus: msg })
+      this.setState({ exporting: false, exportWarning: true, exportStatus: msg })
     }
   }
 
   override render(): ReactNode {
-    const { errorMessage, exporting, exportStatus } = this.state
+    const { errorMessage, exporting, exportStatus, exportWarning } = this.state
     if (!errorMessage) {
       return this.props.children
     }
@@ -91,7 +95,9 @@ export class ErrorBoundary extends Component<Props, State> {
           <h1 className={styles.title}>{translate('crashRecoveryTitle')}</h1>
           <p className={styles.desc}>{translate('crashRecoveryDesc')}</p>
           <pre className={styles.detail}>{errorMessage}</pre>
-          {exportStatus ? <p className={styles.status}>{exportStatus}</p> : null}
+          {exportStatus ? (
+            <p className={exportWarning ? styles.warning : styles.status}>{exportStatus}</p>
+          ) : null}
           <div className={styles.actions}>
             <button type="button" className={styles.primary} onClick={this.handleReload}>
               {translate('crashRecoveryReload')}

@@ -1,4 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import { createId } from '../../utils/id.js'
 import { toSessionSummary, type Session, type SessionSummary } from './types.js'
 
 /** IndexedDB 存储结构版本；新增或调整存储、索引时递增。 */
@@ -203,59 +204,148 @@ export const updateStagingFileTypes = async (types: ReadonlyMap<string, string>)
   ])
 }
 
+export type MergeConflictPolicy = 'keep-existing' | 'keep-both' | 'overwrite'
+
+export type CommitStagingResult = {
+  summaries: SessionSummary[]
+  importedCount: number
+  keptExistingCount: number
+  copiedConflictCount: number
+  overwrittenCount: number
+}
+
+const collectSessionFileIds = (session: Session): string[] =>
+  session.messages.flatMap((message) =>
+    message.role === 'user' ? message.files.map((file) => file.id) : []
+  )
+
 /**
  * 导入完成后提交暂存数据：
  * - `replace`：同一事务中替换全部会话、摘要和原件，并清空暂存；
- * - `merge`：保留已有会话和附件，仅追加或覆盖本次导入的会话及关联原件。
+ * - `merge`：保留已有会话和附件，同 ID 冲突默认保留本地已有会话，也可显式选择另存副本或覆盖。
  */
-export const commitStaging = async (
-  mode: 'replace' | 'merge' = 'replace'
-): Promise<SessionSummary[]> => {
+export const commitStagingWithResult = async (
+  mode: 'replace' | 'merge' = 'replace',
+  conflictPolicy: MergeConflictPolicy = 'keep-existing',
+  copyTitleSuffix = ' (Imported)'
+): Promise<CommitStagingResult> => {
   const tx = (await getDB()).transaction(
     ['sessions', 'sessionSummaries', 'files', 'sessionsStaging', 'filesStaging'],
     'readwrite'
   )
-  const move = async (from: 'sessionsStaging' | 'filesStaging', to: 'sessions' | 'files') => {
-    try {
-      const target = tx.objectStore(to)
-      if (mode === 'replace') {
-        await target.clear()
-        if (to === 'sessions') {
-          await tx.objectStore('sessionSummaries').clear()
-        }
-      }
-      for (
-        let cursor = await tx.objectStore(from).openCursor();
-        cursor;
-        cursor = await cursor.continue()
-      ) {
-        if (to === 'sessions') {
-          const incoming = cursor.value as Session
-          const existing =
-            mode === 'merge' ? ((await target.get(incoming.id)) as Session | undefined) : undefined
-          const nextSession: Session =
-            existing?.memoryPrompt && !incoming.memoryPrompt
-              ? { ...incoming, memoryPrompt: existing.memoryPrompt }
-              : incoming
-          await target.put(nextSession)
-          await tx.objectStore('sessionSummaries').put(storedSummary(nextSession))
-        } else {
-          await target.put(cursor.value)
-        }
-      }
-      await tx.objectStore(from).clear()
-    } catch (error) {
-      // 同步抛出的错误不会让事务自动回滚，需显式中止，避免只提交清空和部分移入。
-      abortTransaction(tx)
-      throw error
+  let importedCount = 0
+  let keptExistingCount = 0
+  let copiedConflictCount = 0
+  let overwrittenCount = 0
+  const neededFileIds = new Set<string>()
+
+  try {
+    const sessionsTarget = tx.objectStore('sessions')
+    const summariesTarget = tx.objectStore('sessionSummaries')
+    const filesTarget = tx.objectStore('files')
+
+    if (mode === 'replace') {
+      await sessionsTarget.clear()
+      await summariesTarget.clear()
+      await filesTarget.clear()
     }
+
+    for (
+      let cursor = await tx.objectStore('sessionsStaging').openCursor();
+      cursor;
+      cursor = await cursor.continue()
+    ) {
+      const incoming = cursor.value as Session
+      if (mode === 'replace') {
+        await sessionsTarget.put(incoming)
+        await summariesTarget.put(storedSummary(incoming))
+        importedCount += 1
+        continue
+      }
+
+      const existing = (await sessionsTarget.get(incoming.id)) as Session | undefined
+      if (!existing) {
+        await sessionsTarget.put(incoming)
+        await summariesTarget.put(storedSummary(incoming))
+        importedCount += 1
+        for (const id of collectSessionFileIds(incoming)) {
+          neededFileIds.add(id)
+        }
+        continue
+      }
+
+      if (conflictPolicy === 'keep-existing') {
+        keptExistingCount += 1
+        continue
+      }
+
+      if (conflictPolicy === 'keep-both') {
+        let cloneId = createId()
+        while (await sessionsTarget.get(cloneId)) {
+          cloneId = createId()
+        }
+        const baseTitle = incoming.title || existing.title || 'Chat'
+        const nextTitle = baseTitle.endsWith(copyTitleSuffix)
+          ? baseTitle
+          : `${baseTitle}${copyTitleSuffix}`
+        const cloned: Session = { ...incoming, id: cloneId, title: nextTitle }
+        await sessionsTarget.put(cloned)
+        await summariesTarget.put(storedSummary(cloned))
+        copiedConflictCount += 1
+        importedCount += 1
+        for (const id of collectSessionFileIds(cloned)) {
+          neededFileIds.add(id)
+        }
+        continue
+      }
+
+      const nextSession: Session =
+        existing.memoryPrompt && !incoming.memoryPrompt
+          ? { ...incoming, memoryPrompt: existing.memoryPrompt }
+          : incoming
+      await sessionsTarget.put(nextSession)
+      await summariesTarget.put(storedSummary(nextSession))
+      overwrittenCount += 1
+      importedCount += 1
+      for (const id of collectSessionFileIds(nextSession)) {
+        neededFileIds.add(id)
+      }
+    }
+
+    for (
+      let cursor = await tx.objectStore('filesStaging').openCursor();
+      cursor;
+      cursor = await cursor.continue()
+    ) {
+      const file = cursor.value as StoredFile
+      if (mode === 'replace' || neededFileIds.has(file.id)) {
+        await filesTarget.put(file)
+      }
+    }
+
+    await tx.objectStore('sessionsStaging').clear()
+    await tx.objectStore('filesStaging').clear()
+  } catch (error) {
+    // 同步抛出的错误不会让事务自动回滚，需显式中止，避免只提交清空和部分移入。
+    abortTransaction(tx)
+    throw error
   }
-  await move('filesStaging', 'files')
-  await move('sessionsStaging', 'sessions')
+
   const allSummaries = await tx.objectStore('sessionSummaries').getAll()
   await tx.done
-  return allSummaries.map(toSessionSummary)
+  return {
+    summaries: allSummaries.map(toSessionSummary),
+    importedCount,
+    keptExistingCount,
+    copiedConflictCount,
+    overwrittenCount,
+  }
 }
+
+export const commitStaging = async (
+  mode: 'replace' | 'merge' = 'replace',
+  conflictPolicy: MergeConflictPolicy = 'keep-existing'
+): Promise<SessionSummary[]> => (await commitStagingWithResult(mode, conflictPolicy)).summaries
 
 /** 本地存储失败不打断对话，只在控制台留痕 */
 export const reportStorageError = (action: string) => (error: unknown) => {

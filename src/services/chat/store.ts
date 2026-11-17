@@ -401,10 +401,24 @@ const waitForIdle = (sessionId?: string) =>
     })
   })
 
+export type CommitHistoryOptions = {
+  conflictPolicy?: db.MergeConflictPolicy
+  copyTitleSuffix?: string
+}
+
+export type CommitHistoryResult = {
+  totalCount: number
+  importedCount: number
+  keptExistingCount: number
+  copiedConflictCount: number
+  overwrittenCount: number
+}
+
 export const commitHistoryChange = async (
   mode: 'replace' | 'merge',
-  write: () => Promise<void>
-): Promise<number> => {
+  write: () => Promise<void>,
+  options: CommitHistoryOptions = {}
+): Promise<CommitHistoryResult> => {
   if (get().importingHistory) {
     throw new Error('History replacement is already in progress')
   }
@@ -430,14 +444,19 @@ export const commitHistoryChange = async (
     sessionLoads.clear()
     await waitForIdle()
     await db.clearStaging()
-    let summaries: SessionSummary[]
+    let commitResult: db.CommitStagingResult
     try {
       await write()
-      summaries = await db.commitStaging(mode)
+      commitResult = await db.commitStagingWithResult(
+        mode,
+        options.conflictPolicy ?? 'keep-existing',
+        options.copyTitleSuffix
+      )
     } catch (error) {
       await db.clearStaging().catch(db.reportStorageError('clear unfinished history replacement'))
       throw error
     }
+    const { summaries } = commitResult
     sessionAccess.clear()
     unsavedSessions.clear()
     pendingFiles.clear()
@@ -458,7 +477,13 @@ export const commitHistoryChange = async (
       sessionSaveErrors: {},
       activeId: nextActive,
     })
-    return summaries.length
+    return {
+      totalCount: summaries.length,
+      importedCount: commitResult.importedCount,
+      keptExistingCount: commitResult.keptExistingCount,
+      copiedConflictCount: commitResult.copiedConflictCount,
+      overwrittenCount: commitResult.overwrittenCount,
+    }
   } finally {
     set({ importingHistory: false })
     retrySaveSessions()
@@ -472,8 +497,8 @@ export const commitHistoryChange = async (
 }
 
 /** 替换历史对话（全量导入 / 删除全部共用） */
-export const replaceHistory = (write: () => Promise<void>): Promise<number> =>
-  commitHistoryChange('replace', write)
+export const replaceHistory = async (write: () => Promise<void>): Promise<number> =>
+  (await commitHistoryChange('replace', write)).totalCount
 
 export const newChat = () => {
   if (!get().importingHistory) {
