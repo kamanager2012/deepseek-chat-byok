@@ -7,6 +7,7 @@
 
 English | [简体中文](README.zh-CN.md)
 
+- **Beginner start page (no GitHub file navigation)**: https://kamanager2012.github.io/deepseek-chat-byok/get-started.html
 - **Live Web / PWA**: https://kamanager2012.github.io/deepseek-chat-byok/
 - **Downloads (Android Release APK & Portable Desktop ZIP)**: https://github.com/kamanager2012/deepseek-chat-byok/releases/latest
 - **Security & Release Signing Guide**: [SECURITY.md](SECURITY.md)
@@ -34,6 +35,8 @@ A local-first, MIT-licensed **Bring-Your-Own-Key (BYOK)** chat client, creative 
 | ![Selective ZIP Archive Merge Preview](docs/images/import-selective-merge.png) | ![Mobile BYOK Multi-Provider Settings](docs/images/mobile-byok-settings.png) |
 
 ## Quick Start (3 Steps)
+
+> **Non-developers:** Start with the [download & migration guide](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html). Importing and reading local archives needs no API key; live replies require your own key and provider charges. Downloads are still served by GitHub Releases, so restricted networks may not be able to download them. No hosted free model quota is included.
 
 1. **Get your official export (optional)**: In the DeepSeek app or web UI, export your data (`deepseek_data-YYYY-MM-DD.zip`).
 2. **Add your own API key**: Open **Settings -> Models & API**, pick a preset (or custom URL), enter your key, and tap **Test & Save** (or **Save Direct**).

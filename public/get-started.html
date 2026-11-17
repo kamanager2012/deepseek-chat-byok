@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#4d6bfe" />
+    <meta
+      name="description"
+      content="DeepSeek Chat BYOK 新手入口：免费导入和查看旧对话，安卓与电脑客户端下载。"
+    />
+    <title>DeepSeek Chat BYOK｜客户端下载与使用指南</title>
+    <style>
+      :root {
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f7f8fc;
+        color: #1c2535;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 760px;
+        margin: auto;
+        padding: 36px 20px 64px;
+      }
+      h1 {
+        font-size: clamp(27px, 5vw, 36px);
+        line-height: 1.26;
+        letter-spacing: -0.03em;
+        margin: 5px 0 12px;
+      }
+      h2 {
+        font-size: 19px;
+        margin: 0 0 8px;
+      }
+      p {
+        margin: 8px 0 12px;
+      }
+      .eyebrow {
+        color: #4565b6;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+      }
+      .lead {
+        color: #4e5d73;
+      }
+      .notice {
+        margin: 20px 0;
+        padding: 14px;
+        background: #eff4ff;
+        border: 1px solid #dce5f9;
+        border-radius: 12px;
+        font-size: 14px;
+      }
+      .steps {
+        display: grid;
+        gap: 14px;
+        margin: 20px 0;
+      }
+      .card {
+        background: white;
+        border: 1px solid #e5e8f0;
+        border-radius: 16px;
+        padding: 19px;
+      }
+      .muted,
+      small {
+        font-size: 13px;
+        color: #5b6880;
+      }
+      .buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 14px;
+      }
+      a.button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 43px;
+        padding: 9px 16px;
+        border-radius: 10px;
+        background: #4668ed;
+        color: white;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+      }
+      a.button.secondary {
+        background: #edf1fb;
+        color: #254cc3;
+      }
+      a.button:focus-visible,
+      a:focus-visible {
+        outline: 3px solid #a7bcff;
+        outline-offset: 3px;
+      }
+      .disclaimer {
+        padding: 13px;
+        background: #fffaf0;
+        border: 1px solid #f0dfb1;
+        border-radius: 12px;
+        font-size: 13px;
+      }
+      ol {
+        padding-left: 22px;
+      }
+      li {
+        margin: 8px 0;
+      }
+      footer {
+        margin-top: 24px;
+        color: #5b6880;
+        font-size: 12px;
+      }
+      footer a {
+        color: #365acb;
+      }
+      @media (max-width: 430px) {
+        main {
+          padding: 26px 16px 40px;
+        }
+        .card {
+          padding: 16px;
+        }
+        .buttons a {
+          flex: 1 1 180px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">DEEPSEEK CHAT BYOK · 免费开源客户端</div>
+      <h1>你的 DeepSeek 对话，可以自己保存、继续使用</h1>
+      <p class="lead">
+        不懂 GitHub 也没关系。先在浏览器里导入旧聊天记录看看，再决定是否安装安卓或电脑版。
+      </p>
+      <div class="notice">
+        <strong>费用说明：</strong>客户端免费。<strong>导入、查看本地历史不需要 API Key</strong
+        >；让在线 AI
+        生成新回复仍需自备密钥，费用由服务商收取。本项目不提供免费模型额度，也不绕过官方限额。
+      </div>
+      <section class="steps" aria-label="开始使用">
+        <div class="card">
+          <h2>① 不安装，先导入旧对话</h2>
+          <p>
+            在 DeepSeek 官方 App 或网页的设置中导出聊天数据
+            ZIP。在客户端选择「导入旧对话」，预览、勾选并合并需要的会话。
+          </p>
+          <div class="buttons"><a class="button" href="./">打开网页版（免安装）</a></div>
+          <p class="muted">
+            历史在当前浏览器本地处理。网页使用共享 GitHub Pages 域名，严格隔离敏感 API Key
+            的用户建议使用独立安卓或电脑端；清理浏览器站点数据可能删除本地记录。
+          </p>
+        </div>
+        <div class="card">
+          <h2>② 安卓手机：下载正式签名版</h2>
+          <p>
+            选择 <strong>android-release.apk</strong>，不要下载 debug.apk。按系统提示安装后，可导入
+            ZIP；需要新回复时再到「设置 → 模型与 API」填 Key。
+          </p>
+          <div class="buttons">
+            <a
+              class="button"
+              id="android-download"
+              href="https://github.com/kamanager2012/deepseek-chat-byok/releases/latest"
+              rel="noopener noreferrer"
+              >查看安卓安装包</a
+            >
+          </div>
+          <p id="download-status" class="muted" role="status" aria-live="polite">
+            正在查找最新正式版安装包…
+          </p>
+          <small
+            >Android 8.0+。从早期 debug 包转正式版前请先导出本地备份；v0.2.2+
+            同证书正式版可覆盖升级。</small
+          >
+        </div>
+        <div class="card">
+          <h2>③ 电脑：下载便携包</h2>
+          <p>
+            Windows / macOS / Linux 可下载 ZIP 并按仓库说明运行启动脚本。<strong
+              >便携包仍需 Node.js 22+，不是双击即用的安装器</strong
+            >；若只想查看历史，优先用网页版。
+          </p>
+          <div class="buttons">
+            <a
+              class="button secondary"
+              id="desktop-download"
+              href="https://github.com/kamanager2012/deepseek-chat-byok/releases/latest"
+              rel="noopener noreferrer"
+              >查看电脑便携包</a
+            >
+          </div>
+        </div>
+      </section>
+      <div class="disclaimer">
+        <strong>下载提醒：</strong>安装包目前仍由 GitHub Releases
+        托管。此页面只省去在仓库中翻找文件的步骤，无法解决 GitHub
+        网络访问受限的问题；请勿从陌生网盘下载修改版安装包。
+      </div>
+      <section class="card" style="margin-top: 16px">
+        <h2>第一次使用，只需要三步</h2>
+        <ol>
+          <li>从 DeepSeek 官方导出历史 ZIP，不要将包含隐私的聊天记录交给陌生人。</li>
+          <li>在客户端「设置 → 数据管理」导入，选择希望保留的对话。</li>
+          <li>如果需要 AI 继续回答，再选择服务商、填写自己的密钥并测试连接。</li>
+        </ol>
+      </section>
+      <footer>
+        基于 DeepSeek 官方 MIT 开源 chat-demo 扩展，非 DeepSeek 官方 App。
+        <a href="https://github.com/kamanager2012/deepseek-chat-byok" rel="noopener noreferrer"
+          >开源代码与安全说明</a
+        >
+      </footer>
+    </main>
+    <script>
+      ;(() => {
+        const status = document.getElementById('download-status')
+        const android = document.getElementById('android-download')
+        const desktop = document.getElementById('desktop-download')
+        const prefix = '/kamanager2012/deepseek-chat-byok/releases/download/'
+        const safeAssetUrl = (assets, suffix) => {
+          const asset = assets.find(
+            (item) =>
+              typeof item.name === 'string' &&
+              item.name.startsWith('deepseek-chat-byok-') &&
+              item.name.endsWith(suffix)
+          )
+          if (!asset || typeof asset.browser_download_url !== 'string') return null
+          try {
+            const url = new URL(asset.browser_download_url)
+            return url.protocol === 'https:' &&
+              url.hostname === 'github.com' &&
+              url.pathname.startsWith(prefix)
+              ? url.href
+              : null
+          } catch {
+            return null
+          }
+        }
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 8000)
+        fetch('https://api.github.com/repos/kamanager2012/deepseek-chat-byok/releases/latest', {
+          signal: controller.signal,
+          cache: 'no-store',
+        })
+          .then((response) => {
+            if (!response.ok) throw new Error('Release lookup failed')
+            return response.json()
+          })
+          .then((release) => {
+            if (!release || release.draft || release.prerelease || !Array.isArray(release.assets)) {
+              throw new Error('Invalid release')
+            }
+            const apk = safeAssetUrl(release.assets, '-android-release.apk')
+            const zip = safeAssetUrl(release.assets, '-portable.zip')
+            if (apk) {
+              android.href = apk
+              android.textContent = '下载安卓正式版 APK'
+            }
+            if (zip) {
+              desktop.href = zip
+              desktop.textContent = '下载电脑便携 ZIP'
+            }
+            status.textContent = apk
+              ? '已找到正式版 APK，可以直接下载。'
+              : '未找到符合条件的正式版 APK，请查看发布页。'
+          })
+          .catch(() => {
+            status.textContent =
+              '无法查询最新下载地址。可尝试打开发布页；如果 GitHub 无法访问，下载可能失败。'
+          })
+          .finally(() => clearTimeout(timeout))
+      })()
+    </script>
+  </body>
+</html>
