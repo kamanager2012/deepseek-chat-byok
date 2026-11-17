@@ -1,9 +1,14 @@
 import 'fake-indexeddb/auto'
+import { strToU8, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
 import { exportEmergencyBackup } from '../src/services/chat/backup.js'
 import * as db from '../src/services/chat/db.js'
 import { exportArchive } from '../src/services/chat/history/exportArchive.js'
-import { importArchive, inspectArchiveIndex } from '../src/services/chat/history/importArchive.js'
+import {
+  checkArchiveFormat,
+  importArchive,
+  inspectArchiveIndex,
+} from '../src/services/chat/history/importArchive.js'
 import type { Session } from '../src/services/chat/types.js'
 
 const deleteRawSessionRecordOnly = async (sessionId: string): Promise<void> =>
@@ -219,5 +224,143 @@ describe('IndexedDB selective import, strip search, and non-destructive merge', 
     // If all indexed sessions are unreadable, emergency backup must fail rather than emit empty ZIP
     await deleteRawSessionRecordOnly(sKeep.id)
     await expect(exportEmergencyBackup()).rejects.toThrow(/0 of 2/)
+  })
+
+  it('inspects and selectively merges ChatGPT (branched mapping) and Claude official ZIP exports', async () => {
+    await db.clearStaging()
+    await db.commitStaging('replace')
+
+    const chatGptArchive = zipSync({
+      'conversations.json': strToU8(
+        JSON.stringify([
+          {
+            id: 'cgpt-conv-1',
+            title: 'ChatGPT Branched Plot',
+            create_time: 1_760_000_000,
+            update_time: 1_760_000_200,
+            current_node: 'node-a2',
+            mapping: {
+              'node-root': { id: 'node-root', parent: null, children: ['node-u1'] },
+              'node-u1': {
+                id: 'node-u1',
+                parent: 'node-root',
+                children: ['node-a1', 'node-a2'],
+                message: {
+                  id: 'u1',
+                  author: { role: 'user' },
+                  create_time: 1_760_000_010,
+                  content: { content_type: 'text', parts: ['Write an opening in Kyoto.'] },
+                },
+              },
+              'node-a1': {
+                id: 'node-a1',
+                parent: 'node-u1',
+                children: [],
+                message: {
+                  id: 'a1',
+                  author: { role: 'assistant' },
+                  create_time: 1_760_000_020,
+                  content: { content_type: 'text', parts: ['Draft v1 in Gion.'] },
+                  metadata: { model_slug: 'gpt-4o' },
+                },
+              },
+              'node-a2': {
+                id: 'node-a2',
+                parent: 'node-u1',
+                children: [],
+                message: {
+                  id: 'a2',
+                  author: { role: 'assistant' },
+                  create_time: 1_760_000_030,
+                  content: { content_type: 'text', parts: ['Draft v2 in Arashiyama.'] },
+                  metadata: { model_slug: 'gpt-4o' },
+                },
+              },
+            },
+          },
+          {
+            id: 'cgpt-conv-skipped',
+            title: 'Unselected ChatGPT Chat',
+            create_time: 1_760_000_000,
+            update_time: 1_760_000_050,
+            mapping: {
+              r: { id: 'r', parent: null, children: ['u'] },
+              u: {
+                id: 'u',
+                parent: 'r',
+                children: [],
+                message: {
+                  id: 'ux',
+                  author: { role: 'user' },
+                  content: { content_type: 'text', parts: ['Skip me'] },
+                },
+              },
+            },
+          },
+        ])
+      ),
+    })
+
+    const chatGptFile = new File([Buffer.from(chatGptArchive)], 'chatgpt-export.zip', {
+      type: 'application/zip',
+    })
+    await checkArchiveFormat(chatGptFile)
+    const cgptIndex = await inspectArchiveIndex(chatGptFile)
+    expect(cgptIndex.map((e) => e.id)).toEqual(['cgpt-conv-1', 'cgpt-conv-skipped'])
+
+    await db.clearStaging()
+    const importedGpt = await importArchive(chatGptFile, {
+      selectedIds: new Set(['cgpt-conv-1']),
+    })
+    expect(importedGpt).toBe(1)
+    await db.commitStagingWithResult('merge')
+
+    const loadedGpt = await db.loadSession('cgpt-conv-1')
+    expect(loadedGpt?.title).toBe('ChatGPT Branched Plot')
+    expect(loadedGpt?.messages).toHaveLength(3)
+    expect(loadedGpt?.messages[0]?.selectedChildId).toBe('a2')
+
+    const claudeArchive = zipSync({
+      'conversations.json': strToU8(
+        JSON.stringify([
+          {
+            uuid: 'claude-conv-1',
+            name: 'Claude Reasoning Note',
+            created_at: '2026-11-16T08:00:00Z',
+            updated_at: '2026-11-16T09:00:00Z',
+            chat_messages: [
+              {
+                uuid: 'cm-u1',
+                sender: 'human',
+                text: 'Compare cache efficiency.',
+                created_at: '2026-11-16T08:01:00Z',
+              },
+              {
+                uuid: 'cm-a1',
+                sender: 'assistant',
+                content: [
+                  { type: 'thinking', thinking: 'Checking prefix reuse' },
+                  { type: 'text', text: 'Pin fixed instructions first.' },
+                ],
+                created_at: '2026-11-16T08:01:10Z',
+              },
+            ],
+          },
+        ])
+      ),
+    })
+    const claudeFile = new File([Buffer.from(claudeArchive)], 'claude-export.zip', {
+      type: 'application/zip',
+    })
+    await checkArchiveFormat(claudeFile)
+    const claudeIndex = await inspectArchiveIndex(claudeFile)
+    expect(claudeIndex.map((e) => e.id)).toEqual(['claude-conv-1'])
+
+    await db.clearStaging()
+    expect(await importArchive(claudeFile)).toBe(1)
+    const mergedStats = await db.commitStagingWithResult('merge')
+    expect(mergedStats.summaries.map((s) => s.id).sort()).toEqual(['cgpt-conv-1', 'claude-conv-1'])
+    const loadedClaude = await db.loadSession('claude-conv-1')
+    expect(loadedClaude?.messages[1]?.role).toBe('assistant')
   })
 })

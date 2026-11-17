@@ -8,12 +8,25 @@ export type SettingsSection = 'general' | 'api' | 'data'
 export const useSettingsDialog = create(() => ({
   open: false,
   section: 'general' as SettingsSection,
+  pendingImportFile: null as File | null,
 }))
 
 export const openSettings = (section: SettingsSection) =>
   useSettingsDialog.setState({ open: true, section })
 
-export const closeSettings = () => useSettingsDialog.setState({ open: false })
+export const openImportWithFile = (file: File) =>
+  useSettingsDialog.setState({ open: true, section: 'data', pendingImportFile: file })
+
+export const consumePendingImportFile = (): File | null => {
+  const file = useSettingsDialog.getState().pendingImportFile
+  if (file) {
+    useSettingsDialog.setState({ pendingImportFile: null })
+  }
+  return file
+}
+
+export const closeSettings = () =>
+  useSettingsDialog.setState({ open: false, pendingImportFile: null })
 
 /** 没有可用 Provider 配置时打开设置并选中「模型与 API」，返回是否已就绪 */
 export const ensureApiKey = () => {

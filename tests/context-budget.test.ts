@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
+  estimateMessageCost,
+  estimateSessionCost,
+  formatUsdCost,
+} from '../src/services/api/pricing.js'
+import {
   applyContextBudget,
   buildDigestSourceText,
   buildEffectiveSystemPrompt,
   estimateTextTokens,
   sessionToMarkdown,
 } from '../src/services/chat/contextBudget.js'
-import type { AssistantMessage, Message, UserMessage } from '../src/services/chat/types.js'
+import type { AssistantMessage, Message, Session, UserMessage } from '../src/services/chat/types.js'
 
 const makeRound = (i: number, qText: string, aText: string): [UserMessage, AssistantMessage] => [
   {
@@ -74,5 +79,55 @@ describe('context budget & memory distillation', () => {
     expect(md).toContain('好的阿明，记住设定了')
 
     expect(estimateTextTokens('你好世界abc')).toBeGreaterThan(0)
+  })
+
+  it('estimates DeepSeek/Claude message and session USD costs with cache-hit savings', () => {
+    const est = estimateMessageCost(
+      {
+        input_tokens: 1_000,
+        cache_creation_input_tokens: 0,
+        cache_read_input_tokens: 100_000,
+        output_tokens: 1_000,
+      },
+      'deepseek-chat'
+    )
+    expect(est).not.toBeNull()
+    expect(est?.costUsd).toBeCloseTo(0.00837, 6)
+    expect(est?.savedUsd).toBeCloseTo(0.02, 6)
+    expect(formatUsdCost(est?.costUsd ?? 0)).toBe('$0.0084')
+
+    const session: Session = {
+      id: 'cost-s1',
+      title: 'Cost check',
+      createdAt: 1000,
+      updatedAt: 2000,
+      messages: [
+        makeRound(1, 'hi', 'hello')[0],
+        {
+          ...makeRound(1, 'hi', 'hello')[1],
+          usage: {
+            input_tokens: 1_000,
+            cache_creation_input_tokens: 0,
+            cache_read_input_tokens: 100_000,
+            output_tokens: 1_000,
+          },
+        },
+      ],
+    }
+    const summary = estimateSessionCost(session, 'deepseek-chat')
+    expect(summary?.pricedMessages).toBe(1)
+    expect(summary?.totalSavedUsd).toBeCloseTo(0.02, 6)
+    expect(estimateMessageCost(undefined, 'unknown-model')).toBeNull()
+    expect(
+      estimateMessageCost(
+        {
+          input_tokens: 100,
+          cache_creation_input_tokens: 0,
+          cache_read_input_tokens: 0,
+          output_tokens: 50,
+        },
+        'unknown-model'
+      )
+    ).toBeNull()
   })
 })

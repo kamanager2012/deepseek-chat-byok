@@ -116,7 +116,7 @@ export const zh = {
   historyImportConfirmTitle: '确认导入历史对话？',
   historyImportConfirmDescription: '上传的历史对话会覆盖当前所有对话记录，是否确认导入？',
   historyImportDescription:
-    '支持从 DeepSeek 官网或 App「设置 → 数据导出」获取的 deepseek_data-*.zip，预览目录后可按对话勾选合并导入，保留当前已有对话。',
+    '支持 DeepSeek 官方（deepseek_data-*.zip）、ChatGPT 与 Claude 官方导出 ZIP（conversations.json），预览目录后可按对话勾选合并导入，保留当前已有对话。',
   historyImportedOne: '已导入 1 个对话',
   historyImported: '已导入 {count} 个对话',
   historyImportedKeptOnly: '未覆盖本地记录：已保留 {kept} 个同名对话',

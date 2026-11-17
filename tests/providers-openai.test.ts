@@ -16,6 +16,7 @@ import {
   shouldProbeLocalProxy,
   type ProviderConfig,
 } from '../src/services/api/providers.js'
+import { loadInitialProvidersWithVault, upsertProvider } from '../src/services/settings.js'
 
 const streamFromChunks = (chunks: string[]): ReadableStream<Uint8Array> => {
   const encoder = new TextEncoder()
@@ -370,6 +371,62 @@ describe('OpenAI protocol adapter', () => {
         { url: target, token: 'fallback-port-secret' },
         { url: 'https://api.example.com/v1/models', token: null },
       ])
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('migrates legacy localStorage API keys into AndroidKeyStore bridge and scrubs plaintext localStorage', () => {
+    const store = new Map<string, string>()
+    const legacyProvider = createDefaultProvider('sk-legacy-plaintext-123')
+    store.set('chat-demo:providers-v1', JSON.stringify([legacyProvider]))
+    store.set('chat-demo:active-provider-id', legacyProvider.id)
+    store.set('chat-demo:api-key', 'sk-legacy-plaintext-123')
+
+    let vaultPayload = '{}'
+    const mockStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        store.set(k, v)
+      },
+      removeItem: (k: string) => {
+        store.delete(k)
+      },
+    }
+
+    vi.stubGlobal('localStorage', mockStorage)
+    vi.stubGlobal('window', {
+      location: { origin: 'http://127.0.0.1:18787' },
+      AndroidExportBridge: {
+        getBridgeToken: () => 'vault-token-123',
+        readSecureSecrets: (token: string) => (token === 'vault-token-123' ? vaultPayload : ''),
+        writeSecureSecrets: (token: string, json: string) => {
+          if (token !== 'vault-token-123') {
+            return false
+          }
+          vaultPayload = json
+          return true
+        },
+      },
+    })
+
+    try {
+      const migrated = loadInitialProvidersWithVault()
+      expect(migrated.providers[0]?.apiKey).toBe('sk-legacy-plaintext-123')
+      expect(JSON.parse(vaultPayload)).toEqual({
+        [legacyProvider.id]: 'sk-legacy-plaintext-123',
+      })
+      // Plaintext keys must be scrubbed from localStorage after migration
+      expect(store.get('chat-demo:api-key')).toBeUndefined()
+      expect(store.get('chat-demo:providers-v1')).not.toContain('sk-legacy-plaintext-123')
+
+      // Updating provider via settings must keep API keys out of localStorage
+      upsertProvider({ ...legacyProvider, apiKey: 'sk-rotated-in-keystore' }, true)
+      expect(JSON.parse(vaultPayload)).toEqual({
+        [legacyProvider.id]: 'sk-rotated-in-keystore',
+      })
+      expect(store.get('chat-demo:api-key')).toBeUndefined()
+      expect(store.get('chat-demo:providers-v1')).not.toContain('sk-rotated-in-keystore')
     } finally {
       vi.unstubAllGlobals()
     }

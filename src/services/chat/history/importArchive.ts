@@ -1,6 +1,7 @@
 import * as db from '../db.js'
 import type { Session } from '../types.js'
 import { BackupError, fail } from './errors.js'
+import { parseExternalConversationsJson } from './externalFormats.js'
 import type { SessionIndexEntry } from './format.js'
 import { INDEX_PATH, MANIFEST_PATH, USER_PATH, parseSessionPath, sessionFilesDir } from './paths.js'
 import { checkManifest, readSessionFile, readSessionIndex } from './schema.js'
@@ -73,8 +74,22 @@ export const stripHistoricalSearchBlocks = (session: Session): Session => ({
   }),
 })
 
+const EXTERNAL_CONVERSATIONS_PATH = 'conversations.json'
+
+const inspectExternalConversations = async (file: File) => {
+  const blob = await readNamedEntry(file, EXTERNAL_CONVERSATIONS_PATH)
+  if (!blob) {
+    return null
+  }
+  const parsed = parseExternalConversationsJson(await readJsonText(blob))
+  if (!parsed) {
+    return fail('backupUnrecognized')
+  }
+  return parsed
+}
+
 /**
- * 仅从中央目录定位并读取 manifest.json 与 chat_session_index.json，
+ * 仅从中央目录定位并读取 manifest.json 与 chat_session_index.json（或 ChatGPT/Claude conversations.json），
  * 不解压会话正文和海量附件即可毫秒级预览 200MB 备份里的全部会话列表。
  */
 export const inspectArchiveIndex = async (file: File): Promise<SessionIndexEntry[]> => {
@@ -84,7 +99,11 @@ export const inspectArchiveIndex = async (file: File): Promise<SessionIndexEntry
   try {
     const manifestBlob = await readNamedEntry(file, MANIFEST_PATH)
     if (!manifestBlob) {
-      return fail('backupUnrecognized')
+      const external = await inspectExternalConversations(file)
+      if (!external) {
+        return fail('backupUnrecognized')
+      }
+      return external.index
     }
     checkManifest(await readJsonText(manifestBlob))
     const indexBlob = await readNamedEntry(file, INDEX_PATH)
@@ -99,7 +118,7 @@ export const inspectArchiveIndex = async (file: File): Promise<SessionIndexEntry
 }
 
 /**
- * 检查 ZIP 格式、首个 manifest 条目及格式版本。
+ * 检查 ZIP 格式、首个 manifest 条目及格式版本（兼容 ChatGPT/Claude 官方导出 conversations.json）。
  * 校验失败时保留正在生成的回答和现有暂存数据。
  */
 export const checkArchiveFormat = async (file: File): Promise<void> => {
@@ -108,10 +127,14 @@ export const checkArchiveFormat = async (file: File): Promise<void> => {
   }
   try {
     for await (const entry of readArchive(file)) {
-      if (entry.path !== MANIFEST_PATH) {
-        fail('backupUnrecognized')
+      if (entry.path === MANIFEST_PATH) {
+        checkManifest(await readJson(entry))
+        return
       }
-      checkManifest(await readJson(entry))
+      break
+    }
+    const external = await inspectExternalConversations(file)
+    if (external) {
       return
     }
   } catch (error) {
@@ -139,6 +162,27 @@ export const importArchive = async (
     fail('backupUnrecognized')
   }
   const { selectedIds, stripSearchBlocks = false } = options
+  if (!(await readNamedEntry(file, MANIFEST_PATH))) {
+    try {
+      const external = await inspectExternalConversations(file)
+      if (!external) {
+        return fail('backupUnrecognized')
+      }
+      let count = 0
+      for (const [id, session] of external.sessions) {
+        if (selectedIds && !selectedIds.has(id)) {
+          continue
+        }
+        await db.addStagingSession(
+          stripSearchBlocks ? stripHistoricalSearchBlocks(session) : session
+        )
+        count += 1
+      }
+      return count
+    } catch (error) {
+      throw error instanceof ArchiveError ? new BackupError('backupIncomplete') : error
+    }
+  }
   const imported = new Set<string>()
   const images = new Map<string, string>()
   /** 已保存的原件：文件 ID → MIME。同一图片出现在多个会话目录时只保存一次。 */

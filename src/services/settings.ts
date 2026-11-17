@@ -5,7 +5,12 @@ import {
   isProviderConfigured,
   type ProviderConfig,
 } from './api/providers.js'
-import { getDefaultCorsProxyUrl } from './api/androidBridge.js'
+import {
+  getDefaultCorsProxyUrl,
+  hasAndroidSecureStorage,
+  readAndroidSecureSecrets,
+  writeAndroidSecureSecrets,
+} from './api/androidBridge.js'
 import { normalizeLocation, type UserLocation } from './location.js'
 
 export type Locale = 'zh-CN' | 'en-US'
@@ -118,8 +123,27 @@ const isProviderRecord = (value: unknown): value is ProviderConfig => {
   )
 }
 
-const initialProviders = (): { providers: ProviderConfig[]; activeProviderId: string } => {
+const buildSecretVaultMap = (providers: ProviderConfig[]): Record<string, string> => {
+  const vault: Record<string, string> = {}
+  for (const item of providers) {
+    const key = item.apiKey.trim()
+    if (key) {
+      vault[item.id] = key
+    }
+  }
+  return vault
+}
+
+const stripProviderSecrets = (providers: ProviderConfig[]): ProviderConfig[] =>
+  providers.map((item) => (item.apiKey ? { ...item, apiKey: '' } : item))
+
+/** Android 下把 localStorage 遗留明文密钥迁入 AndroidKeyStore 保险箱并清除明文 */
+export const loadInitialProvidersWithVault = (): {
+  providers: ProviderConfig[]
+  activeProviderId: string
+} => {
   const legacyKey = read(KEYS.apiKey) ?? ''
+  let resolved: { providers: ProviderConfig[]; activeProviderId: string } | null = null
   try {
     const raw = JSON.parse(read(KEYS.providers) ?? 'null') as unknown
     if (Array.isArray(raw)) {
@@ -130,15 +154,50 @@ const initialProviders = (): { providers: ProviderConfig[]; activeProviderId: st
       if (valid.length > 0) {
         const savedActive = read(KEYS.activeProviderId) ?? ''
         const activeId = valid.some((p) => p.id === savedActive) ? savedActive : valid[0].id
-        return { providers: valid, activeProviderId: activeId }
+        resolved = { providers: valid, activeProviderId: activeId }
       }
     }
   } catch {
     // 解析失败回退默认配置
   }
-  const fallback = createDefaultProvider(legacyKey)
-  return { providers: [fallback], activeProviderId: fallback.id }
+  if (!resolved) {
+    const fallback = createDefaultProvider(legacyKey)
+    resolved = { providers: [fallback], activeProviderId: fallback.id }
+  }
+  if (!hasAndroidSecureStorage()) {
+    return resolved
+  }
+
+  const vault = readAndroidSecureSecrets()
+  let needsVaultWrite = false
+  let hasLocalPlaintext = Boolean(legacyKey.trim())
+  const hydrated = resolved.providers.map((item) => {
+    const localKey = item.apiKey.trim()
+    if (localKey) {
+      hasLocalPlaintext = true
+      if (!vault[item.id]) {
+        vault[item.id] = localKey
+        needsVaultWrite = true
+      }
+    }
+    const vaultKey = vault[item.id] ?? ''
+    return vaultKey ? { ...item, apiKey: vaultKey } : { ...item, apiKey: '' }
+  })
+  if (legacyKey.trim() && hydrated[0] && !hydrated[0].apiKey.trim()) {
+    hydrated[0] = { ...hydrated[0], apiKey: legacyKey.trim() }
+    vault[hydrated[0].id] = legacyKey.trim()
+    needsVaultWrite = true
+  }
+  const vaultOk = !needsVaultWrite || writeAndroidSecureSecrets(vault)
+  if (hasLocalPlaintext && vaultOk) {
+    write(KEYS.providers, JSON.stringify(stripProviderSecrets(hydrated)))
+    write(KEYS.apiKey, null)
+  }
+  return { providers: hydrated, activeProviderId: resolved.activeProviderId }
 }
+
+const initialProviders = (): { providers: ProviderConfig[]; activeProviderId: string } =>
+  loadInitialProvidersWithVault()
 
 /** 位置选择模式跟随浏览器语言，与应用内选择的界面语言无关。 */
 export const isChineseBrowser = (): boolean =>
@@ -213,9 +272,14 @@ export const isActiveProviderReady = (state = useSettings.getState()): boolean =
 const persistProviders = (providers: ProviderConfig[], activeId: string) => {
   const active = resolveActive(providers, activeId)
   const cleanKey = active.apiKey.trim() || null
-  write(KEYS.providers, JSON.stringify(providers))
+  if (hasAndroidSecureStorage() && writeAndroidSecureSecrets(buildSecretVaultMap(providers))) {
+    write(KEYS.providers, JSON.stringify(stripProviderSecrets(providers)))
+    write(KEYS.apiKey, null)
+  } else {
+    write(KEYS.providers, JSON.stringify(providers))
+    write(KEYS.apiKey, cleanKey)
+  }
   write(KEYS.activeProviderId, active.id)
-  write(KEYS.apiKey, cleanKey)
   useSettings.setState({
     providers,
     activeProviderId: active.id,

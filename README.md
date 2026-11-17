@@ -22,9 +22,9 @@ A local-first, MIT-licensed **Bring-Your-Own-Key (BYOK)** chat client, creative 
 | **Android Native App**                | **`*-android-release.apk`** from [Latest Release](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest)                                                                                                       | Built-in `127.0.0.1:18787` bridge | Phone daily driver, any BYOK endpoint, SAF file export        |
 | **Portable Desktop / Local Server**   | **`*-portable.zip`** ([Download & Setup Guide](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html)): unzip and double-click `Start-Windows.bat` / `Start-macOS.command`, or run `./scripts/start-desktop.*` | Built-in Node 22 `/_proxy`        | Desktop windowed mode, strict third-party APIs & local Ollama |
 
-1. **Migrate Locked/Older Chats in Seconds**: Export `deepseek_data-*.zip` from DeepSeek Settings -> Data Export, drop it into **Settings -> Data -> Import Chat History**, preview the archive index immediately, and **merge** selected conversations without wiping your existing sessions or Memory Cards.
-2. **Switch Providers Freely (BYOK)**: Keep multiple profiles in `localStorage` across DeepSeek Official (Anthropic + native search/files/TTS), DeepSeek OpenAI, OpenCode Go / Zen, Anthropic Messages, SiliconFlow, OpenRouter, Local Ollama, or custom endpoints.
-3. **Cut Token Waste on Long Chats & Fiction**: Cap history by round count / token budget, pin a persistent **Memory Card** (editable or summarized from trimmed turns), and inspect per-reply cache hits (`in (hit X) · out`).
+1. **Cross-Platform Chat Asset Migration in Seconds**: Open **DeepSeek** (`deepseek_data-*.zip`), **ChatGPT**, or **Claude** (`conversations.json`) export ZIPs directly via drag-and-drop, file picker, or Android **Share / Open with**; preview indexes immediately, preserve branched regenerations, and merge non-destructively without overwriting existing sessions or Memory Cards.
+2. **Switch Providers Freely (BYOK + Android Keystore)**: Keep multiple profiles across DeepSeek Official (Anthropic + native search/files/TTS), DeepSeek OpenAI, OpenCode Go / Zen, Anthropic Messages, SiliconFlow, OpenRouter, Local Ollama, or custom endpoints. Android `v0.4.0+` encrypts saved keys with AES-256-GCM in `AndroidKeyStore`.
+3. **Cut Token Waste & Estimate Cache Savings**: Cap history by round count / token budget, pin a persistent **Memory Card** (editable or summarized from trimmed turns), and track per-reply token usage, cache hits (`in (hit X) · out`), and estimated USD cost.
 
 ## Screenshots
 
@@ -70,7 +70,7 @@ pnpm start
 
 Found a bug or UX bottleneck? Use the [De-identified Feedback Form](https://github.com/kamanager2012/deepseek-chat-byok/issues/new?template=pilot-feedback.yml) (or open a [GitHub Issue](https://github.com/kamanager2012/deepseek-chat-byok/issues)) with:
 
-1. Platform & release version (`GitHub Pages`, `Portable Desktop`, or `Android Release APK v0.3.2`)
+1. Platform & release version (`GitHub Pages`, `Portable Desktop`, or `Android Release APK v0.4.0`)
 2. Provider preset / protocol (`deepseek-anthropic`, `openai`, `anthropic`, or `ollama`)
 3. Whether archive merge (`deepseek_data-*.zip`) succeeded and approximate session count / ZIP size
 4. Reproduction steps or sanitized console/UI error messages (**never attach API keys or personal chat ZIPs**)
