@@ -361,6 +361,37 @@ describe('Real Chromium E2E across desktop and mobile viewports', () => {
       )
       await guidePage.close()
 
+      // A published Pages mirror takes precedence over GitHub API links.
+      const validSha = 'a'.repeat(64)
+      await desktopContext.route('**/downloads/manifest.json', async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            schemaVersion: 1,
+            tag: 'v0.3.1',
+            android: {
+              filename: 'deepseek-chat-byok-v0.3.1-android-release.apk',
+              sha256: validSha,
+            },
+            desktop: {
+              filename: 'deepseek-chat-byok-v0.3.1-portable.zip',
+              sha256: validSha,
+            },
+          }),
+        })
+      })
+      const mirroredPage = await desktopContext.newPage()
+      await mirroredPage.goto(`${appServer.url}/get-started.html`, { waitUntil: 'networkidle' })
+      await mirroredPage.getByRole('link', { name: '直接下载安卓正式版（v0.3.1）' }).waitFor()
+      expect(await mirroredPage.locator('#android-download').getAttribute('href')).toBe(
+        `${appServer.url}/downloads/deepseek-chat-byok-v0.3.1-android-release.apk`
+      )
+      expect(await mirroredPage.locator('#desktop-download').getAttribute('href')).toBe(
+        `${appServer.url}/downloads/deepseek-chat-byok-v0.3.1-portable.zip`
+      )
+      await mirroredPage.close()
+
       await page.getByRole('button', { name: '设置模型，开始聊天' }).click()
       await page.getByRole('tab', { name: '模型与 API' }).waitFor()
       await page.getByRole('button', { name: '新增配置' }).click()

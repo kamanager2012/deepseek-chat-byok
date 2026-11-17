@@ -253,7 +253,7 @@
           if (
             manifest?.schemaVersion !== 1 ||
             typeof manifest.tag !== 'string' ||
-            !/^v\\d+\\.\\d+\\.\\d+(?:[-.][0-9A-Za-z.-]+)?$/.test(manifest.tag)
+            !/^v\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.-]+)?$/.test(manifest.tag)
           ) {
             throw new Error('Unrecognized mirror manifest')
           }
