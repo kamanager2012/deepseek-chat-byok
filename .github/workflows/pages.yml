@@ -23,6 +23,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+      actions: read
       checks: read
       pages: write
     steps:
