@@ -2,6 +2,12 @@ import type { zh } from './zh.js'
 
 export const en = {
   welcomeMessageChat250808: 'How can I help you?',
+  onboardingTitle: 'Bring your old chats or start a new one',
+  onboardingImport: 'Import chats (no key needed)',
+  onboardingConfigure: 'Set up a model to chat',
+  onboardingCostNote:
+    'Importing and reading local chats is free and needs no key. Online AI replies require your own API key and provider charges. No free model quota is included.',
+  onboardingInstallGuide: 'Android & desktop downloads and setup',
   contentCaveat: 'AI-generated, for reference only',
   expandSiderbarButton: 'Open sidebar',
   collapseSiderbarButton: 'Close sidebar',

@@ -1,5 +1,11 @@
 export const zh = {
   welcomeMessageChat250808: '今天有什么可以帮到你？',
+  onboardingTitle: '带走旧对话，也可以开始新对话',
+  onboardingImport: '导入旧对话（无需密钥）',
+  onboardingConfigure: '设置模型，开始聊天',
+  onboardingCostNote:
+    '导入、查看本地对话不需要密钥；调用在线 AI 需要自己的 API Key，费用由服务商收取。本工具免费，不提供免费模型额度。',
+  onboardingInstallGuide: '安卓与电脑版下载、安装说明',
   contentCaveat: '内容由 AI 生成，请仔细甄别',
   expandSiderbarButton: '打开边栏',
   collapseSiderbarButton: '收起边栏',

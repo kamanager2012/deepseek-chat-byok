@@ -310,10 +310,16 @@ describe('Real Chromium E2E across desktop and mobile viewports', () => {
       })
       expect(swRegistered).toBe(true)
 
-      // First launch with empty API key auto-opens API Settings modal
-      if (!(await page.getByRole('dialog').isVisible())) {
-        await page.locator('button[title]').first().click()
-      }
+      // A new user can inspect imported history before providing an API Key.
+      expect(await page.getByRole('dialog').count()).toBe(0)
+      await page.getByRole('button', { name: '导入旧对话（无需密钥）' }).click()
+      await page.getByRole('tab', { name: '数据管理' }).waitFor()
+      await page.getByRole('button', { name: '关闭' }).click()
+      const guideResponse = await page.request.get(`${appServer.url}/get-started.html`)
+      expect(guideResponse.status()).toBe(200)
+      expect(await guideResponse.text()).toContain('客户端下载')
+      await page.getByRole('button', { name: '设置模型，开始聊天' }).click()
+      await page.getByRole('tab', { name: '模型与 API' }).waitFor()
       await page.getByRole('button', { name: '新增配置' }).click()
 
       const proxyToggle = page.getByLabel(
@@ -511,6 +517,10 @@ describe('Real Chromium E2E across desktop and mobile viewports', () => {
 
       await mobilePage.goto(appServer.url, { waitUntil: 'networkidle' })
       await mobilePage.waitForSelector('text=今天有什么可以帮到你？')
+      expect(await mobilePage.getByRole('dialog').count()).toBe(0)
+      await mobilePage.getByRole('button', { name: '导入旧对话（无需密钥）' }).click()
+      await mobilePage.getByRole('tab', { name: '数据管理' }).waitFor()
+      await mobilePage.getByRole('button', { name: '关闭' }).click()
 
       const overflowCheck = await mobilePage.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth
