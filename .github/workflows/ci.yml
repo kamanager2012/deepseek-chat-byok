@@ -182,6 +182,9 @@ jobs:
             exit 1
           fi
           export PATH="${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator:${PATH}"
+          mkdir -p "${HOME}/.android/avd"
+          export ANDROID_USER_HOME="${HOME}/.android"
+          export ANDROID_AVD_HOME="${HOME}/.android/avd"
           SDK_TOOLS="$(dirname "$(command -v sdkmanager || find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | sort -V | tail -n1)")"
           yes | "${SDK_TOOLS}/sdkmanager" --licenses >/dev/null || true
           "${SDK_TOOLS}/sdkmanager" "platform-tools" "emulator" "system-images;android-34;default;x86_64"
@@ -195,6 +198,11 @@ jobs:
           trap cleanup EXIT
 
           for _ in $(seq 1 90); do
+            if ! kill -0 "$EMU_PID" 2>/dev/null; then
+              echo "ERROR: Android emulator exited prematurely" >&2
+              cat "${RUNNER_TEMP}/emulator.log"
+              exit 1
+            fi
             BOOTED="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
             if [ "$BOOTED" = "1" ]; then break; fi
             sleep 2
