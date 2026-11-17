@@ -455,7 +455,32 @@ describe('Real Chromium E2E across desktop and mobile viewports', () => {
       await page.getByRole('button', { name: '下载' }).click()
       const zipDownload = await zipDownloadPromise
       expect(zipDownload.suggestedFilename().endsWith('.zip')).toBe(true)
+
+      // Re-import original ZIP overlapping Alpha Canon -> verify non-destructive merge keeps newer local turns
+      await page.locator('input[type="file"][accept*=".zip"]').setInputFiles({
+        name: 'deepseek_data-e2e.zip',
+        mimeType: 'application/zip',
+        buffer: zipBuffer,
+      })
+      await page.waitForSelector('text=选择要导入的对话')
+      await page.getByRole('button', { name: '清空勾选' }).click()
+      await page
+        .locator('label', { hasText: 'Alpha Canon' })
+        .locator('input[type="checkbox"]')
+        .check()
+      await page
+        .locator('label', { hasText: 'Beta Skipped' })
+        .locator('input[type="checkbox"]')
+        .check()
+      await page.waitForSelector('text=本地已存在')
+      await page.waitForSelector('text=已选中条目中有 1 个与本地对话同 ID')
+      await page.getByRole('button', { name: '确认导入' }).click()
+      await page.waitForSelector('text=已导入 1 个对话（已保留 1 个同名本地对话）')
       await page.getByRole('button', { name: '关闭' }).click()
+
+      await page.getByText('Beta Skipped').first().waitFor()
+      await page.getByText('Alpha Canon').first().click()
+      await page.waitForSelector('text=这是第一段正文')
 
       const captured = mockOpenAi.getCapturedRequests()
       expect(captured.length).toBe(4)

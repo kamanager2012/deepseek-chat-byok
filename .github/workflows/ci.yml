@@ -136,8 +136,9 @@ jobs:
         with:
           packages: platform-tools platforms;android-35 build-tools;35.0.0 build-tools;34.0.0
 
-      - name: Build V1 & V2 Release APKs signed with repository certificate
+      - name: Download published baseline V1 APK and build candidate V2 Release APK
         env:
+          GH_TOKEN: ${{ github.token }}
           DS_KEYSTORE_BASE64: ${{ secrets.DS_KEYSTORE_BASE64 }}
           DS_KEYSTORE_PASSWORD: ${{ secrets.DS_KEYSTORE_PASSWORD }}
           DS_KEY_ALIAS: ${{ secrets.DS_KEY_ALIAS }}
@@ -150,19 +151,47 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build && pnpm android:sync
 
+          mkdir -p "${RUNNER_TEMP}/apks"
+          LATEST_TAG="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName -q '.[0].tagName')"
+          if [ -z "${LATEST_TAG}" ]; then
+            echo "ERROR: Expected at least one published GitHub Release APK for cross-version upgrade verification." >&2
+            exit 1
+          fi
+          echo "Downloading published Release APK baseline: ${LATEST_TAG}"
+          gh release download "${LATEST_TAG}" \
+            --pattern 'deepseek-chat-byok-*-android-release.apk' \
+            --dir "${RUNNER_TEMP}/apks"
+          V1_DOWNLOADED="$(find "${RUNNER_TEMP}/apks" -maxdepth 1 -name 'deepseek-chat-byok-*-android-release.apk' | head -n1)"
+          if [ -z "${V1_DOWNLOADED}" ] || [ ! -s "${V1_DOWNLOADED}" ]; then
+            echo "ERROR: Published release ${LATEST_TAG} missing signed android-release.apk asset." >&2
+            exit 1
+          fi
+          mv "$V1_DOWNLOADED" "${RUNNER_TEMP}/apks/v1-release.apk"
+
+          AAPT2="${ANDROID_HOME}/build-tools/35.0.0/aapt2"
+          V1_VC="$("$AAPT2" dump badging "${RUNNER_TEMP}/apks/v1-release.apk" | sed -nE "s/.*versionCode='([0-9]+)'.*/\1/p" | head -n1)"
+          V1_VN="$("$AAPT2" dump badging "${RUNNER_TEMP}/apks/v1-release.apk" | sed -nE "s/.*versionName='([^']+)'.*/\1/p" | head -n1)"
+          BASE_VC="$(sed -nE 's/^[[:space:]]*versionCode ([0-9]+).*/\1/p' android/app/build.gradle | head -n1)"
+          BASE_VN="$(sed -nE "s/^[[:space:]]*versionName '([^']+)'.*/\1/p" android/app/build.gradle | head -n1)"
+          if [ -z "${V1_VC}" ]; then
+            echo "ERROR: Failed to parse versionCode from published V1 APK." >&2
+            exit 1
+          fi
+          if [ "${BASE_VC}" -gt "${V1_VC}" ]; then
+            NEXT_VC="${BASE_VC}"
+            NEXT_VN="${BASE_VN}"
+          else
+            NEXT_VC="$((V1_VC + 1))"
+            NEXT_VN="${BASE_VN}-rc"
+          fi
+          echo "Cross-version upgrade target: published ${LATEST_TAG} (vc=${V1_VC}, vn=${V1_VN}) -> HEAD (vc=${NEXT_VC}, vn=${NEXT_VN})"
+
           KEYSTORE_FILE="${RUNNER_TEMP}/release-verify.jks"
           trap 'rm -f "$KEYSTORE_FILE"' EXIT
           printf '%s' "${DS_KEYSTORE_BASE64}" | base64 -d > "$KEYSTORE_FILE"
           export DS_KEYSTORE_PATH="$KEYSTORE_FILE"
 
-          BASE_VC="$(sed -nE 's/^[[:space:]]*versionCode ([0-9]+).*/\1/p' android/app/build.gradle | head -n1)"
-          NEXT_VC="$((BASE_VC + 1))"
-
-          mkdir -p "${RUNNER_TEMP}/apks"
-          gradle -p android :app:assembleRelease
-          cp android/app/build/outputs/apk/release/app-release.apk "${RUNNER_TEMP}/apks/v1-release.apk"
-
-          gradle -p android :app:assembleRelease -PdsVersionCode="${NEXT_VC}" -PdsVersionName="upgrade-verify"
+          gradle -p android :app:assembleRelease -PdsVersionCode="${NEXT_VC}" -PdsVersionName="${NEXT_VN}"
           cp android/app/build/outputs/apk/release/app-release.apk "${RUNNER_TEMP}/apks/v2-release.apk"
 
           APKSIGNER="${ANDROID_HOME}/build-tools/35.0.0/apksigner"
@@ -170,7 +199,7 @@ jobs:
           for apk in "${RUNNER_TEMP}/apks/v1-release.apk" "${RUNNER_TEMP}/apks/v2-release.apk"; do
             "$APKSIGNER" verify --verbose --print-certs "$apk" | grep -iq "$EXPECTED_SHA"
           done
-          echo "Both V1 and V2 Release APKs verified against official SHA-256 certificate digest."
+          echo "Both published V1 (${LATEST_TAG}) and candidate V2 Release APKs verified against official SHA-256 certificate digest."
 
       - name: Boot Android API 34 KVM emulator and test in-place V1 -> V2 data preservation
         run: |

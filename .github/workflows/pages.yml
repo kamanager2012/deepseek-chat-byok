@@ -1,7 +1,9 @@
 name: Deploy GitHub Pages
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -14,14 +16,43 @@ concurrency:
 
 jobs:
   build:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
+      checks: read
       pages: write
     steps:
-      - name: Check out source
+      - name: Check out verified source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Verify full CI check-runs succeeded for target SHA
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          node -e '
+            const { execFileSync } = require("node:child_process");
+            const sha = process.env.TARGET_SHA;
+            const repo = process.env.GITHUB_REPOSITORY;
+            const raw = execFileSync("gh", ["api", `repos/${repo}/commits/${sha}/check-runs?per_page=100`], { encoding: "utf8" });
+            const runs = JSON.parse(raw).check_runs || [];
+            const required = ["verify", "android-apk", "android-release-upgrade"];
+            for (const name of required) {
+              const matched = runs.filter((r) => r.name === name);
+              const latest = matched.sort((a, b) => Number(b.id) - Number(a.id))[0];
+              if (!latest || latest.status !== "completed" || latest.conclusion !== "success") {
+                console.error(`GATE BLOCKED: Check-run "${name}" on ${sha} is ${latest ? `${latest.status}/${latest.conclusion}` : "missing"}`);
+                process.exit(1);
+              }
+            }
+            console.log(`CI gate verified on ${sha}: ${required.join(", ")} all completed/success.`);
+          '
 
       - name: Set up pnpm
         uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1

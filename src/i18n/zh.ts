@@ -113,6 +113,15 @@ export const zh = {
     '支持从 DeepSeek 官网或 App「设置 → 数据导出」获取的 deepseek_data-*.zip，预览目录后可按对话勾选合并导入，保留当前已有对话。',
   historyImportedOne: '已导入 1 个对话',
   historyImported: '已导入 {count} 个对话',
+  historyImportedKeptOnly: '未覆盖本地记录：已保留 {kept} 个同名对话',
+  historyImportedWithSkipped: '已导入 {imported} 个对话（已保留 {kept} 个同名本地对话）',
+  historyImportedWithCopies: '已导入 {imported} 个对话（其中 {copied} 个同名对话另存为副本）',
+  historyImportConflictTag: '本地已存在',
+  historyImportConflictSummary: '已选中条目中有 {count} 个与本地对话同 ID，请选择处理方式：',
+  historyImportConflictKeepExisting: '保留本地已有对话（跳过同名项，避免覆盖本地新增消息）',
+  historyImportConflictKeepBoth: '保留双方（将备份中的同名会话另存为新副本）',
+  historyImportConflictOverwrite: '用备份覆盖本地同名对话（若备份无记忆卡则保留本地记忆卡）',
+  historyImportCopySuffix: '（导入副本）',
   historyImportFailed:
     '文件导入失败，可能是文件格式错误或使用了旧版的对话导出 ZIP 文件，请前往 DeepSeek 重新导出历史对话文件后再次导入。',
   historyExportFailed: '导出失败：{message}',
@@ -239,4 +248,6 @@ export const zh = {
   crashRecoveryReload: '重新加载页面',
   crashRecoveryExport: '导出紧急备份 ZIP',
   crashRecoveryExported: '已导出 {count} 条本地会话至紧急备份 ZIP',
+  crashRecoveryExportPartial:
+    '注意：仅部分备份成功，已导出 {exported}/{total} 条会话；{skipped} 条损坏或缺失已跳过（示例 ID：{ids}），请先保留原始设备数据。',
 } as const

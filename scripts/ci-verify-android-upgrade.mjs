@@ -194,10 +194,74 @@ await waitForNode(
 )
 console.log('Confirmed BYOK API key persisted in V1 Release APK!')
 
-adb('shell', 'am', 'force-stop', PKG)
+// 4. Close Settings modal and persist a real chat session + pinned Memory Card in V1 IndexedDB
+const { found: closeSettingsBtn } = await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && /^(Close|关闭)$/u.test(n.text || n.desc),
+  'Close Settings modal button',
+  10_000
+)
+adb('shell', 'input', 'tap', String(closeSettingsBtn.cx), String(closeSettingsBtn.cy))
 await sleep(600)
 
-// 4. In-place upgrade to V2 Release APK (same release certificate, no uninstall)
+const { found: composerField } = await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && n.cls.endsWith('EditText'),
+  'Welcome chat composer EditText',
+  20_000
+)
+adb('shell', 'input', 'tap', String(composerField.cx), String(composerField.cy))
+await sleep(500)
+const SENTINEL_CHAT = 'UpgradeSentinelMsg'
+adb('shell', 'input', 'text', SENTINEL_CHAT)
+await sleep(600)
+
+const { found: sendBtn } = await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && /^(Send|发送)$/u.test(n.text || n.desc),
+  'Chat Send button',
+  15_000
+)
+adb('shell', 'input', 'tap', String(sendBtn.cx), String(sendBtn.cy))
+await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && n.text.includes(SENTINEL_CHAT),
+  'Persisted user message in V1 SessionView',
+  20_000
+)
+await sleep(1200)
+
+const { found: memBtnV1 } = await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && /^(Memory|记忆卡)(\s*\*)?$/u.test((n.text || n.desc).trim()),
+  'Memory Card button in V1 ContextBar',
+  15_000
+)
+adb('shell', 'input', 'tap', String(memBtnV1.cx), String(memBtnV1.cy))
+const { found: memFieldV1 } = await waitForNode(
+  (n) =>
+    n.w > 0 &&
+    n.h > 0 &&
+    n.cls.endsWith('EditText') &&
+    /Write character|填写人物设定|character traits|剧情脉络/iu.test(
+      `${n.hint} ${n.desc} ${n.text}`
+    ),
+  'Memory Card textarea in V1 modal',
+  15_000
+)
+adb('shell', 'input', 'tap', String(memFieldV1.cx), String(memFieldV1.cy))
+await sleep(500)
+const SENTINEL_MEMORY = 'UpgradeSentinelMemory'
+adb('shell', 'input', 'text', SENTINEL_MEMORY)
+await sleep(500)
+const { found: saveMemBtn } = await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && /^(Save Memory|保存记忆卡)$/u.test(n.text || n.desc),
+  'Save Memory button in V1 modal',
+  15_000
+)
+adb('shell', 'input', 'tap', String(saveMemBtn.cx), String(saveMemBtn.cy))
+await sleep(1800)
+console.log('Confirmed chat turn + Memory Card written to V1 IndexedDB!')
+
+adb('shell', 'am', 'force-stop', PKG)
+await sleep(700)
+
+// 5. In-place upgrade to candidate V2 Release APK (same release certificate, no uninstall)
 console.log(`Installing V2 Release APK IN PLACE (adb install -r): ${v2Apk}`)
 const installOut = adb('install', '-r', v2Apk)
 console.log(installOut.trim())
@@ -213,7 +277,7 @@ if (meta1.firstInstall && meta2.firstInstall && meta1.firstInstall !== meta2.fir
   )
 }
 
-// 5. Launch V2 and prove saved API key survived in-place upgrade
+// 6. Launch V2 and prove saved API key, IndexedDB chat session, and Memory Card ALL survived
 adb('shell', 'am', 'start', '-W', '-n', ACTIVITY)
 
 const { nodes: v2Nodes } = await waitForNode(
@@ -235,12 +299,62 @@ if (/Save Directly|直接保存/u.test(joinedV2)) {
   throw new Error(`Onboarding API key dialog reopened unexpectedly after upgrade! UI: ${joinedV2}`)
 }
 
+const { found: openSidebarBtn } = await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && /^(Open sidebar|打开边栏)$/u.test((n.text || n.desc).trim()),
+  'Open sidebar button in V2',
+  15_000
+)
+adb('shell', 'input', 'tap', String(openSidebarBtn.cx), String(openSidebarBtn.cy))
+const { found: siderSearchField } = await waitForNode(
+  (n) =>
+    n.w > 0 &&
+    n.h > 0 &&
+    n.cls.endsWith('EditText') &&
+    /Filter chats|筛选历史对话/u.test(`${n.hint} ${n.desc} ${n.text}`),
+  'Sidebar Filter chats box (proves sessions.length > 0 in V2)',
+  15_000
+)
+const { found: sessionItem } = await waitForNode(
+  (n) =>
+    n.w > 0 &&
+    n.h > 0 &&
+    !n.cls.endsWith('EditText') &&
+    n.y1 > siderSearchField.y2 &&
+    n.cy < Math.round(screen.height * 0.85) &&
+    /^(UpgradeSentinelMsg|New chat|新对话)/u.test((n.text || n.desc).trim()),
+  'Saved V1 chat item below sidebar filter in V2',
+  15_000
+)
+adb('shell', 'input', 'tap', String(sessionItem.cx), String(sessionItem.cy))
+
+await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && `${n.text} ${n.desc}`.includes(SENTINEL_CHAT),
+  'Restored V1 chat message inside V2 SessionView',
+  20_000
+)
+
+const { found: memBtnV2 } = await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && /^(Memory|记忆卡)(\s*\*)?$/u.test((n.text || n.desc).trim()),
+  'Memory Card button in V2 restored session',
+  15_000
+)
+adb('shell', 'input', 'tap', String(memBtnV2.cx), String(memBtnV2.cy))
+await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && `${n.text} ${n.desc}`.includes(SENTINEL_MEMORY),
+  'Restored V1 Memory Card inside V2 modal',
+  15_000
+)
+
 const summary = {
   package: PKG,
   v1: meta1,
   v2: meta2,
   inPlaceUpgradeSuccess: true,
   savedKeyPreserved: true,
+  chatSessionPreserved: true,
+  memoryCardPreserved: true,
+  sentinelChatMessage: SENTINEL_CHAT,
+  sentinelMemoryCard: SENTINEL_MEMORY,
 }
 writeFileSync(outPath, JSON.stringify(summary, null, 2))
 console.log('IN-PLACE UPGRADE ACCEPTANCE PASSED:', JSON.stringify(summary))

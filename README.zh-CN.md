@@ -61,13 +61,13 @@ pnpm start
 - 编译 Android Debug APK：`pnpm android:apk`（输出 `android/app/build/outputs/apk/debug/app-debug.apk`）
 - 容器化部署：`docker build -t deepseek-chat-byok . && docker run -p 8787:8787 deepseek-chat-byok`
 
-> 局域网 / VPS 提示：非本机 `127.0.0.1` 的明文 `http://` 访问会被现代浏览器限制 PWA 安装、剪贴板与 Service Worker。远程访问建议通过 Caddy、Nginx 或 Tailscale Serve 前置 HTTPS。
+> 局域网 / Web 同源隔离提示：非本机 `127.0.0.1` 的明文 `http://` 访问会被现代浏览器限制 PWA 安装、剪贴板与 Service Worker，远程访问建议通过 Caddy、Nginx 或 Tailscale Serve 前置 HTTPS。另请注意：`https://kamanager2012.github.io/deepseek-chat-byok/` 与同账号下其他 GitHub Pages 仓库共用 `kamanager2012.github.io` 域名同源边界（`localStorage` / IndexedDB 同源可见）；如需严格的浏览器存储隔离，请使用 **Android Release APK**（固定本机 Origin `127.0.0.1:18787`）、**电脑便携版**，或将 `dist/` 部署到独立子域名（`CNAME` / Cloudflare Pages）。
 
 ## 问题反馈与使用交流
 
 使用过程中遇到问题或有体验建议，欢迎通过 [脱敏反馈表单](https://github.com/kamanager2012/deepseek-chat-byok/issues/new?template=pilot-feedback.yml)（或 [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues)）提交，建议附带：
 
-1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android Release APK `v0.3.0`）
+1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android Release APK `v0.3.1`）
 2. 所选接口预设与协议（DeepSeek 官方 / OpenCode Go / SiliconFlow / Ollama / 自定义等）
 3. `deepseek_data-*.zip` 导入体积、会话数量与选择性合并情况
 4. 复现步骤或脱敏后的报错信息（**严禁上传 API Key 或个人原始聊天导出包**）

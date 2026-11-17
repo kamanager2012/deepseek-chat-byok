@@ -5,6 +5,7 @@ import { commitHistoryChange, replaceHistory, useChatStore } from './store.js'
 import type { Session } from './types.js'
 
 export { BackupError } from './history/errors.js'
+export type { MergeConflictPolicy } from './db.js'
 export type { SessionIndexEntry }
 
 // 导入、导出与全部删除串行处理，避免读取归档时数据被清空或两个替换事务交错。
@@ -47,26 +48,104 @@ export const exportHistory = (): Promise<{ name: string; blob: Blob }> =>
     return { name: backupFileName(now), blob }
   })
 
-export type ImportBackupOptions = {
-  selectedIds?: ReadonlySet<string>
-  mode?: 'merge' | 'replace'
-  stripSearchBlocks?: boolean
+export type EmergencyBackupResult = {
+  name: string
+  blob: Blob
+  totalCount: number
+  exportedCount: number
+  skippedIds: string[]
 }
 
 /**
- * 校验并导入历史对话归档；支持选择指定会话、增量合并（默认保留已有记录）或覆盖替换。
- * 返回实际写入本次的会话数量。
+ * 故障降级时的紧急 ZIP 导出：直接遍历持久化 IndexedDB 摘要并逐条核对读写完整性。
+ * 若部分会话损坏/丢失但仍有可读数据，保留可恢复 ZIP 并在结果中显式暴露 skippedIds；
+ * 若有摘要记录但全部不可读，则显式抛出错误，避免输出空包并误报成功。
  */
-export const importHistory = (file: File, options: ImportBackupOptions = {}): Promise<number> =>
+export const exportEmergencyBackup = async (): Promise<EmergencyBackupResult> => {
+  const summaries = await db.loadSessionSummaries()
+  const skippedIds: string[] = []
+  let exportedCount = 0
+
+  async function* readSessions(): AsyncGenerator<Session> {
+    for (const summary of summaries) {
+      try {
+        const loaded = await db.loadSession(summary.id)
+        if (!loaded) {
+          skippedIds.push(summary.id)
+          continue
+        }
+        exportedCount += 1
+        yield { ...loaded, ...summary }
+      } catch {
+        skippedIds.push(summary.id)
+      }
+    }
+  }
+
+  const { exportArchive } = await import('./history/exportArchive.js')
+  const now = new Date()
+  const blob = await exportArchive(readSessions())
+  if (summaries.length > 0 && exportedCount === 0) {
+    const preview = skippedIds.slice(0, 5).join(', ')
+    throw new Error(
+      `Emergency backup failed: 0 of ${summaries.length} indexed chat(s) readable (${preview})`
+    )
+  }
+  return {
+    name: `deepseek_emergency-${formatDate(now)}.zip`,
+    blob,
+    totalCount: summaries.length,
+    exportedCount,
+    skippedIds,
+  }
+}
+
+export type ImportBackupOptions = {
+  selectedIds?: ReadonlySet<string>
+  mode?: 'merge' | 'replace'
+  conflictPolicy?: db.MergeConflictPolicy
+  copyTitleSuffix?: string
+  stripSearchBlocks?: boolean
+}
+
+export type ImportBackupResult = {
+  importedCount: number
+  keptExistingCount: number
+  copiedConflictCount: number
+  overwrittenCount: number
+}
+
+/**
+ * 校验并导入历史对话归档；支持选择指定会话、增量合并（同 ID 冲突默认保留已有记录）或覆盖替换。
+ * 返回实际写入/保留统计。
+ */
+export const importHistory = (
+  file: File,
+  options: ImportBackupOptions = {}
+): Promise<ImportBackupResult> =>
   enqueueBackup(async () => {
-    const { selectedIds, mode = 'replace', stripSearchBlocks = false } = options
+    const {
+      selectedIds,
+      mode = 'replace',
+      conflictPolicy = 'keep-existing',
+      copyTitleSuffix,
+      stripSearchBlocks = false,
+    } = options
     const { checkArchiveFormat, importArchive } = await import('./history/importArchive.js')
     await checkArchiveFormat(file)
-    let importedCount = 0
-    await commitHistoryChange(mode, async () => {
-      importedCount = await importArchive(file, { selectedIds, stripSearchBlocks })
-    })
-    return importedCount
+    const result = await commitHistoryChange(
+      mode,
+      async () => {
+        await importArchive(file, { selectedIds, stripSearchBlocks })
+      },
+      { conflictPolicy, copyTitleSuffix }
+    )
+    return {
+      importedCount: result.importedCount,
+      keptExistingCount: result.keptExistingCount,
+      copiedConflictCount: result.copiedConflictCount,
+      overwrittenCount: result.overwrittenCount,
+    }
   })
 
 /** 确认删除后调用：以空历史原子替换全部本地会话与附件，保留 API Key 和其他设置。 */

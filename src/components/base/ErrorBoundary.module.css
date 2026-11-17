@@ -53,6 +53,13 @@
   color: var(--dsw-alias-button-primary-fill, #4d6bfe);
 }
 
+.warning {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--dsw-alias-feedback-error, #b91c1c);
+}
+
 .actions {
   display: flex;
   gap: 10px;

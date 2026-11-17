@@ -428,8 +428,36 @@ const useHistoryImport = () => {
     setBusy(true)
     setStatus(null)
     try {
-      const count = await importHistory(currentFile, options)
-      setStatus({ key: count === 1 ? 'historyImportedOne' : 'historyImported', params: { count } })
+      const result = await importHistory(currentFile, options)
+      if (result.keptExistingCount > 0) {
+        setStatus(
+          result.importedCount === 0
+            ? {
+                key: 'historyImportedKeptOnly',
+                params: { kept: result.keptExistingCount },
+              }
+            : {
+                key: 'historyImportedWithSkipped',
+                params: {
+                  imported: result.importedCount,
+                  kept: result.keptExistingCount,
+                },
+              }
+        )
+      } else if (result.copiedConflictCount > 0) {
+        setStatus({
+          key: 'historyImportedWithCopies',
+          params: {
+            imported: result.importedCount,
+            copied: result.copiedConflictCount,
+          },
+        })
+      } else {
+        setStatus({
+          key: result.importedCount === 1 ? 'historyImportedOne' : 'historyImported',
+          params: { count: result.importedCount },
+        })
+      }
     } catch {
       setStatus({ key: 'historyImportFailed', error: true })
     } finally {

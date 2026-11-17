@@ -4,8 +4,10 @@ import {
   BackupError,
   inspectBackupArchive,
   type ImportBackupOptions,
+  type MergeConflictPolicy,
   type SessionIndexEntry,
 } from '../../services/chat/backup.js'
+import { useChatStore } from '../../services/chat/store.js'
 import { Button } from '../base/Button.js'
 import { Modal } from '../base/Modal.js'
 import styles from './ImportDialog.module.css'
@@ -18,11 +20,14 @@ type ImportDialogProps = {
 
 export const ImportDialog = ({ file, onCancel, onConfirm }: ImportDialogProps) => {
   const t = useTranslate()
+  const existingSessions = useChatStore((state) => state.sessions)
+  const existingIds = useMemo(() => new Set(existingSessions.map((s) => s.id)), [existingSessions])
   const [entries, setEntries] = useState<SessionIndexEntry[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
   const [mode, setMode] = useState<'merge' | 'replace'>('merge')
+  const [conflictPolicy, setConflictPolicy] = useState<MergeConflictPolicy>('keep-existing')
   const [stripSearchBlocks, setStripSearchBlocks] = useState(true)
   const [busy, setBusy] = useState(false)
 
@@ -74,6 +79,16 @@ export const ImportDialog = ({ file, onCancel, onConfirm }: ImportDialogProps) =
     })
   }
 
+  const conflictCount = useMemo(() => {
+    let count = 0
+    for (const id of selectedIds) {
+      if (existingIds.has(id)) {
+        count += 1
+      }
+    }
+    return count
+  }, [existingIds, selectedIds])
+
   const runConfirm = async () => {
     if (busy || !entries || selectedIds.size === 0) {
       return
@@ -84,6 +99,8 @@ export const ImportDialog = ({ file, onCancel, onConfirm }: ImportDialogProps) =
       await onConfirm({
         selectedIds: allSelected ? undefined : selectedIds,
         mode,
+        conflictPolicy,
+        copyTitleSuffix: t('historyImportCopySuffix'),
         stripSearchBlocks,
       })
     } finally {
@@ -164,6 +181,9 @@ export const ImportDialog = ({ file, onCancel, onConfirm }: ImportDialogProps) =
                     onChange={() => toggleId(item.id)}
                   />
                   <span className={styles.itemTitle}>{item.title || t('untitledChat')}</span>
+                  {existingIds.has(item.id) ? (
+                    <span className={styles.conflictBadge}>{t('historyImportConflictTag')}</span>
+                  ) : null}
                   <span className={styles.itemMeta}>
                     {item.message_count} · {item.updated_at.slice(0, 10)}
                   </span>
@@ -180,6 +200,40 @@ export const ImportDialog = ({ file, onCancel, onConfirm }: ImportDialogProps) =
                 />
                 <span>{t('historyImportModeMerge')}</span>
               </label>
+              {mode === 'merge' && conflictCount > 0 ? (
+                <div className={styles.conflictBox}>
+                  <div className={styles.conflictHeader}>
+                    {t('historyImportConflictSummary', { count: conflictCount })}
+                  </div>
+                  <label className={styles.optionRow}>
+                    <input
+                      type="radio"
+                      name="merge-conflict-policy"
+                      checked={conflictPolicy === 'keep-existing'}
+                      onChange={() => setConflictPolicy('keep-existing')}
+                    />
+                    <span>{t('historyImportConflictKeepExisting')}</span>
+                  </label>
+                  <label className={styles.optionRow}>
+                    <input
+                      type="radio"
+                      name="merge-conflict-policy"
+                      checked={conflictPolicy === 'keep-both'}
+                      onChange={() => setConflictPolicy('keep-both')}
+                    />
+                    <span>{t('historyImportConflictKeepBoth')}</span>
+                  </label>
+                  <label className={styles.optionRow}>
+                    <input
+                      type="radio"
+                      name="merge-conflict-policy"
+                      checked={conflictPolicy === 'overwrite'}
+                      onChange={() => setConflictPolicy('overwrite')}
+                    />
+                    <span>{t('historyImportConflictOverwrite')}</span>
+                  </label>
+                </div>
+              ) : null}
               <label className={styles.optionRow}>
                 <input
                   type="radio"
