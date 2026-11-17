@@ -318,6 +318,49 @@ describe('Real Chromium E2E across desktop and mobile viewports', () => {
       const guideResponse = await page.request.get(`${appServer.url}/get-started.html`)
       expect(guideResponse.status()).toBe(200)
       expect(await guideResponse.text()).toContain('客户端下载')
+
+      // The beginner page must choose the signed release APK, never a debug package.
+      const assetBase =
+        'https://github.com/kamanager2012/deepseek-chat-byok/releases/download/v0.3.1/'
+      await desktopContext.route(
+        'https://api.github.com/repos/kamanager2012/deepseek-chat-byok/releases/latest',
+        async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            headers: { 'access-control-allow-origin': '*' },
+            body: JSON.stringify({
+              draft: false,
+              prerelease: false,
+              assets: [
+                {
+                  name: 'deepseek-chat-byok-v0.3.1-android-debug.apk',
+                  browser_download_url: assetBase + 'deepseek-chat-byok-v0.3.1-android-debug.apk',
+                },
+                {
+                  name: 'deepseek-chat-byok-v0.3.1-android-release.apk',
+                  browser_download_url: assetBase + 'deepseek-chat-byok-v0.3.1-android-release.apk',
+                },
+                {
+                  name: 'deepseek-chat-byok-v0.3.1-portable.zip',
+                  browser_download_url: assetBase + 'deepseek-chat-byok-v0.3.1-portable.zip',
+                },
+              ],
+            }),
+          })
+        }
+      )
+      const guidePage = await desktopContext.newPage()
+      await guidePage.goto(`${appServer.url}/get-started.html`, { waitUntil: 'networkidle' })
+      await guidePage.getByRole('link', { name: '下载安卓正式版 APK' }).waitFor()
+      expect(await guidePage.locator('#android-download').getAttribute('href')).toBe(
+        assetBase + 'deepseek-chat-byok-v0.3.1-android-release.apk'
+      )
+      expect(await guidePage.locator('#desktop-download').getAttribute('href')).toBe(
+        assetBase + 'deepseek-chat-byok-v0.3.1-portable.zip'
+      )
+      await guidePage.close()
+
       await page.getByRole('button', { name: '设置模型，开始聊天' }).click()
       await page.getByRole('tab', { name: '模型与 API' }).waitFor()
       await page.getByRole('button', { name: '新增配置' }).click()

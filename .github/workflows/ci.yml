@@ -36,16 +36,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Temporary format preview for PR authoring
-        run: |
-          pnpm format
-          printf 'FORMATTED_RSPACK_START\n'
-          base64 -w 0 rspack.config.ts
-          printf '\nFORMATTED_RSPACK_END\n'
-          printf 'FORMATTED_LANDING_START\n'
-          base64 -w 0 public/get-started.html
-          printf '\nFORMATTED_LANDING_END\n'
-
       - name: Check formatting
         run: pnpm format:check
 
