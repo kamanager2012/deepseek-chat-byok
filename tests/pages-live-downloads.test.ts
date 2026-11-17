@@ -25,14 +25,20 @@ const release = {
 }
 const root = 'https://example.org/deepseek-chat-byok/'
 
-const fakeFetch = (options: { corruptZip?: boolean; corruptDigest?: boolean; missingApk?: boolean } = {}) =>
+const fakeFetch =
+  (options: { corruptZip?: boolean; corruptDigest?: boolean; missingApk?: boolean } = {}) =>
   async (input: URL | RequestInfo) => {
     const url = String(input)
-    if (url.endsWith('/downloads/manifest.json')) return Response.json(manifest)
+    if (url.endsWith('/downloads/manifest.json')) {
+      return Response.json(manifest)
+    }
     if (url.includes('api.github.com/')) {
       return Response.json(
         options.corruptDigest
-          ? { ...release, assets: release.assets.map((a) => ({ ...a, digest: 'sha256:' + '0'.repeat(64) })) }
+          ? {
+              ...release,
+              assets: release.assets.map((a) => ({ ...a, digest: 'sha256:' + '0'.repeat(64) })),
+            }
           : release
       )
     }
@@ -43,7 +49,9 @@ const fakeFetch = (options: { corruptZip?: boolean; corruptDigest?: boolean; mis
       return new Response(options.corruptZip ? 'modified zip' : desktopData)
     }
     if (url.endsWith('/get-started.html')) {
-      return new Response('<title>客户端下载与使用指南</title><script>fetch("./downloads/manifest.json")</script>')
+      return new Response(
+        '<title>客户端下载与使用指南</title><script>fetch("./downloads/manifest.json")</script>'
+      )
     }
     return new Response('404', { status: 404 })
   }
@@ -67,7 +75,11 @@ describe('Public Pages download post-deploy acceptance', () => {
 
   it('does not trust site-provided checksums without checking published Release metadata', async () => {
     await expect(
-      verifyLiveDownloads(root, 'kamanager2012/deepseek-chat-byok', fakeFetch({ corruptDigest: true }))
+      verifyLiveDownloads(
+        root,
+        'kamanager2012/deepseek-chat-byok',
+        fakeFetch({ corruptDigest: true })
+      )
     ).rejects.toThrow('Published Release digest/size mismatch')
   })
 })

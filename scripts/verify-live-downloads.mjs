@@ -15,7 +15,10 @@ export const verifyLiveDownloads = async (siteUrl, repo, fetcher = fetch, authTo
   const manifestResponse = await fetcher(manifestUrl, { cache: 'no-store' })
   if (!manifestResponse.ok) throw new Error(`Live manifest HTTP ${manifestResponse.status}`)
   const manifest = await manifestResponse.json()
-  if (manifest.schemaVersion !== 1 || !/^v\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.-]+)?$/.test(manifest.tag)) {
+  if (
+    manifest.schemaVersion !== 1 ||
+    !/^v\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.-]+)?$/.test(manifest.tag)
+  ) {
     throw new Error('Unexpected live manifest format or release tag')
   }
 
@@ -53,11 +56,7 @@ export const verifyLiveDownloads = async (siteUrl, repo, fetcher = fetch, authTo
       throw new Error(`Invalid ${platform} manifest entry`)
     }
     const asset = release.assets?.find((value) => value.name === expectedName)
-    if (
-      !asset ||
-      asset.digest !== `sha256:${item.sha256}` ||
-      asset.size !== item.bytes
-    ) {
+    if (!asset || asset.digest !== `sha256:${item.sha256}` || asset.size !== item.bytes) {
       throw new Error(`Published Release digest/size mismatch: ${platform}`)
     }
     const fileUrl = new URL(`downloads/${encodeURIComponent(expectedName)}`, root)
@@ -95,7 +94,9 @@ const runCli = async () => {
       return
     } catch (error) {
       lastError = error
-      console.warn(`Live acceptance attempt ${i + 1} failed: ${error instanceof Error ? error.message : String(error)}`)
+      console.warn(
+        `Live acceptance attempt ${i + 1} failed: ${error instanceof Error ? error.message : String(error)}`
+      )
       if (i < 9) await new Promise((resolve) => setTimeout(resolve, 5000))
     }
   }
