@@ -58,6 +58,13 @@ export const ProviderSettings = () => {
     void probeLocalProxy().then((ok) => {
       if (active) {
         setLocalProxyAvailable(ok)
+        if (ok) {
+          setDraft((prev) =>
+            prev.id === 'default-deepseek-official' && !prev.apiKey.trim() && !prev.useCorsProxy
+              ? { ...prev, useCorsProxy: true }
+              : prev
+          )
+        }
       }
     })
     return () => {

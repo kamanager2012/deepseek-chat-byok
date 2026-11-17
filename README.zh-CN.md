@@ -3,38 +3,43 @@
 [English](README.md) | 简体中文
 
 - **在线网页 / PWA 版**：https://kamanager2012.github.io/deepseek-chat-byok/
-- **版本下载（Android APK & 便携版压缩包）**：https://github.com/kamanager2012/deepseek-chat-byok/releases
+- **安装包下载（Android APK & 便携版桌面端）**：https://github.com/kamanager2012/deepseek-chat-byok/releases
+- **安全架构与正式签名手册**：[SECURITY.md](SECURITY.md)
 
-基于 MIT 开源项目 [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo) 扩展的**完全本地、纯工具型（零后端收费/零套餐代销）BYOK 聊天、写作与 DeepSeek 导出历史迁移工具**。
+基于 MIT 开源项目 [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo) 扩展的**完全本地、纯工具型（零后端收费 / 零共享密钥）BYOK 聊天、长文写作与 DeepSeek 官方导出历史迁移工具**。
 
-## 核心特性
+## 30 秒看懂定位与运行形态
 
-1. **自带 API Key（BYOK）多服务商自由切换**
-   - 在 **设置 → 模型与 API** 支持保存多套配置并随时切换，所有 Key 仅保存在本机 `localStorage`（导出对话包时不会携带），支持未保存修改提示。
-   - 内置预设：
-     - **DeepSeek 官方（Anthropic + 原生工具）**：`https://api.deepseek.com`，完整保留官方联网搜索、文档解析、网页阅读与语音能力。
-     - **DeepSeek 官方（OpenAI 兼容）**：`https://api.deepseek.com/v1`。
-     - **OpenCode Go / Zen（个人订阅/按量 Key）**：预置 `https://opencode.ai/zen/go/v1` 与 `https://opencode.ai/zen/v1`，适配 `deepseek-v4.1-flash` / `deepseek-v4-pro` 等模型的思考链与正文流式输出。
-     - **硅基流动 SiliconFlow / OpenRouter / 本地 Ollama / 任意自定义端点**（兼容 OpenAI Chat Completions 与 Anthropic Messages）。
-   - 支持 **「测试并保存」** 与 **「直接保存」**（兼容未开放 `GET /models` 的网关）。
+| 使用方式                    | 推荐入口                                                                                             | 内置本地 `/_proxy`          | 适用场景                                          |
+| :-------------------------- | :--------------------------------------------------------------------------------------------------- | :-------------------------- | :------------------------------------------------ |
+| **零安装网页 / PWA**        | [打开在线版](https://kamanager2012.github.io/deepseek-chat-byok/)                                    | 无（浏览器直连）            | 支持跨域的官方/三方接口、快速预览导出包           |
+| **Android 独立 APK**        | 在 [Releases](https://github.com/kamanager2012/deepseek-chat-byok/releases) 下载 `android-debug.apk` | 内置 `127.0.0.1:18787` 桥接 | 手机高频聊天/写作、直连任意兼容 API、系统文件导出 |
+| **电脑便携版 / 本地桌面窗** | 下载 `portable.zip` 或运行 `./scripts/start-desktop.*`                                               | 内置 Node 22 `/_proxy`      | 电脑独立应用窗口、无 CORS 网关、本地 Ollama       |
 
-2. **大包不卡死：DeepSeek 官方导出包（`export_format_version: 3`）选择性合并导入**
-   - 一次性读取中央目录索引 `chat_session_index.json` 毫秒级展示全部会话，无需把 200 MB+ 归档全部解压进手机内存即可搜索、勾选需要迁移的会话。
-   - 默认支持 **合并导入（保留当前已有新对话及已有记忆卡）**，也保留 **覆盖替换** 选项；导入时默认可选剔除体积极大的历史联网搜索结果碎片。
+1. **老对话防卡死迁移**：无需把几百 MB 的官方导出包一次性塞进内存。直接读取 `chat_session_index.json` 目录索引秒开列表，支持搜索、勾选并**合并导入**到现有会话（不覆盖已有记录与记忆卡），默认剔除膨胀的旧联网搜索网页碎片。
+2. **多服务商自带密钥（BYOK）**：支持保存并切换 DeepSeek 官方（Anthropic + 搜索/文件/语音）、DeepSeek OpenAI、OpenCode Go / Zen、Anthropic Messages、硅基流动 SiliconFlow、OpenRouter、本地 Ollama 与任意自定义端点；所有 Key 仅存本机 `localStorage`，备份包永不携带。
+3. **对抗低缓存与长文本费率**：支持按轮数与 Token 预算裁剪上文，配合固定 **记忆卡（Memory Card）**（支持手动编辑或用当前模型一键浓缩早期对话）、逐条回复 `in (hit X) · out` 用量显示与一键导出 Markdown。
 
-3. **对抗低缓存高费率：上下文预算裁剪 + 固定记忆卡 + 用量展示 + Markdown 导出**
-   - **发送前预算控制**：可按「携带最近 N 轮（默认 20 轮）」与「历史 Token 上限（默认 ~24K tokens）」自动裁剪超长历史；每条回答底部展示 `in / cache hit / out` Token 统计。
-   - **固定记忆卡（Memory Prefix）**：支持手工编辑人物设定/背景故事，或点击 **「用当前模型压缩早期对话」** 一键提炼（支持关闭弹窗/切换会话时自动取消请求），大幅降低无缓存输入费用。
-   - **一键导出 Markdown**：将当前会话整理为清爽 Markdown，方便本地留档或配合外部工具使用。
+## 界面实机截图
 
-4. **电脑版桌面窗口 + 手机 PWA + 安全加固本地转发服务**
-   - `pnpm build` 生成离线可用的 PWA 静态站点（含 `manifest.webmanifest`、矢量/PNG 图标与 `sw.js` 应用壳缓存，且不拦截 `/_proxy`）。
-   - 零依赖 Node 22 服务 `server.mjs` 提供 `/_proxy` 本地 CORS 转发，内置：同源 `Origin` / `Sec-Fetch-Site` 防跨站 CSRF 滥用、请求方法白名单、禁止 `3xx` 重定向 SSRF、DNS 解析防内网/云元数据 IP 回环绑定、`25 MB` 请求体上限保护。
-   - 提供开箱即用桌面端应用窗口脚本（macOS/Linux `./scripts/start-desktop.sh`、Windows `./scripts/start-desktop.ps1`）与容器化部署 `Dockerfile`。
+![桌面端多配置 BYOK、固定记忆卡与思维链排版](docs/images/desktop-byok-workspace.png)
 
-## 运行、验证与部署
+|                  官方导出包目录预览与选择性合并                   |                   移动端（390px）BYOK 接口配置                    |
+| :---------------------------------------------------------------: | :---------------------------------------------------------------: |
+| ![选择性合并导入预览弹窗](docs/images/import-selective-merge.png) | ![移动端多服务商 BYOK 配置](docs/images/mobile-byok-settings.png) |
 
-需要 Node.js 22+ 与 pnpm：
+## 三步快速上手
+
+1. **准备官方导出包（可选）**：在 DeepSeek 官网或 App「设置 → 个人资料 / 数据导出」下载 `deepseek_data-YYYY-MM-DD.zip`。
+2. **填入自己的 API Key**：打开 **设置 → 模型与 API**，选中预设并填入个人 Key，点击 **「测试并保存」**（若网关未开放 `GET /models`，可直接点 **「直接保存」**）。
+   - 纯静态网页版受浏览器同源安全策略约束，无法请求未返回 CORS 头的第三方接口；此类接口建议使用 **Android APK** 或 **电脑便携版**。
+3. **选择性合并导入并续写**：在 **设置 → 数据管理** 导入 ZIP，勾选需要恢复的会话合并导入，按需设置 **「记忆卡」** 即可低开销续聊。
+
+> Android 安装升级说明：当前公开 `Releases` 提供 CI Debug 签名的 `android-debug.apk` 供体验与测试。在后续切换为正式团队密钥签名的 Release 版前，请先在设置页导出备份并卸载 Debug 版；正式 Keystore 配置方法见 [SECURITY.md](SECURITY.md)。
+
+## 从源码构建与校验
+
+需准备 Node.js 22+、`pnpm`，构建与验证 Android 桥接需 JDK 17 与 Android SDK：
 
 ```sh
 pnpm install
@@ -47,15 +52,20 @@ pnpm test:e2e
 pnpm start
 ```
 
-- **电脑端桌面窗口一键启动**：
-  - macOS / Linux：`./scripts/start-desktop.sh`
-  - Windows PowerShell：`./scripts/start-desktop.ps1`
-- **原生 Android APK（内置 `127.0.0.1:18787` 本地流式 `/_proxy`、文件选择与原生文档导出，无需自建服务器即可在手机端直连任意兼容 API）**：
-  - `pnpm android:apk`（输出 `android/app/build/outputs/apk/debug/app-debug.apk`）
-- **自托管 Docker 部署（供多端 / 手机浏览器访问）**：
-  - `docker build -t deepseek-chat-byok . && docker run -p 8787:8787 deepseek-chat-byok`
+- 桌面独立窗口：`./scripts/start-desktop.sh`（macOS / Linux）或 `./scripts/start-desktop.ps1`（Windows PowerShell）
+- 编译 Android Debug APK：`pnpm android:apk`（输出 `android/app/build/outputs/apk/debug/app-debug.apk`）
+- 容器化部署：`docker build -t deepseek-chat-byok . && docker run -p 8787:8787 deepseek-chat-byok`
 
-> 手机端提示：浏览器对 PWA 安装与 Service Worker 要求 HTTPS（或本机 `127.0.0.1`）。若在局域网或云服务器部署后用手机浏览器安装 PWA 与走同源 `/_proxy`，建议前置 Caddy / Nginx / Tailscale Serve 提供 HTTPS。
+> 局域网 / VPS 提示：非本机 `127.0.0.1` 的明文 `http://` 访问会被现代浏览器限制 PWA 安装、剪贴板与 Service Worker。远程访问建议通过 Caddy、Nginx 或 Tailscale Serve 前置 HTTPS。
+
+## 外部试用反馈收集清单
+
+欢迎在 [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues) 提交可复现试用反馈，建议附带以下 4 项信息：
+
+1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android APK `v0.2.0`）
+2. 所选接口预设与协议（DeepSeek 官方 / OpenCode Go / SiliconFlow / Ollama / 自定义等）
+3. `deepseek_data-*.zip` 导入体积、会话数量与是否顺利合并保留旧记忆
+4. 首次配置 Key、流式输出、记忆卡压缩或跨域报错中的具体卡点描述
 
 ## 许可证
 

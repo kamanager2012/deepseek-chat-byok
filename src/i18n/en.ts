@@ -116,7 +116,7 @@ export const en = {
   historyImportConfirmDescription:
     'The uploaded chat history will replace all your current chats. Import anyway?',
   historyImportDescription:
-    'Supports ZIP files exported from DeepSeek. Preview the index to select sessions to merge or replace.',
+    'Supports deepseek_data-*.zip exported from DeepSeek Settings -> Data Export. Preview the archive index first to merge selected chats without overwriting existing ones.',
   historyImportedOne: 'Imported 1 chat',
   historyImported: 'Imported {count} chats',
   historyImportFailed:
@@ -233,7 +233,7 @@ export const en = {
   uploadRequiresDeepseekFiles:
     'Binary document parsing requires DeepSeek Official mode; paste text or switch providers.',
   networkCorsHint:
-    'Network/CORS failure: for 3rd-party APIs in browser, start via pnpm start and enable Local CORS Proxy in Settings.',
+    'Network/CORS error: if a provider blocks direct browser requests on the static site, use the Android APK (built-in /_proxy) or Portable Desktop bundle.',
   providerUnsavedHint: 'Unsaved profile edits',
   siderSearchPlaceholder: 'Filter chats...',
   siderSearchEmpty: 'No matching chats',

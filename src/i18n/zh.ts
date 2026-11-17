@@ -109,7 +109,8 @@ export const zh = {
   historyImportConfirm: '确认导入',
   historyImportConfirmTitle: '确认导入历史对话？',
   historyImportConfirmDescription: '上传的历史对话会覆盖当前所有对话记录，是否确认导入？',
-  historyImportDescription: '支持 DeepSeek 导出的 ZIP 文件，预览目录后可按对话勾选合并或覆盖导入。',
+  historyImportDescription:
+    '支持从 DeepSeek 官网或 App「设置 → 数据导出」获取的 deepseek_data-*.zip，预览目录后可按对话勾选合并导入，保留当前已有对话。',
   historyImportedOne: '已导入 1 个对话',
   historyImported: '已导入 {count} 个对话',
   historyImportFailed:
@@ -222,7 +223,7 @@ export const zh = {
   uploadRequiresDeepseekFiles:
     '当前兼容端点不支持 PDF/Word 版面解析，请切到 DeepSeek 官方端点或直接粘贴文字',
   networkCorsHint:
-    '网络/跨域失败：若在浏览器调用第三方接口受 CORS 限制，请通过 pnpm start 运行并在设置中开启本地转发代理。',
+    '连接失败（可能为网络异常或浏览器 CORS 跨域拦截）：在纯静态网页版调用未开放跨域的第三方接口受限时，可改用 Android APK（内置本地转发）或便携桌面端。',
   providerUnsavedHint: '当前配置有未保存修改',
   siderSearchPlaceholder: '筛选历史对话...',
   siderSearchEmpty: '没有匹配的对话',
