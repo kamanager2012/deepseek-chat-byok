@@ -62,3 +62,14 @@ Release APKs signed across builds with the same keystore support in-place upgrad
    sha256sum -c SHA256SUMS.txt
    apksigner verify --verbose --print-certs deepseek-chat-byok-v*-android-release.apk
    ```
+
+## 4. Official Android Release Signing Certificate Fingerprint
+
+Starting with `v0.2.2+`, official Android release APKs (`*-android-release.apk`) are signed with a persistent release certificate so users can upgrade in place without losing local chat history, Memory Cards, or API keys:
+
+- **Signer DN**: `CN=DeepSeek Chat BYOK Release, OU=Community, O=DeepSeek Chat BYOK, L=NA, ST=NA, C=US`
+- **Algorithm**: RSA 2048 (`SHA256withRSA`, APK Signature Scheme v2)
+- **Certificate SHA-256 Digest**: `86:D8:29:E2:15:71:AF:ED:FC:AE:69:0F:24:0A:DA:7F:33:8E:4C:10:FD:99:97:DD:C7:A1:8A:E9:DA:91:AD:A7`
+- **Certificate SHA-1 Digest**: `8E:19:DF:09:86:4D:2D:86:8E:B8:75:91:A5:2C:DA:95:99:64:05:91`
+
+> Prior debug releases (`v0.2.0`, `v0.2.1`) used ephemeral CI debug certificates and cannot be upgraded in place into the signed release channel without backing up and uninstalling first.

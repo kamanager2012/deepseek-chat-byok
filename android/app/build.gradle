@@ -12,6 +12,12 @@ android {
         targetSdk 35
         versionCode 3
         versionName '0.2.1'
+        if (project.hasProperty('dsVersionCode')) {
+            versionCode = project.property('dsVersionCode').toString().toInteger()
+        }
+        if (project.hasProperty('dsVersionName')) {
+            versionName = project.property('dsVersionName').toString()
+        }
     }
 
     signingConfigs {

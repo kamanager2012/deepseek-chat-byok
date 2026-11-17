@@ -100,3 +100,121 @@ jobs:
           name: deepseek-chat-byok-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+  android-release-upgrade:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 11.21.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Set up Java 17
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-35 build-tools;35.0.0 build-tools;34.0.0
+
+      - name: Build V1 & V2 Release APKs signed with repository certificate
+        env:
+          DS_KEYSTORE_BASE64: ${{ secrets.DS_KEYSTORE_BASE64 }}
+          DS_KEYSTORE_PASSWORD: ${{ secrets.DS_KEYSTORE_PASSWORD }}
+          DS_KEY_ALIAS: ${{ secrets.DS_KEY_ALIAS }}
+          DS_KEY_PASSWORD: ${{ secrets.DS_KEY_PASSWORD }}
+        run: |
+          if [ -z "${DS_KEYSTORE_BASE64}" ]; then
+            echo "ERROR: Release signing secrets are required on main for upgrade verification." >&2
+            exit 1
+          fi
+          pnpm install --frozen-lockfile
+          pnpm build && pnpm android:sync
+
+          KEYSTORE_FILE="${RUNNER_TEMP}/release-verify.jks"
+          trap 'rm -f "$KEYSTORE_FILE"' EXIT
+          printf '%s' "${DS_KEYSTORE_BASE64}" | base64 -d > "$KEYSTORE_FILE"
+          export DS_KEYSTORE_PATH="$KEYSTORE_FILE"
+
+          BASE_VC="$(sed -nE 's/^[[:space:]]*versionCode ([0-9]+).*/\1/p' android/app/build.gradle | head -n1)"
+          NEXT_VC="$((BASE_VC + 1))"
+
+          mkdir -p "${RUNNER_TEMP}/apks"
+          gradle -p android :app:assembleRelease
+          cp android/app/build/outputs/apk/release/app-release.apk "${RUNNER_TEMP}/apks/v1-release.apk"
+
+          gradle -p android :app:assembleRelease -PdsVersionCode="${NEXT_VC}" -PdsVersionName="upgrade-verify"
+          cp android/app/build/outputs/apk/release/app-release.apk "${RUNNER_TEMP}/apks/v2-release.apk"
+
+          APKSIGNER="${ANDROID_HOME}/build-tools/35.0.0/apksigner"
+          EXPECTED_SHA="86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7"
+          for apk in "${RUNNER_TEMP}/apks/v1-release.apk" "${RUNNER_TEMP}/apks/v2-release.apk"; do
+            "$APKSIGNER" verify --verbose --print-certs "$apk" | grep -iq "$EXPECTED_SHA"
+          done
+          echo "Both V1 and V2 Release APKs verified against official SHA-256 certificate digest."
+
+      - name: Boot Android API 34 KVM emulator and test in-place V1 -> V2 data preservation
+        run: |
+          if [ -e /dev/kvm ]; then
+            sudo chmod 666 /dev/kvm || true
+          fi
+          if [ ! -r /dev/kvm ] || [ ! -w /dev/kvm ]; then
+            echo "ERROR: /dev/kvm unavailable on runner; cannot run Android emulator upgrade acceptance." >&2
+            exit 1
+          fi
+          export PATH="${ANDROID_HOME}/platform-tools:${ANDROID_HOME}/emulator:${PATH}"
+          SDK_TOOLS="$(dirname "$(command -v sdkmanager || find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | sort -V | tail -n1)")"
+          yes | "${SDK_TOOLS}/sdkmanager" --licenses >/dev/null || true
+          "${SDK_TOOLS}/sdkmanager" "platform-tools" "emulator" "system-images;android-34;default;x86_64"
+          echo "no" | "${SDK_TOOLS}/avdmanager" create avd --force -n byok-upgrade-api34 -k "system-images;android-34;default;x86_64" --abi x86_64
+          nohup "${ANDROID_HOME}/emulator/emulator" -avd byok-upgrade-api34 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > "${RUNNER_TEMP}/emulator.log" 2>&1 &
+          EMU_PID=$!
+          cleanup() {
+            adb emu kill >/dev/null 2>&1 || true
+            kill "$EMU_PID" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          for _ in $(seq 1 90); do
+            BOOTED="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+            if [ "$BOOTED" = "1" ]; then break; fi
+            sleep 2
+          done
+          [ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)" = "1" ] || { cat "${RUNNER_TEMP}/emulator.log"; exit 1; }
+          adb shell settings put global window_animation_scale 0 || true
+          adb shell settings put global transition_animation_scale 0 || true
+          adb shell settings put global animator_duration_scale 0 || true
+          adb shell input keyevent 224 || true
+          adb shell wm dismiss-keyguard || true
+          adb shell input keyevent 82 || true
+
+          node scripts/ci-verify-android-upgrade.mjs "${RUNNER_TEMP}/apks/v1-release.apk" "${RUNNER_TEMP}/apks/v2-release.apk" "${RUNNER_TEMP}/android-upgrade-evidence.json"
+
+      - name: Upload Android upgrade acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-upgrade-evidence
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/android-upgrade-evidence.json
+            ${{ runner.temp }}/emulator.log
