@@ -151,18 +151,32 @@ jobs:
           fi
 
           NOTES_FILE="${RUNNER_TEMP}/release-notes.md"
-          printf '%s\n' \
-            "## DeepSeek Chat BYOK ${RELEASE_TAG}" \
-            "" \
-            "- **Source Provenance**: Tag \`${RELEASE_TAG}\` at commit \`${GITHUB_SHA}\`" \
-            "- **Web / PWA**: https://kamanager2012.github.io/deepseek-chat-byok/" \
-            "- **Security Policy & Signing Guide**: [SECURITY.md](https://github.com/${GITHUB_REPOSITORY}/blob/${RELEASE_TAG}/SECURITY.md)" \
-            "" \
-            "### Included Hardening & Upgrade Guidance" \
-            "- Includes loopback DNS-rebinding \`Host\` header checks on \`/_proxy\`, Android \`X-DS-Bridge-Token\` cross-app bridge isolation, API error secret redaction (\`redactApiSecrets()\`), SAF export bounds, and strict external link filtering." \
-            "- **Android APK (\`android-debug.apk\`)**: Signed with an ephemeral CI debug keystore. **Do not assume in-place upgrades work across CI debug builds**: before switching versions without a fixed release keystore, export your chats via **Settings -> Data -> Export all chats** first, uninstall the older APK cleanly, install the new APK, re-import your ZIP backup, and re-enter your API key(s)." \
-            "- **Portable Bundle (\`portable.zip\`)**: Prebuilt \`dist/\` + zero-dependency Node 22 \`server.mjs\` + desktop/LAN launchers (\`./scripts/start-desktop.sh\` or \`./scripts/start-desktop.ps1\`)." \
-            > "$NOTES_FILE"
+          HAS_RELEASE_APK=false
+          if [ -f "${ASSETS_DIR}/deepseek-chat-byok-${RELEASE_TAG}-android-release.apk" ]; then
+            HAS_RELEASE_APK=true
+          fi
+
+          {
+            printf '%s\n' \
+              "## DeepSeek Chat BYOK ${RELEASE_TAG}" \
+              "" \
+              "- **Source Provenance**: Tag \`${RELEASE_TAG}\` at commit \`${GITHUB_SHA}\`" \
+              "- **Web / PWA**: https://kamanager2012.github.io/deepseek-chat-byok/" \
+              "- **Security Policy & Signing Guide**: [SECURITY.md](https://github.com/${GITHUB_REPOSITORY}/blob/${RELEASE_TAG}/SECURITY.md)" \
+              "" \
+              "### Included Hardening & Upgrade Guidance" \
+              "- Includes loopback DNS-rebinding \`Host\` header checks on \`/_proxy\`, Android \`X-DS-Bridge-Token\` cross-app bridge isolation, API error secret redaction (\`redactApiSecrets()\`), SAF export bounds, and strict external link filtering."
+            if [ "${HAS_RELEASE_APK}" = "true" ]; then
+              printf '%s\n' \
+                "- **Android Release APK (\`*-android-release.apk\`) — Recommended**: Signed with the persistent release certificate (SHA-256 \`86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7\`). Upgrading between \`v0.2.2+\` \`android-release.apk\` builds preserves local chats, Memory Cards, and API keys without uninstalling. If migrating from an older CI debug build (\`v0.2.0\`, \`v0.2.1\`, or \`*-android-debug.apk\`), export your chats first (**Settings -> Data -> Export all chats**), uninstall the debug APK, install \`*-android-release.apk\`, and re-import your backup." \
+                "- **Android Debug APK (\`*-android-debug.apk\`)**: Ephemeral CI debug build retained only for fallback diagnostics; incompatible for in-place upgrades with the Release certificate."
+            else
+              printf '%s\n' \
+                "- **Android APK (\`android-debug.apk\`)**: Signed with an ephemeral CI debug keystore. **Do not assume in-place upgrades work across CI debug builds**: before switching versions without a fixed release keystore, export your chats via **Settings -> Data -> Export all chats** first, uninstall the older APK cleanly, install the new APK, re-import your ZIP backup, and re-enter your API key(s)."
+            fi
+            printf '%s\n' \
+              "- **Portable Bundle (\`portable.zip\`)**: Prebuilt \`dist/\` + zero-dependency Node 22 \`server.mjs\` + desktop/LAN launchers (\`./scripts/start-desktop.sh\` or \`./scripts/start-desktop.ps1\`)."
+          } > "$NOTES_FILE"
 
           gh release create "${RELEASE_TAG}" "${ASSETS_DIR}"/* \
             --verify-tag \

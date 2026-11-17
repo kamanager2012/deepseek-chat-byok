@@ -1,0 +1,85 @@
+name: Pilot Feedback / Bug Report (试用反馈与问题报告)
+description: Report first-run onboarding, DeepSeek archive migration, or Day-2 usage feedback (v0.2.2+).
+title: '[Pilot v0.2.2] '
+labels:
+  - pilot-feedback
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **Privacy Notice / 隐私安全提醒**
+        > NEVER paste API keys (`sk-...`), Bearer tokens, raw chat messages, or personal `deepseek_data-*.zip` archives into public issues. Share only de-identified steps, device/browser details, and error codes.
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform / 运行端形态
+      options:
+        - Web / PWA (GitHub Pages)
+        - Android APK (v0.2.2+ android-release.apk)
+        - Android APK (legacy debug build)
+        - Portable Desktop (Windows / macOS / Linux Node 22)
+        - Docker
+    validations:
+      required: true
+
+  - type: input
+    id: app_version
+    attributes:
+      label: App Version & Device/Browser / 版本号与设备环境
+      placeholder: 'e.g. v0.2.2 · Android 14 (Pixel 7) or Chrome 131 on Windows 11'
+    validations:
+      required: true
+
+  - type: input
+    id: provider
+    attributes:
+      label: Provider Type (No Keys!) / 模型服务商类型（严禁填密钥）
+      placeholder: 'e.g. DeepSeek Official / OpenAI / Anthropic / OpenRouter / Custom NewAPI'
+
+  - type: dropdown
+    id: first_run_result
+    attributes:
+      label: First-Run BYOK Setup / 首次配置体验
+      options:
+        - Completed independently and chatted successfully
+        - Completed with friction / confusing UI
+        - Blocked before first reply
+    validations:
+      required: true
+
+  - type: dropdown
+    id: migration_result
+    attributes:
+      label: History ZIP Migration / 历史导入专项
+      options:
+        - Not tested
+        - Small DeepSeek ZIP (< 10 MB) - Succeeded cleanly
+        - Large DeepSeek ZIP (>= 10 MB) - Succeeded cleanly
+        - Import failed or hit performance/UI issue
+        - Native BYOK backup ZIP export/import
+
+  - type: dropdown
+    id: day2_status
+    attributes:
+      label: Usage Continuity / 次日回访情况
+      options:
+        - First-day trial only
+        - Returned on Day 2 and kept using
+        - Unlikely to continue (please explain below)
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Steps, Blockers & Expected Behavior / 复现步骤、卡点与改进建议（已脱敏）
+      placeholder: 'Describe what worked, where you got stuck, console/UI error messages (without API keys), or what stopped you from reusing on Day 2.'
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: privacy_check
+    attributes:
+      label: Privacy Confirmation / 脱敏确认
+      options:
+        - label: I confirm this report contains NO API keys, auth headers, personal chat transcripts, or raw archive ZIPs. / 我确认已脱敏，未包含 API Key、个人对话内容或原始导出包。
+          required: true
