@@ -15,25 +15,25 @@
 - **在线网页 / PWA 版（零安装试用）**：https://kamanager2012.github.io/deepseek-chat-byok/
 - **校验与源码发行源**：[GitHub Releases（含 APK / 便携包 / SHA256SUMS）](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest) · [SECURITY.md](SECURITY.md)
 
-## 30 秒看懂定位与运行形态
+## 定位与运行形态速览
 
-| 使用方式                    | 推荐入口                                                                                                                                                                                                                                                      | 内置本地 `/_proxy`          | 适用场景                                                     |
-| :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :-------------------------- | :----------------------------------------------------------- |
-| **零安装网页 / PWA**        | [打开在线版](https://kamanager2012.github.io/deepseek-chat-byok/)                                                                                                                                                                                             | 无（浏览器直连）            | 零安装预览/导入官方导出包、支持跨域的官方或三方接口          |
-| **Android 独立 APK**        | 在 [新手直达与校验下载页](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html) 直接下载 **`*-android-release.apk`**（GitHub Pages 校验镜像优先；[GitHub Releases](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest) 备选） | 内置 `127.0.0.1:18787` 桥接 | 手机日常高频聊天/写作、系统「分享/打开方式」导 ZIP、SAF 导出 |
-| **电脑便携版 / 本地桌面窗** | 在 [新手直达与校验下载页](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html) 下载 **`*-portable.zip`**（需本机 Node.js 22+ LTS；解压双击 `Start-Windows.bat` / `Start-macOS.command`）                                                      | 内置 Node 22 `/_proxy`      | 电脑独立应用窗口、无 CORS 限制网关、本地 Ollama              |
+| 使用方式                            | 推荐入口                                                                                                                                                                                                                                                      | 内置本地 `/_proxy`          | 适用场景                                                                 |
+| :---------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | :-------------------------- | :----------------------------------------------------------------------- |
+| **零安装网页 / PWA（小白首选）**    | [打开在线版](https://kamanager2012.github.io/deepseek-chat-byok/)                                                                                                                                                                                             | 无（浏览器直连）            | 零安装导入并查看旧聊天、支持跨域的官方或三方接口                         |
+| **Android 独立 APK（手机首选）**    | 在 [新手引导与直达下载页](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html) 直接下载 **`*-android-release.apk`**（GitHub Pages 校验镜像优先；[GitHub Releases](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest) 备选） | 内置 `127.0.0.1:18787` 桥接 | 手机日常高频聊天/写作、系统「分享/打开方式」导 ZIP、SAF 导出             |
+| **电脑便携版（进阶，需 Node 22+）** | 在 [新手页进阶下载区](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html) 下载 **`*-portable.zip`**（需本机先装 Node.js 22+ LTS；解压双击 `Start-Windows.bat` / `Start-macOS.command`）                                                      | 内置 Node 22 `/_proxy`      | 需本地 CORS 转发、连接本地 Ollama 等进阶场景（普通用户推荐直接用网页版） |
 
-1. **跨平台 AI 对话资产迁移**：支持 **DeepSeek 官方（`deepseek_data-*.zip`）**、**ChatGPT 官方** 与 **Claude 官方导出 ZIP**（`conversations.json`），支持桌面端直接拖入、Android 文件管理器 **「分享 / 用其他应用打开」** 直达导入；秒开目录并保留多分支重新生成版本，「合并导入」默认保护本地已有新对话与记忆卡。
-2. **多服务商自带密钥（BYOK + Android Keystore）**：内置 DeepSeek 官方、DeepSeek OpenAI、OpenCode Go / Zen、Anthropic、硅基流动 SiliconFlow、OpenRouter、本地 Ollama 及自定义端点与取 Key 直达链接；Android `v0.4.0+` 采用 `AndroidKeyStore` AES-256-GCM 加密保管密钥（导出备份包永不携带）。
-3. **对抗低缓存与成本估算**：支持按轮数与 Token 预算裁剪上文、固定 **记忆卡**（一键浓缩早期轮次）、单条回复与会话累计 USD 预估花费及缓存命中省流显示（`in (hit X) · out`）。
+1. **三步导入旧聊天（免 Key 启动）**：内置 DeepSeek / ChatGPT / Claude 分步导出教程，支持桌面端直接拖入 `.zip` 或 Android 文件管理器 **「分享 / 用其他应用打开」** 导入，默认安全合并保留本地已有会话与记忆卡。
+2. **多服务商自带密钥（BYOK + Android Keystore）**：内置 DeepSeek 官方（含取 Key 引导）、DeepSeek OpenAI、OpenCode Go / Zen、Anthropic、硅基流动 SiliconFlow、OpenRouter、本地 Ollama 及自定义端点；Android 端使用 `AndroidKeyStore` 管理加密密钥（导出备份包永不携带）。
+3. **保存重要内容与人民币费用参考**：支持钉住 **记忆卡**（长文背景/设定不丢失）、按轮数控制携带上下文，并提供人民币参考花费（`预计约 ¥... 元`）与缓存命中省流显示。
 
 ## 产品边界与同类定位对照（避免混淆）
 
-| 项目 / 方案                        | 类型与定位                                                                  | 典型体积 / 形态                                           | 与本项目的关系                                                                                                                                                                          |
-| :--------------------------------- | :-------------------------------------------------------------------------- | :-------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`DeepSeek Chat BYOK`**（本项目） | **独立、免费、开源的轻量聊天与历史迁移客户端**                              | Web / PWA · `~2.24 MB` Android Release APK · 电脑便携 ZIP | **已集成发布的独立产品**，专注聊天记录搬家、记忆卡、预算/费用可见与多端 BYOK 对话，不捆绑重型 Agent 引擎                                                                                |
-| 官方 `deepseek-chat-import`        | `deepseek-ai/deepseek-harness` 内的实验性 CLI 导入插件                      | 命令行插件（需运行 Harness 环境）                         | 把 DeepSeek ZIP 转为 Harness 会话；而本项目是免命令行、可视化预览/选择性合并并可直接续聊的独立客户端                                                                                    |
-| **`DSH Community`**（兄弟项目）    | 基于 `@deepseek-ai/dsh` 的**重型多 Agent Harness 工作台与 E2EE 远程控制端** | Linux 终端 TUI / AppImage / Web PWA / Android APK         | 与本团队独立维护：[github.com/kamanager2012/dsh-community](https://github.com/kamanager2012/dsh-community)；与 `DSH Go` 同属重型 Agent 工作台赛道，使 `DeepSeek Chat BYOK` 保持极致轻量 |
+| 项目 / 方案                                 | 类型与定位                                                                  | 典型体积 / 形态                                           | 与本项目的关系                                                                                                                                                            |
+| :------------------------------------------ | :-------------------------------------------------------------------------- | :-------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **`DeepSeek Chat BYOK`（AI 聊天搬家助手）** | **独立、免费、开源的轻量聊天与历史迁移客户端**                              | Web / PWA · `~2.25 MB` Android Release APK · 电脑便携 ZIP | **已集成发布的独立产品**，无需安装 Harness 环境即可三步导入旧聊天、保存重要设定并续聊，不捆绑重型 Agent 引擎                                                              |
+| 官方 `deepseek-chat-import`                 | `deepseek-ai/deepseek-harness` 内的实验性插件                               | 依赖 Harness 环境的实验性插件（支持 CLI 与 Harness 界面） | 把 DeepSeek ZIP 转为 Harness 会话；而本项目是无需 Harness 环境、面向普通用户的独立轻量客户端                                                                              |
+| **`DSH Community`**（兄弟项目）             | 基于 `@deepseek-ai/dsh` 的**重型多 Agent Harness 工作台与 E2EE 远程控制端** | Linux 终端 TUI / AppImage / Web PWA / Android APK         | 与本团队独立维护：[github.com/kamanager2012/dsh-community](https://github.com/kamanager2012/dsh-community)；与 `DSH Go` 同属重型 Agent 工作台赛道，使本客户端保持简单轻快 |
 
 > **这不是什么**：本项目不是 DeepSeek 官方客户端，也不是几个零散开源插件的组合脚本；不出售共享账号，不提供无限免费模型额度；软件免费开源，但在线生成新回复需填写你自己的 API Key 并由所选服务商按用量计费。
 
@@ -57,7 +57,7 @@
 3. **需要 AI 续写时再填 API Key**：打开 **设置 → 模型与 API**，选择服务商预设（或自定义端点），填入自己的密钥并点击 **「测试并保存」**（若网关未开放 `GET /models`，可直接点 **「直接保存」**）；再按需钉住 **「记忆卡」**、调节携带轮数即可低开销续聊。
    - 静态网页版受浏览器同源 CORS 策略限制，请求未开放 CORS 头的第三方接口时请改用 **Android Release APK** 或 **电脑便携版**。
 
-> **Android 安装与升级说明**：自 `v0.2.2+` 起，公开 `Releases` 与 GitHub Pages 镜像均提供固定长期证书签名的 **`*-android-release.apk`**（SHA-256 指纹 `86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7`），后续版本可直接覆盖安装并保留本地对话、记忆卡与 API Key（`v0.4.0+` 起自动迁移进 `AndroidKeyStore` AES-256-GCM 加密库）；仅此前安装过早期临时 Debug 版（`v0.2.0`、`v0.2.1` 或 `*-android-debug.apk`）的用户，需先 **设置 → 数据管理 → 导出所有历史对话** 并卸载旧 Debug 包一次。验签指纹与说明见 [SECURITY.md](SECURITY.md)。
+> **Android 安装与升级说明**：自 `v0.2.2+` 起，公开 `Releases` 与 GitHub Pages 镜像均提供固定长期证书签名的 **`*-android-release.apk`**（SHA-256 指纹 `86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7`），后续版本可直接覆盖安装并保留本地对话、记忆卡与 API Key（`v0.4.0+` 起使用 `AndroidKeyStore` 管理加密密钥）；仅此前安装过早期临时 Debug 版（`v0.2.0`、`v0.2.1` 或 `*-android-debug.apk`）的用户，需先 **设置 → 数据管理 → 导出所有历史对话** 并卸载旧 Debug 包一次。验签指纹与说明见 [SECURITY.md](SECURITY.md)。
 
 ## 从源码构建与校验
 
@@ -84,7 +84,7 @@ pnpm start
 
 使用过程中遇到问题或有体验建议，欢迎通过 [脱敏反馈表单](https://github.com/kamanager2012/deepseek-chat-byok/issues/new?template=pilot-feedback.yml)（或 [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues)）提交，建议附带：
 
-1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android Release APK `v0.4.0`）
+1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android Release APK `v0.4.1`）
 2. 所选接口预设与协议（DeepSeek 官方 / OpenCode Go / SiliconFlow / Ollama / 自定义等）
 3. `deepseek_data-*.zip` 导入体积、会话数量与选择性合并情况
 4. 复现步骤或脱敏后的报错信息（**严禁上传 API Key 或个人原始聊天导出包**）

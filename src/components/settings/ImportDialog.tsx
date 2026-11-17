@@ -172,6 +172,7 @@ export const ImportDialog = ({ file, onCancel, onConfirm }: ImportDialogProps) =
                 selected: selectedIds.size,
               })}
             </div>
+            <div className={styles.safeBanner}>{t('historyImportSafeBanner')}</div>
             <div className={styles.list}>
               {filtered.map((item) => (
                 <label key={item.id} className={styles.item}>
@@ -234,23 +235,30 @@ export const ImportDialog = ({ file, onCancel, onConfirm }: ImportDialogProps) =
                   </label>
                 </div>
               ) : null}
-              <label className={styles.optionRow}>
-                <input
-                  type="radio"
-                  name="import-mode"
-                  checked={mode === 'replace'}
-                  onChange={() => setMode('replace')}
-                />
-                <span>{t('historyImportModeReplace')}</span>
-              </label>
-              <label className={styles.optionRow}>
-                <input
-                  type="checkbox"
-                  checked={stripSearchBlocks}
-                  onChange={(e) => setStripSearchBlocks(e.target.checked)}
-                />
-                <span>{t('historyImportStripSearch')}</span>
-              </label>
+              <details className={styles.advancedOptions}>
+                <summary className={styles.advancedSummary}>
+                  {t('historyImportMoreOptions')}
+                </summary>
+                <div className={styles.advancedBody}>
+                  <label className={styles.optionRow}>
+                    <input
+                      type="radio"
+                      name="import-mode"
+                      checked={mode === 'replace'}
+                      onChange={() => setMode('replace')}
+                    />
+                    <span>{t('historyImportModeReplace')}</span>
+                  </label>
+                  <label className={styles.optionRow}>
+                    <input
+                      type="checkbox"
+                      checked={stripSearchBlocks}
+                      onChange={(e) => setStripSearchBlocks(e.target.checked)}
+                    />
+                    <span>{t('historyImportStripSearch')}</span>
+                  </label>
+                </div>
+              </details>
             </div>
           </>
         )}

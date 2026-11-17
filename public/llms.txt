@@ -1,6 +1,6 @@
-# DeepSeek Chat BYOK
+# AI 聊天搬家助手 (DeepSeek Chat BYOK)
 
-> DeepSeek Chat BYOK 是一个独立、免费、开源的 DeepSeek 聊天客户端，支持导入官方导出的聊天记录、本地记忆卡和自带 API Key 对话。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。
+> DeepSeek Chat BYOK（面向普通用户的中文简称：AI 聊天搬家助手）是一个独立、免费、开源的 DeepSeek 聊天客户端，支持导入官方导出的聊天记录、本地记忆卡和自带 API Key 对话。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。
 > Independent, free, open-source DeepSeek chat client with official history import, local memory cards, and Bring-Your-Own-Key (BYOK) chat. Not an official DeepSeek product and not a Harness plugin bundle.
 
 ## Canonical URLs & Packaging
@@ -13,23 +13,22 @@
 - Persistent Android Release Signing Certificate SHA-256: `86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7`
 
 ## Key Features (Integrated Standalone App)
-1. Keyless Cross-Platform History Migration:
+1. Three-Step Keyless Chat History Import (三步导入旧聊天):
    - Imports DeepSeek official exports (`deepseek_data-*.zip`), ChatGPT official exports (`conversations.json` in ZIP with branched `mapping`), and Claude official exports (`conversations.json` in ZIP with `chat_messages` and thinking blocks).
-   - Desktop drag-and-drop onto the window and Android OS `Share / Open with` `.zip` intent (`ACTION_SEND` / `ACTION_VIEW`).
-   - Instant directory index preview, keyword search, selective session import, non-destructive same-ID merge (keeps local turns & memory cards by default), and optional stripping of old web search noise.
-2. Multi-Provider BYOK + AndroidKeyStore Security:
+   - Built-in step-by-step export guide modal for DeepSeek, ChatGPT, and Claude, desktop drag-and-drop onto the window, and Android OS `Share / Open with` `.zip` intent (`ACTION_SEND` / `ACTION_VIEW`).
+   - Safe non-destructive merge by default (keeps existing local turns & memory cards) with search and selective checkboxes.
+2. Multi-Provider BYOK + AndroidKeyStore Key Management:
    - Built-in presets for DeepSeek Official (Anthropic + native search/files/TTS), DeepSeek OpenAI, OpenCode Go/Zen, Anthropic, SiliconFlow, OpenRouter, Local Ollama, and custom endpoints.
-   - Android v0.4.0+ encrypts saved API keys using AES-256-GCM backed by `AndroidKeyStore` (`deepseek_byok_keystore_v1`), automatically migrating legacy WebView keys on in-place upgrade and never writing secrets into chat export backups.
-3. Context Control & Cost Transparency:
-   - Pinned local Memory Cards (manual or model-summarized), tunable history round & token budget, per-reply and cumulative USD cost estimates, and prompt cache hit savings (`in (hit X) · out`).
+   - Android v0.4.0+ manages encrypted API keys via `AndroidKeyStore` (and automatically migrates legacy WebView keys on in-place upgrade without writing secrets into export backups).
+3. Context Control & Plain-Language RMB/USD Cost Estimates:
+   - Pinned local Memory Cards (manual or model-summarized), tunable history round & token budget, and per-reply + session cost estimates in both RMB (`¥`) and USD (`$`) with cache-hit savings.
 
 ## Explicit Boundaries (What This Is NOT)
 - NOT an official DeepSeek product; extended independently from MIT-licensed `deepseek-ai/chat-demo`.
-- NOT a bundle of disconnected scripts or Harness plugins: distributed as a Web PWA, signed `~2.24 MB` Android Release APK, and Portable Desktop ZIP.
+- NOT a bundle of disconnected scripts or Harness plugins: distributed as a zero-install Web PWA and signed `~2.25 MB` Android Release APK for everyday users (plus an optional Portable Desktop ZIP in the advanced section that requires Node.js 22+ LTS).
 - NO shared accounts, NO hosted billing backend, and NO free API quota included; reading/importing local history is free and requires no API key, while live AI replies use the user's own key billed by their provider.
-- Portable Desktop ZIP (`*-portable.zip`) runs a local Node.js 22 server (`server.mjs`) with `/_proxy` CORS bypass, so it requires Node.js 22+ LTS installed locally; users who prefer zero dependencies should use the Web/PWA or Android Release APK.
 
 ## Ecosystem Comparison
-- `DeepSeek Chat BYOK` (`kamanager2012/deepseek-chat-byok`): Lightweight standalone chat UI and multi-platform conversation asset hub.
-- Official `deepseek-chat-import` (`deepseek-ai/deepseek-harness`): Experimental CLI plugin converting DeepSeek export ZIPs into Harness sessions; requires a Harness setup.
-- `DSH Community` (`kamanager2012/dsh-community`): Our separately maintained heavy Multi-Agent Harness Workbench & E2EE remote controller built on `@deepseek-ai/dsh` (competes directly with heavy Agent workbenches such as `DSH Go`), keeping `DeepSeek Chat BYOK` free of Agent/Harness bloat.
+- `DeepSeek Chat BYOK` / AI 聊天搬家助手 (`kamanager2012/deepseek-chat-byok`): Standalone lightweight client requiring no Harness setup, built for everyday users to import and continue chats.
+- Official `deepseek-chat-import` (`deepseek-ai/deepseek-harness`): Experimental plugin depending on the DeepSeek Harness environment (CLI and Harness UI) to convert export ZIPs into Harness sessions.
+- `DSH Community` (`kamanager2012/dsh-community`): Our separately maintained heavy Multi-Agent Harness Workbench & E2EE remote controller built on `@deepseek-ai/dsh` (competes directly with heavy Agent workbenches such as `DSH Go`), keeping `DeepSeek Chat BYOK` clean and approachable.

@@ -2,12 +2,29 @@ import type { zh } from './zh.js'
 
 export const en = {
   welcomeMessageChat250808: 'How can I help you?',
-  onboardingTitle: 'Bring your old chats or start a new one',
+  onboardingBadge: 'AI Chat Migration Assistant · Open Source · Not Official',
+  onboardingTitle: "Your old chats don't have to start over",
+  onboardingSubtitle:
+    'Bring over past chats from DeepSeek, ChatGPT, or Claude to read freely and keep important notes.',
   onboardingImport: 'Import chats (no key needed)',
+  onboardingHowToExport: 'How to export? See guide',
   onboardingConfigure: 'Set up a model to chat',
   onboardingCostNote:
-    'Importing and reading local chats is free and needs no key. Online AI replies require your own API key and provider charges. No free model quota is included.',
-  onboardingInstallGuide: 'Android & desktop downloads and setup',
+    'Importing and reading local chats is free and requires no API key. Online AI replies require connecting your own provider key billed by usage.',
+  onboardingInstallGuide: 'Android App & Help Guide',
+  exportGuideTitle: 'How to export old chats (3 simple steps)',
+  exportGuideIntro:
+    'Pick the app you used before and follow the steps below. Keep the downloaded .zip file zipped and select it directly.',
+  exportGuideZipTip:
+    'Tip: Drag and drop the .zip onto the desktop window, or tap below to pick it.',
+  exportGuidePickFile: 'I have a .zip file, import now',
+  exportGuideOpenSettings: 'Open Data settings',
+  exportGuideDeepSeekSteps:
+    '1. Open DeepSeek Web or App -> tap avatar -> Settings;\n2. Go to Profile / Data & Privacy -> Export Data and confirm;\n3. Save the deepseek_data-*.zip from your email or downloads without unzipping.',
+  exportGuideChatGptSteps:
+    '1. Open ChatGPT -> Settings -> Data Controls;\n2. Click Export Data and confirm;\n3. Download the .zip archive from your email without unzipping.',
+  exportGuideClaudeSteps:
+    '1. Open Claude -> Settings -> Account / Privacy;\n2. Click Export Data to request your archive;\n3. Save the official .zip archive to your device without unzipping.',
   contentCaveat: 'AI-generated, for reference only',
   expandSiderbarButton: 'Open sidebar',
   collapseSiderbarButton: 'Close sidebar',
@@ -208,7 +225,7 @@ export const en = {
   providerApiKeyOptional: 'Optional for local Ollama',
   providerGetApiKeyLink: 'Get API Key for this provider ↗',
   providerBeginnerSteps:
-    'Quick setup: 1. Pick a preset -> 2. Paste your API key -> 3. Click "Test & Save"',
+    'Quick 2-step setup: 1. Click "Get API Key for this provider" below and copy your key -> 2. Paste it into API Key and click "Test & Save" (recommended DeepSeek defaults are already selected).',
   providerCorsProxyToggle: 'Use local CORS proxy (required for some 3rd-party gateways in browser)',
   providerCorsProxyUrlLabel: 'Local Proxy URL',
   providerSaveVerify: 'Test & Save',
@@ -222,7 +239,7 @@ export const en = {
   providerDeleteProfile: 'Delete Profile',
   providerDeepseekToolsNote:
     'Compatibility mode active: DeepSeek native search, file parser, and speech are disabled',
-  contextBudgetSection: 'Budget & Memory',
+  contextBudgetSection: 'Saving Settings & Important Memory (defaults work well)',
   contextMaxRoundsLabel: 'Max History Rounds',
   contextMaxTokensLabel: 'History Token Budget',
   contextUnlimited: 'Unlimited (Send All)',
@@ -230,10 +247,16 @@ export const en = {
   contextSystemPromptLabel: 'System Prompt / Persona Preset',
   contextBudgetBar: '{provider} · {model} | {kept}/{total} rounds · ~{tokens} tok',
   contextBudgetTrimmedHint: ' ({dropped} earlier rounds trimmed)',
+  contextCostShort: ' · Est. {usd} (~{cny})',
+  contextCostTooltip: 'Estimated session cost: {usd} (~{cny})',
+  contextCostTooltipSaved: 'Estimated session cost: {usd} (~{cny}), cache saved {savedUsd}',
+  replyCostShort: 'Est. {usd} (~{cny})',
+  replyCostTooltip: 'Estimated reply cost: {usd} (~{cny})',
+  replyCostTooltipSaved: 'Estimated reply cost: {usd} (~{cny}), cache saved {savedUsd}',
   sessionMemoryButton: 'Memory',
-  sessionMemoryModalTitle: 'Pinned Memory & Persona Prefix',
+  sessionMemoryModalTitle: 'Pinned Memory & Important Notes',
   sessionMemoryPlaceholder:
-    'Write character traits, key story details, or project context to pin at the start of every request.',
+    'Save details AI should never forget (story characters, background, fixed instructions). Kept automatically across replies without resending old turns.',
   sessionMemoryDistill: 'Summarize Trimmed Rounds',
   sessionMemoryDistilling: 'Summarizing earlier turns...',
   sessionMemoryDistilled: 'Summarized earlier turns into memory card. Review and save.',
@@ -242,6 +265,9 @@ export const en = {
   sessionMemorySave: 'Save Memory',
   exportMarkdown: 'Export Markdown',
   historyImportPreviewTitle: 'Select Chats to Import',
+  historyImportSafeBanner:
+    'Safe import by default: selected old chats are added without overwriting existing local chats.',
+  historyImportMoreOptions: 'More import options (usually keep defaults)',
   historyImportModeMerge: 'Merge into existing chats (keep existing)',
   historyImportModeReplace: 'Replace all local chats',
   historyImportStripSearch: 'Strip historical web-search fragments on import (saves storage)',
@@ -250,7 +276,7 @@ export const en = {
   historyImportSelectRecent: 'Recent 20',
   historyImportSelectNone: 'Clear',
   historyImportCountInfo: '{selected} of {total} sessions selected',
-  historyImportReadingIndex: 'Reading archive index...',
+  historyImportReadingIndex: 'Opening chat archive...',
   historyImportNoneSelected: 'Select at least one chat to import',
   uploadRequiresDeepseekFiles:
     'Binary document parsing requires DeepSeek Official mode; paste text or switch providers.',

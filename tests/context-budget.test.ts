@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   estimateMessageCost,
   estimateSessionCost,
+  formatCnyCost,
   formatUsdCost,
 } from '../src/services/api/pricing.js'
 import {
@@ -95,6 +96,8 @@ describe('context budget & memory distillation', () => {
     expect(est?.costUsd).toBeCloseTo(0.00837, 6)
     expect(est?.savedUsd).toBeCloseTo(0.02, 6)
     expect(formatUsdCost(est?.costUsd ?? 0)).toBe('$0.0084')
+    expect(formatCnyCost(est?.costUsd ?? 0)).toBe('¥0.06 元')
+    expect(formatCnyCost(0.0005)).toBe('< ¥0.01 元')
 
     const session: Session = {
       id: 'cost-s1',
