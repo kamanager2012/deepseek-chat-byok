@@ -62,7 +62,7 @@ pnpm start
 
 欢迎在 [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues) 提交可复现试用反馈，建议附带以下 4 项信息：
 
-1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android APK `v0.2.1`）
+1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android APK `v0.2.2`）
 2. 所选接口预设与协议（DeepSeek 官方 / OpenCode Go / SiliconFlow / Ollama / 自定义等）
 3. `deepseek_data-*.zip` 导入体积、会话数量与是否顺利合并保留旧记忆
 4. 首次配置 Key、流式输出、记忆卡压缩或跨域报错中的具体卡点描述

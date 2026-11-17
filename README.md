@@ -60,9 +60,9 @@ pnpm start
 
 ## Trial Feedback Checklist
 
-Trying out `v0.2.1`? Share reproducible feedback in [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues) with:
+Trying out `v0.2.2`? Share reproducible feedback in [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues) with:
 
-1. Platform & version (`GitHub Pages`, `Portable Desktop`, or `Android APK v0.2.1`)
+1. Platform & version (`GitHub Pages`, `Portable Desktop`, or `Android APK v0.2.2`)
 2. Provider preset / protocol (`deepseek-anthropic`, `openai`, `anthropic`, or `ollama`)
 3. Whether archive merge (`deepseek_data-*.zip`) succeeded and approximate session count / ZIP size
 4. Any friction in first-run key setup, streaming, Memory Card distillation, or CORS errors
