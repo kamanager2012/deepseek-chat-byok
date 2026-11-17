@@ -5,7 +5,7 @@ const maxBytes = 64 * 1024 * 1024
 
 /** Validate the deployed bytes against original GitHub Release asset digests. */
 export const verifyLiveDownloads = async (siteUrl, repo, fetcher = fetch, authToken = '') => {
-  const root = new URL(siteUrl)
+  const root = new URL(siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`)
   if (root.protocol !== 'https:') throw new Error('Public site URL must use HTTPS')
   if (!/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repo)) {
     throw new Error('Invalid GitHub repository')

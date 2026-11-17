@@ -36,6 +36,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Temporary canonical format capture
+        run: |
+          pnpm format
+          for file in scripts/verify-live-downloads.mjs tests/pages-live-downloads.test.ts; do
+            printf 'LIVE_FORMAT_START:%s\n' "$file"
+            base64 -w 0 "$file"
+            printf '\nLIVE_FORMAT_END:%s\n' "$file"
+          done
+
       - name: Check formatting
         run: pnpm format:check
 
