@@ -35,7 +35,7 @@
    - 纯静态网页版受浏览器同源安全策略约束，无法请求未返回 CORS 头的第三方接口；此类接口建议使用 **Android APK** 或 **电脑便携版**。
 3. **选择性合并导入并续写**：在 **设置 → 数据管理** 导入 ZIP，勾选需要恢复的会话合并导入，按需设置 **「记忆卡」** 即可低开销续聊。
 
-> Android 安装升级说明：当前公开 `Releases` 提供 CI Debug 签名的 `android-debug.apk` 供体验与测试。在后续切换为正式团队密钥签名的 Release 版前，请先在设置页导出备份并卸载 Debug 版；正式 Keystore 配置方法见 [SECURITY.md](SECURITY.md)。
+> Android 安装升级说明：当前公开 `Releases` 提供 CI Debug 签名的 `android-debug.apk`。由于未配置固定发布证书时各次 CI 构建的临时 Debug 签名不一致，**请先导出备份（设置 → 数据管理 → 导出所有历史对话）再卸载旧安装包**，装入新版本后导回备份并重新填入 API Key；固定证书签名配置方法见 [SECURITY.md](SECURITY.md)。
 
 ## 从源码构建与校验
 
@@ -62,7 +62,7 @@ pnpm start
 
 欢迎在 [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues) 提交可复现试用反馈，建议附带以下 4 项信息：
 
-1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android APK `v0.2.0`）
+1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android APK `v0.2.1`）
 2. 所选接口预设与协议（DeepSeek 官方 / OpenCode Go / SiliconFlow / Ollama / 自定义等）
 3. `deepseek_data-*.zip` 导入体积、会话数量与是否顺利合并保留旧记忆
 4. 首次配置 Key、流式输出、记忆卡压缩或跨域报错中的具体卡点描述

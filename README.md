@@ -35,7 +35,7 @@ A local-first, MIT-licensed **Bring-Your-Own-Key (BYOK)** chat client, creative 
    - Static GitHub Pages only calls APIs directly from your browser; endpoints that block browser CORS require the Android APK or Portable Desktop (`server.mjs`).
 3. **Import & Continue**: In **Settings -> Data**, pick your ZIP, select sessions to merge, optionally pin a **Memory Card**, and keep writing.
 
-> Android Upgrade Note: Current public releases ship a CI debug-signed APK (`android-debug.apk`). Before installing an officially signed release APK later, export a local backup first or uninstall the debug APK cleanly. See [SECURITY.md](SECURITY.md) for permanent release keystore setup.
+> Android Upgrade Note: Current public releases ship a CI debug-signed APK (`android-debug.apk`). Because ephemeral debug signatures differ across CI builds, **export your chats first** (`Settings -> Data -> Export all chats`), uninstall the prior debug build, install the new APK, re-import your backup ZIP, and re-enter your API key(s). See [SECURITY.md](SECURITY.md) for permanent release keystore setup.
 
 ## Build & Verify From Source
 
@@ -60,9 +60,9 @@ pnpm start
 
 ## Trial Feedback Checklist
 
-Trying out `v0.2.0`? Share reproducible feedback in [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues) with:
+Trying out `v0.2.1`? Share reproducible feedback in [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues) with:
 
-1. Platform & version (`GitHub Pages`, `Portable Desktop`, or `Android APK v0.2.0`)
+1. Platform & version (`GitHub Pages`, `Portable Desktop`, or `Android APK v0.2.1`)
 2. Provider preset / protocol (`deepseek-anthropic`, `openai`, `anthropic`, or `ollama`)
 3. Whether archive merge (`deepseek_data-*.zip`) succeeded and approximate session count / ZIP size
 4. Any friction in first-run key setup, streaming, Memory Card distillation, or CORS errors
