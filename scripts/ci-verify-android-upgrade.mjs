@@ -233,15 +233,24 @@ const { found: memBtnV1 } = await waitForNode(
   15_000
 )
 adb('shell', 'input', 'tap', String(memBtnV1.cx), String(memBtnV1.cy))
+const { found: memTitleV1 } = await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && /Pinned Memory|长期记忆与人设前缀/u.test(n.text || n.desc),
+  'Memory Card modal title in V1',
+  15_000
+)
+const { found: memSaveAnchorV1 } = await waitForNode(
+  (n) => n.w > 0 && n.h > 0 && /^(Save Memory|保存记忆卡)$/u.test((n.text || n.desc).trim()),
+  'Save Memory anchor in V1 modal',
+  15_000
+)
 const { found: memFieldV1 } = await waitForNode(
   (n) =>
     n.w > 0 &&
     n.h > 0 &&
     n.cls.endsWith('EditText') &&
-    /Write character|填写人物设定|character traits|剧情脉络/iu.test(
-      `${n.hint} ${n.desc} ${n.text}`
-    ),
-  'Memory Card textarea in V1 modal',
+    n.cy > memTitleV1.y2 &&
+    n.cy < memSaveAnchorV1.y1,
+  'Memory Card textarea inside V1 modal',
   15_000
 )
 adb('shell', 'input', 'tap', String(memFieldV1.cx), String(memFieldV1.cy))
@@ -250,8 +259,8 @@ const SENTINEL_MEMORY = 'UpgradeSentinelMemory'
 adb('shell', 'input', 'text', SENTINEL_MEMORY)
 await sleep(500)
 const { found: saveMemBtn } = await waitForNode(
-  (n) => n.w > 0 && n.h > 0 && /^(Save Memory|保存记忆卡)$/u.test(n.text || n.desc),
-  'Save Memory button in V1 modal',
+  (n) => n.w > 0 && n.h > 0 && /^(Save Memory|保存记忆卡)$/u.test((n.text || n.desc).trim()),
+  'Save Memory button in V1 modal after text entry',
   15_000
 )
 adb('shell', 'input', 'tap', String(saveMemBtn.cx), String(saveMemBtn.cy))
@@ -305,13 +314,13 @@ const { found: openSidebarBtn } = await waitForNode(
   15_000
 )
 adb('shell', 'input', 'tap', String(openSidebarBtn.cx), String(openSidebarBtn.cy))
-const { found: siderSearchField } = await waitForNode(
+const { found: siderGroupHeader } = await waitForNode(
   (n) =>
     n.w > 0 &&
     n.h > 0 &&
-    n.cls.endsWith('EditText') &&
-    /Filter chats|筛选历史对话/u.test(`${n.hint} ${n.desc} ${n.text}`),
-  'Sidebar Filter chats box (proves sessions.length > 0 in V2)',
+    !n.cls.endsWith('EditText') &&
+    /^(Today|今天|Yesterday|昨天)$/u.test((n.text || n.desc).trim()),
+  'Sidebar date section header (proves sessions.length > 0 in V2)',
   15_000
 )
 const { found: sessionItem } = await waitForNode(
@@ -319,10 +328,10 @@ const { found: sessionItem } = await waitForNode(
     n.w > 0 &&
     n.h > 0 &&
     !n.cls.endsWith('EditText') &&
-    n.y1 > siderSearchField.y2 &&
+    n.y1 >= siderGroupHeader.y2 &&
     n.cy < Math.round(screen.height * 0.85) &&
     /^(UpgradeSentinelMsg|New chat|新对话)/u.test((n.text || n.desc).trim()),
-  'Saved V1 chat item below sidebar filter in V2',
+  'Saved V1 chat item below sidebar date header in V2',
   15_000
 )
 adb('shell', 'input', 'tap', String(sessionItem.cx), String(sessionItem.cy))
