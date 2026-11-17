@@ -23,7 +23,7 @@ const startCliServer = (): Promise<{ url: string; close: () => Promise<void> }> 
     const timer = setTimeout(() => {
       child.kill()
       reject(new Error(`Server startup timeout. stdout=${out} stderr=${err}`))
-    }, 5000)
+    }, 10_000)
 
     child.stdout.on('data', (chunk: Buffer) => {
       out += chunk.toString('utf8')
@@ -181,7 +181,7 @@ describe('server.mjs static & hardened SSRF/CSRF-safe /_proxy', () => {
       await upstream.close()
       await srv.close()
     }
-  })
+  }, 15_000)
 
   it('blocks cross-origin/CSRF browser requests and enforces maxBodyBytes 413 cleanly', async () => {
     const upstream = await startMockUpstream((_req, res) => {

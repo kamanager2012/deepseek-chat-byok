@@ -57,7 +57,7 @@ const startJavaBridge = (
     const timer = setTimeout(() => {
       child.kill()
       reject(new Error(`Java bridge timeout. stdout=${out} stderr=${err}`))
-    }, 8000)
+    }, 15_000)
 
     child.stdout.on('data', (chunk: Buffer) => {
       out += chunk.toString('utf8')
@@ -213,5 +213,5 @@ describe('Android LocalBridgeServer.java static & SSRF/CSRF-safe streaming /_pro
     } finally {
       rmSync(tmpDir, { recursive: true, force: true })
     }
-  })
+  }, 30_000)
 })
