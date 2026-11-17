@@ -188,7 +188,7 @@ jobs:
           SDK_TOOLS="$(dirname "$(command -v sdkmanager || find "${ANDROID_HOME}/cmdline-tools" -name sdkmanager -type f | sort -V | tail -n1)")"
           yes | "${SDK_TOOLS}/sdkmanager" --licenses >/dev/null || true
           "${SDK_TOOLS}/sdkmanager" "platform-tools" "emulator" "system-images;android-34;default;x86_64"
-          echo "no" | "${SDK_TOOLS}/avdmanager" create avd --force -n byok-upgrade-api34 -k "system-images;android-34;default;x86_64" --abi x86_64
+          echo "no" | "${SDK_TOOLS}/avdmanager" create avd --force -n byok-upgrade-api34 -k "system-images;android-34;default;x86_64" --abi x86_64 -d "medium_phone"
           nohup "${ANDROID_HOME}/emulator/emulator" -avd byok-upgrade-api34 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot > "${RUNNER_TEMP}/emulator.log" 2>&1 &
           EMU_PID=$!
           cleanup() {
