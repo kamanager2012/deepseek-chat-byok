@@ -234,7 +234,12 @@ const { found: memBtnV1 } = await waitForNode(
 )
 adb('shell', 'input', 'tap', String(memBtnV1.cx), String(memBtnV1.cy))
 const { found: memTitleV1 } = await waitForNode(
-  (n) => n.w > 0 && n.h > 0 && /Pinned Memory|长期记忆与人设前缀/u.test(n.text || n.desc),
+  (n) =>
+    n.w > 0 &&
+    n.h > 0 &&
+    n.h < 200 &&
+    !n.cls.endsWith('Dialog') &&
+    /Pinned Memory|长期记忆与人设前缀/u.test(n.text || n.desc),
   'Memory Card modal title in V1',
   15_000
 )
@@ -265,6 +270,10 @@ const { found: saveMemBtn } = await waitForNode(
 )
 adb('shell', 'input', 'tap', String(saveMemBtn.cx), String(saveMemBtn.cy))
 await sleep(1800)
+const afterSaveDump = findNodes(dumpUi())
+if (afterSaveDump.some((n) => n.cls.endsWith('Dialog') && /Pinned Memory|长期记忆/u.test(n.text))) {
+  throw new Error('Save Memory tap did not close Memory Card modal cleanly in V1')
+}
 console.log('Confirmed chat turn + Memory Card written to V1 IndexedDB!')
 
 adb('shell', 'am', 'force-stop', PKG)
