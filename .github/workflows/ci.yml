@@ -88,6 +88,15 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools platforms;android-35 build-tools;35.0.0 build-tools;34.0.0
 
       - name: Install dependencies & build Android Debug APK
         run: pnpm install --frozen-lockfile && pnpm android:apk
+
+      - name: Upload Android Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepseek-chat-byok-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
