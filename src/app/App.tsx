@@ -15,6 +15,8 @@ import { SessionView } from '../components/session/SessionView.js'
 import { MobileHeader } from '../components/session/MobileHeader.js'
 import { Welcome } from '../components/session/Welcome.js'
 import { SettingsDialog } from '../components/settings/SettingsDialog.js'
+import { openImportWithFile } from '../components/settings/settingsDialogState.js'
+import { consumeAndroidSharedZip } from '../services/api/androidBridge.js'
 import { Toast } from '../components/base/Toast.js'
 import { showToast } from '../components/base/toastState.js'
 import { onUploadNotice } from '../services/attachments.js'
@@ -69,6 +71,19 @@ export const App = () => {
   useEffect(() => {
     void initChat()
     // 首次打开不强制配置；导入与阅读本地历史无需 Key。
+  }, [])
+
+  useEffect(() => {
+    const checkSharedZip = () => {
+      void consumeAndroidSharedZip().then((file) => {
+        if (file) {
+          openImportWithFile(file)
+        }
+      })
+    }
+    checkSharedZip()
+    window.addEventListener('ds-android-shared-zip', checkSharedZip)
+    return () => window.removeEventListener('ds-android-shared-zip', checkSharedZip)
   }, [])
 
   return (

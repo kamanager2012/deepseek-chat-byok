@@ -122,7 +122,7 @@ export const en = {
   historyImportConfirmDescription:
     'The uploaded chat history will replace all your current chats. Import anyway?',
   historyImportDescription:
-    'Supports deepseek_data-*.zip exported from DeepSeek Settings -> Data Export. Preview the archive index first to merge selected chats without overwriting existing ones.',
+    'Supports DeepSeek (deepseek_data-*.zip), ChatGPT, and Claude official export ZIPs (conversations.json). Preview the index first to merge selected chats without overwriting existing ones.',
   historyImportedOne: 'Imported 1 chat',
   historyImported: 'Imported {count} chats',
   historyImportedKeptOnly: 'No overwrite: kept {kept} existing conflicting chat(s)',

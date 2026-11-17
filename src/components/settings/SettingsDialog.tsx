@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   IconDarkOutline16,
   IconDataOutline16,
@@ -34,7 +34,12 @@ import { Select } from '../base/Select.js'
 import { showToast } from '../base/toastState.js'
 import { ImportDialog } from './ImportDialog.js'
 import { ProviderSettings } from './ProviderSettings.js'
-import { closeSettings, useSettingsDialog, type SettingsSection } from './settingsDialogState.js'
+import {
+  closeSettings,
+  consumePendingImportFile,
+  useSettingsDialog,
+  type SettingsSection,
+} from './settingsDialogState.js'
 import styles from './Settings.module.css'
 
 /**
@@ -64,10 +69,22 @@ const SettingsContent = () => {
   const t = useTranslate()
   // 打开时按调用方指定的分组选中，之后在弹窗内切换
   const [section, setSection] = useState(() => useSettingsDialog.getState().section)
+  const pendingImportFile = useSettingsDialog((state) => state.pendingImportFile)
   const historyImport = useHistoryImport()
   const historyDelete = useHistoryDelete()
   const replacingHistory = useChatStore((state) => state.importingHistory)
   const historyBusy = historyImport.busy || historyDelete.busy || replacingHistory
+  const selectImportFile = historyImport.select
+
+  useEffect(() => {
+    if (pendingImportFile) {
+      const incoming = consumePendingImportFile()
+      if (incoming) {
+        setSection('data')
+        selectImportFile(incoming)
+      }
+    }
+  }, [pendingImportFile, selectImportFile])
   return (
     <>
       <Modal
