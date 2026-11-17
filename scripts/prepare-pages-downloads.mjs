@@ -58,14 +58,23 @@ export const preparePagesDownloads = async (sourceDir, siteDir, tag) => {
   return { tag, ...staged }
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
+if (
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)
+) {
   const [sourceDir, siteDir, tag] = process.argv.slice(2)
   if (!sourceDir || !siteDir || !tag) {
-    console.error('Usage: node scripts/prepare-pages-downloads.mjs <assets-dir> <dist-dir> <release-tag>')
+    console.error(
+      'Usage: node scripts/prepare-pages-downloads.mjs <assets-dir> <dist-dir> <release-tag>'
+    )
     process.exitCode = 2
   } else {
     preparePagesDownloads(sourceDir, siteDir, tag)
-      .then((result) => console.log(`Pages mirrored ${result.tag}: ${result.android.filename}, ${result.desktop.filename}`))
+      .then((result) =>
+        console.log(
+          `Pages mirrored ${result.tag}: ${result.android.filename}, ${result.desktop.filename}`
+        )
+      )
       .catch((error) => {
         console.error(error instanceof Error ? error.message : String(error))
         process.exitCode = 1

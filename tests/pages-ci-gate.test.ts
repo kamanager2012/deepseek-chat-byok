@@ -30,7 +30,11 @@ describe('Pages exact CI run gate', () => {
 
   it('requires every job of the specific main CI run, not the latest global check-run', () => {
     expect(() =>
-      validatePublishCi(validRun, jobs.filter((job) => job.name !== 'verify'), sha)
+      validatePublishCi(
+        validRun,
+        jobs.filter((job) => job.name !== 'verify'),
+        sha
+      )
     ).toThrow('Missing or duplicate')
     expect(() =>
       validatePublishCi(

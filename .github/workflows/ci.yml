@@ -36,15 +36,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Temporary canonical format capture
-        run: |
-          pnpm format
-          for file in public/get-started.html scripts/prepare-pages-downloads.mjs scripts/verify-pages-ci.mjs tests/pages-ci-gate.test.ts tests/pages-downloads.test.ts; do
-            printf 'CANONICAL_FILE_START:%s\n' "$file"
-            base64 -w 0 "$file"
-            printf '\nCANONICAL_FILE_END:%s\n' "$file"
-          done
-
       - name: Check formatting
         run: pnpm format:check
 

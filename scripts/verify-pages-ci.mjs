@@ -41,12 +41,16 @@ const runCli = () => {
   const repo = process.env.GITHUB_REPOSITORY
   const sha = process.env.TARGET_SHA
   const triggerId = process.env.TRIGGER_CI_RUN_ID
-  if (!repo || !/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repo) || !sha || !/^[a-f0-9]{40}$/.test(sha)) {
+  if (
+    !repo ||
+    !/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repo) ||
+    !sha ||
+    !/^[a-f0-9]{40}$/.test(sha)
+  ) {
     throw new Error('Missing or invalid GitHub repository and target SHA')
   }
 
-  const api = (path) =>
-    JSON.parse(execFileSync('gh', ['api', path], { encoding: 'utf8' }))
+  const api = (path) => JSON.parse(execFileSync('gh', ['api', path], { encoding: 'utf8' }))
 
   let run
   if (triggerId) {

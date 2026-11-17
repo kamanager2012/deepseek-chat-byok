@@ -2,7 +2,6 @@ import { createHash } from 'node:crypto'
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { preparePagesDownloads } from '../scripts/prepare-pages-downloads.mjs'
 
@@ -53,12 +52,16 @@ describe('Pages release download mirror', () => {
     const { source, site } = await fixture()
     await rm(path.join(source, apk))
     await writeFile(path.join(source, `deepseek-chat-byok-${tag}-android-debug.apk`), 'debug')
-    await expect(preparePagesDownloads(source, site, tag)).rejects.toThrow('Required Release asset missing')
+    await expect(preparePagesDownloads(source, site, tag)).rejects.toThrow(
+      'Required Release asset missing'
+    )
   })
 
   it('rejects invalid release tags and wrong-identity checksums', async () => {
     const { source, site } = await fixture()
-    await expect(preparePagesDownloads(source, site, '../../other')).rejects.toThrow('Invalid release tag')
+    await expect(preparePagesDownloads(source, site, '../../other')).rejects.toThrow(
+      'Invalid release tag'
+    )
     await writeFile(path.join(source, 'SHA256SUMS.txt'), `${digest('other')}  ${apk}\n`)
     await expect(preparePagesDownloads(source, site, tag)).rejects.toThrow('checksum mismatch')
   })

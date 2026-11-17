@@ -206,7 +206,9 @@
         </div>
       </section>
       <div class="disclaimer">
-        <strong>下载提醒：</strong>发行源为 GitHub Releases；本站发布流水线会校验 SHA-256 后镜像原始安装包，优先提供本站直接下载。无法访问 GitHub Pages 的网络仍可能下载失败；也可使用官方 Release 备用入口。请勿从陌生网盘下载修改版安装包。
+        <strong>下载提醒：</strong>发行源为 GitHub Releases；本站发布流水线会校验 SHA-256
+        后镜像原始安装包，优先提供本站直接下载。无法访问 GitHub Pages
+        的网络仍可能下载失败；也可使用官方 Release 备用入口。请勿从陌生网盘下载修改版安装包。
       </div>
       <section class="card" style="margin-top: 16px">
         <h2>第一次使用，只需要三步</h2>
@@ -264,7 +266,8 @@
           desktop.href = zip
           desktop.download = manifest.desktop.filename
           desktop.textContent = `直接下载电脑便携包（${manifest.tag}）`
-          status.textContent = '优先从本站下载：发布时已核对发行包 SHA-256；如无法访问本站，可查看 GitHub Releases。'
+          status.textContent =
+            '优先从本站下载：发布时已核对发行包 SHA-256；如无法访问本站，可查看 GitHub Releases。'
           return true
         }
 
@@ -312,7 +315,8 @@
           } catch {
             android.href = releasePage
             desktop.href = releasePage
-            status.textContent = '暂时无法查到安装包，请在 GitHub 正式发布页查看；若网络无法访问 GitHub，下载可能失败。'
+            status.textContent =
+              '暂时无法查到安装包，请在 GitHub 正式发布页查看；若网络无法访问 GitHub，下载可能失败。'
           } finally {
             clearTimeout(timeout)
           }
