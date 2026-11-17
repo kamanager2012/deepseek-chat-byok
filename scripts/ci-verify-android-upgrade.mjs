@@ -87,15 +87,22 @@ const waitForNode = async (predicate, description, timeoutMs = 45_000) => {
   )
 }
 
-const scrollUntilVisible = async (predicate, description, screen, maxSwipes = 6) => {
+const scrollUntilVisible = async (
+  predicate,
+  description,
+  screen,
+  maxSwipes = 6,
+  maxCyRatio = 0.85
+) => {
   const x = Math.round(screen.width * 0.5)
-  const yStart = Math.round(screen.height * 0.72)
-  const yEnd = Math.round(screen.height * 0.34)
+  const yStart = Math.round(screen.height * 0.52)
+  const yEnd = Math.round(screen.height * 0.24)
+  const maxCy = Math.round(screen.height * maxCyRatio)
   let lastNodes = []
   for (let i = 0; i <= maxSwipes; i += 1) {
     lastNodes = findNodes(dumpUi())
     const found = lastNodes.find(
-      (n) => n.w > 0 && n.h > 0 && n.cy > 60 && n.cy < screen.height - 60 && predicate(n)
+      (n) => n.w > 0 && n.h > 0 && n.cy > 60 && n.cy < maxCy && predicate(n)
     )
     if (found) return found
     if (i < maxSwipes) {
@@ -148,13 +155,15 @@ await waitForNode(
   45_000
 )
 
-// 2. Scroll to password EditText (API Key input) and fill test BYOK secret
+// 2. Scroll to password EditText (API Key input) in upper half and fill test BYOK secret
 const keyField = await scrollUntilVisible(
   (n) =>
     n.cls.endsWith('EditText') &&
     (n.password || /API Key|请输入 API Key|Enter API Key/iu.test(`${n.hint} ${n.desc} ${n.text}`)),
   'API Key EditText',
-  screen
+  screen,
+  6,
+  0.48
 )
 
 console.log(`Tapping visible API Key EditText at (${keyField.cx}, ${keyField.cy})`)
@@ -162,18 +171,14 @@ adb('shell', 'input', 'tap', String(keyField.cx), String(keyField.cy))
 await sleep(500)
 adb('shell', 'input', 'text', 'sk-upgrade-retention-proof')
 await sleep(500)
-try {
-  adb('shell', 'input', 'keyevent', '111') // Dismiss IME/focus if open
-} catch {
-  // ignore
-}
-await sleep(400)
 
-// 3. Scroll Settings modal to Save Directly button and tap
+// 3. Scroll Settings modal to Save Directly button in upper half (above any IME) and tap
 const saveBtn = await scrollUntilVisible(
   (n) => /^(Save Directly|直接保存)$/u.test(n.text || n.desc),
   'Save Directly button',
-  screen
+  screen,
+  6,
+  0.56
 )
 
 console.log(`Tapping visible Save Directly at (${saveBtn.cx}, ${saveBtn.cy})`)
