@@ -38,6 +38,10 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) {
     return
   }
+  // Do not cache installer binaries or their metadata in the PWA CacheStorage.
+  if (url.pathname.includes('/downloads/')) {
+    return
+  }
   if (url.pathname.startsWith('/_proxy')) {
     return
   }
