@@ -16,11 +16,11 @@
 
 ## 30 秒看懂定位与运行形态
 
-| 使用方式                    | 推荐入口                                                                                                                                             | 内置本地 `/_proxy`          | 适用场景                                          |
-| :-------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------- | :------------------------------------------------ |
-| **零安装网页 / PWA**        | [打开在线版](https://kamanager2012.github.io/deepseek-chat-byok/)                                                                                    | 无（浏览器直连）            | 支持跨域的官方/三方接口、快速预览导出包           |
-| **Android 独立 APK**        | 在 [Latest Release](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest) 下载 **`*-android-release.apk`**                            | 内置 `127.0.0.1:18787` 桥接 | 手机高频聊天/写作、直连任意兼容 API、系统文件导出 |
-| **电脑便携版 / 本地桌面窗** | 下载 **`*-portable.zip`**（[Latest Release](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest)）或运行 `./scripts/start-desktop.*` | 内置 Node 22 `/_proxy`      | 电脑独立应用窗口、无 CORS 网关、本地 Ollama       |
+| 使用方式                    | 推荐入口                                                                                                                                                                                                  | 内置本地 `/_proxy`          | 适用场景                                          |
+| :-------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------- | :------------------------------------------------ |
+| **零安装网页 / PWA**        | [打开在线版](https://kamanager2012.github.io/deepseek-chat-byok/)                                                                                                                                         | 无（浏览器直连）            | 支持跨域的官方/三方接口、快速预览导出包           |
+| **Android 独立 APK**        | 在 [Latest Release](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest) 下载 **`*-android-release.apk`**                                                                                 | 内置 `127.0.0.1:18787` 桥接 | 手机高频聊天/写作、直连任意兼容 API、系统文件导出 |
+| **电脑便携版 / 本地桌面窗** | 下载 **`*-portable.zip`**（[新手直达入口](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html)），解压双击 `Start-Windows.bat` / `Start-macOS.command` 或运行 `./scripts/start-desktop.*` | 内置 Node 22 `/_proxy`      | 电脑独立应用窗口、无 CORS 网关、本地 Ollama       |
 
 1. **老对话防卡死迁移**：无需把几百 MB 的官方导出包一次性塞进内存。直接读取 `chat_session_index.json` 目录索引秒开列表，支持搜索、勾选并**合并导入**到现有会话（不覆盖已有记录与记忆卡），默认剔除膨胀的旧联网搜索网页碎片。
 2. **多服务商自带密钥（BYOK）**：支持保存并切换 DeepSeek 官方（Anthropic + 搜索/文件/语音）、DeepSeek OpenAI、OpenCode Go / Zen、Anthropic Messages、硅基流动 SiliconFlow、OpenRouter、本地 Ollama 与任意自定义端点；所有 Key 仅存本机 `localStorage`，备份包永不携带。
@@ -70,7 +70,7 @@ pnpm start
 
 使用过程中遇到问题或有体验建议，欢迎通过 [脱敏反馈表单](https://github.com/kamanager2012/deepseek-chat-byok/issues/new?template=pilot-feedback.yml)（或 [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues)）提交，建议附带：
 
-1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android Release APK `v0.3.1`）
+1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android Release APK `v0.3.2`）
 2. 所选接口预设与协议（DeepSeek 官方 / OpenCode Go / SiliconFlow / Ollama / 自定义等）
 3. `deepseek_data-*.zip` 导入体积、会话数量与选择性合并情况
 4. 复现步骤或脱敏后的报错信息（**严禁上传 API Key 或个人原始聊天导出包**）

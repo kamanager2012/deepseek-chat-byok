@@ -194,6 +194,9 @@ export const zh = {
   providerModelLabel: '模型 ID',
   providerApiKeyLabel: 'API Key（仅存本机）',
   providerApiKeyOptional: '可选（本地 Ollama 可留空）',
+  providerGetApiKeyLink: '获取该服务商 API Key ↗',
+  providerBeginnerSteps:
+    '新手三步：① 选择服务商预设 → ② 粘贴个人 API Key → ③ 点击「测试并保存」即可续聊',
   providerCorsProxyToggle: '通过本地转发代理请求（解决第三方接口浏览器 CORS 跨域报错）',
   providerCorsProxyUrlLabel: '本地转发地址',
   providerSaveVerify: '测试并保存',

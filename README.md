@@ -16,11 +16,11 @@ A local-first, MIT-licensed **Bring-Your-Own-Key (BYOK)** chat client, creative 
 
 ## Why DeepSeek Chat BYOK (30-Second Overview)
 
-| How you want to use it                | Recommended Entry                                                                                                                           | Local CORS `/_proxy`              | Best For                                                      |
-| :------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------ | :-------------------------------- | :------------------------------------------------------------ |
-| **Zero-Install Browser / Mobile PWA** | [Open Live Web App](https://kamanager2012.github.io/deepseek-chat-byok/)                                                                    | None (direct browser fetch)       | CORS-enabled APIs & local archive inspection                  |
-| **Android Native App**                | **`*-android-release.apk`** from [Latest Release](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest)                      | Built-in `127.0.0.1:18787` bridge | Phone daily driver, any BYOK endpoint, SAF file export        |
-| **Portable Desktop / Local Server**   | **`*-portable.zip`** ([Latest Release](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest)) or `./scripts/start-desktop.*` | Built-in Node 22 `/_proxy`        | Desktop windowed mode, strict third-party APIs & local Ollama |
+| How you want to use it                | Recommended Entry                                                                                                                                                                                                            | Local CORS `/_proxy`              | Best For                                                      |
+| :------------------------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------- | :------------------------------------------------------------ |
+| **Zero-Install Browser / Mobile PWA** | [Open Live Web App](https://kamanager2012.github.io/deepseek-chat-byok/)                                                                                                                                                     | None (direct browser fetch)       | CORS-enabled APIs & local archive inspection                  |
+| **Android Native App**                | **`*-android-release.apk`** from [Latest Release](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest)                                                                                                       | Built-in `127.0.0.1:18787` bridge | Phone daily driver, any BYOK endpoint, SAF file export        |
+| **Portable Desktop / Local Server**   | **`*-portable.zip`** ([Download & Setup Guide](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html)): unzip and double-click `Start-Windows.bat` / `Start-macOS.command`, or run `./scripts/start-desktop.*` | Built-in Node 22 `/_proxy`        | Desktop windowed mode, strict third-party APIs & local Ollama |
 
 1. **Migrate Locked/Older Chats in Seconds**: Export `deepseek_data-*.zip` from DeepSeek Settings -> Data Export, drop it into **Settings -> Data -> Import Chat History**, preview the archive index immediately, and **merge** selected conversations without wiping your existing sessions or Memory Cards.
 2. **Switch Providers Freely (BYOK)**: Keep multiple profiles in `localStorage` across DeepSeek Official (Anthropic + native search/files/TTS), DeepSeek OpenAI, OpenCode Go / Zen, Anthropic Messages, SiliconFlow, OpenRouter, Local Ollama, or custom endpoints.
@@ -70,7 +70,7 @@ pnpm start
 
 Found a bug or UX bottleneck? Use the [De-identified Feedback Form](https://github.com/kamanager2012/deepseek-chat-byok/issues/new?template=pilot-feedback.yml) (or open a [GitHub Issue](https://github.com/kamanager2012/deepseek-chat-byok/issues)) with:
 
-1. Platform & release version (`GitHub Pages`, `Portable Desktop`, or `Android Release APK v0.3.1`)
+1. Platform & release version (`GitHub Pages`, `Portable Desktop`, or `Android Release APK v0.3.2`)
 2. Provider preset / protocol (`deepseek-anthropic`, `openai`, `anthropic`, or `ollama`)
 3. Whether archive merge (`deepseek_data-*.zip`) succeeded and approximate session count / ZIP size
 4. Reproduction steps or sanitized console/UI error messages (**never attach API keys or personal chat ZIPs**)

@@ -463,15 +463,18 @@ export const commitHistoryChange = async (
     if (mode === 'replace') {
       clearAllDrafts()
     }
+    const sorted = sortSessions(summaries)
     const prevActive = get().activeId
     const nextActive =
-      mode === 'merge' && prevActive && summaries.some((s) => s.id === prevActive)
+      mode === 'merge' && prevActive && sorted.some((s) => s.id === prevActive)
         ? prevActive
-        : null
+        : commitResult.importedCount > 0
+          ? (sorted[0]?.id ?? null)
+          : null
     set({
       ready: true,
       initError: false,
-      sessions: sortSessions(summaries),
+      sessions: sorted,
       sessionCache: {},
       sessionLoadErrors: {},
       sessionSaveErrors: {},

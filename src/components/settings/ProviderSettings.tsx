@@ -223,6 +223,7 @@ export const ProviderSettings = () => {
     <div>
       <div className={styles.section}>
         <div className={styles.heading}>{t('providerLabel')}</div>
+        <div className={styles.beginnerBanner}>{t('providerBeginnerSteps')}</div>
         <div className={styles.profileBar}>
           <Select
             ariaLabel={t('providerLabel')}
@@ -318,9 +319,21 @@ export const ProviderSettings = () => {
           </label>
 
           <div className={`${styles.field} ${styles.fieldFull}`}>
-            <label htmlFor={apiKeyId} className={styles.fieldLabel}>
-              {t('providerApiKeyLabel')}
-            </label>
+            <div className={styles.keyLabelRow}>
+              <label htmlFor={apiKeyId} className={styles.fieldLabel}>
+                {t('providerApiKeyLabel')}
+              </label>
+              {presetMeta.keyUrl ? (
+                <a
+                  href={presetMeta.keyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.keyLink}
+                >
+                  {t('providerGetApiKeyLink')}
+                </a>
+              ) : null}
+            </div>
             <div className={styles.keyRow}>
               <input
                 id={apiKeyId}
