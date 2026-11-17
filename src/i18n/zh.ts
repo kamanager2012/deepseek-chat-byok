@@ -234,4 +234,9 @@ export const zh = {
   providerHideApiKey: '隐藏',
   providerNeedKeyTag: '未填 Key',
   sessionMemorySuggestHint: '已有早期对话超出窗口，点击压缩为长期记忆卡',
+  crashRecoveryTitle: '界面遇到了意外错误',
+  crashRecoveryDesc: '本地聊天数据与 API 配置未丢失。可先点击重新加载，或直接导出紧急 ZIP 备份。',
+  crashRecoveryReload: '重新加载页面',
+  crashRecoveryExport: '导出紧急备份 ZIP',
+  crashRecoveryExported: '已导出 {count} 条本地会话至紧急备份 ZIP',
 } as const

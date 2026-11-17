@@ -1,4 +1,5 @@
 import { translate, type TranslationMessage } from '../../i18n/index.js'
+import { getAndroidBridgeToken, isLocalProxyRequestUrl } from './androidBridge.js'
 import {
   OpenAIStreamError,
   buildOpenAIMessages,
@@ -65,35 +66,6 @@ export const redactApiSecrets = (raw: string): string =>
   raw
     .replace(/(Bearer\s+)[A-Za-z0-9._\-+=/:]{8,}/giu, '$1[REDACTED]')
     .replace(/\b(sk-[A-Za-z0-9_-]{8,})\b/gu, '[REDACTED]')
-
-const getAndroidBridgeToken = (): string | null => {
-  if (typeof window === 'undefined') {
-    return null
-  }
-  const bridge = (window as Window & { AndroidExportBridge?: { getBridgeToken?: () => string } })
-    .AndroidExportBridge
-  try {
-    const token = bridge?.getBridgeToken?.()
-    return typeof token === 'string' && token.length > 0 ? token : null
-  } catch {
-    return null
-  }
-}
-
-const isLocalProxyRequestUrl = (url: string): boolean => {
-  if (url === '/_proxy' || url.startsWith('/_proxy?')) {
-    return true
-  }
-  if (
-    typeof window !== 'undefined' &&
-    window.location.origin &&
-    window.location.origin !== 'null'
-  ) {
-    const prefix = `${window.location.origin}/_proxy`
-    return url === prefix || url.startsWith(`${prefix}?`)
-  }
-  return false
-}
 
 const readErrorResponse = async (
   response: Response,

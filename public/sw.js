@@ -1,4 +1,4 @@
-const CACHE_NAME = 'deepseek-chat-byok-v1'
+const CACHE_NAME = 'deepseek-chat-byok-__APP_VERSION__'
 const APP_SHELL_URLS = [
   './',
   './index.html',

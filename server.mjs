@@ -384,6 +384,12 @@ const handleProxy = async (req, res, urlObj, options) => {
     return
   }
 
+  if ((method === 'HEAD' || method === 'GET') && urlObj.searchParams.get('probe') === '1') {
+    res.writeHead(204, { ...SECURITY_HEADERS, 'Content-Length': '0' })
+    res.end()
+    return
+  }
+
   const rawTarget = urlObj.searchParams.get('url')
   if (!rawTarget) {
     res.writeHead(400, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' })

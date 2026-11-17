@@ -244,4 +244,10 @@ export const en = {
   providerHideApiKey: 'Hide',
   providerNeedKeyTag: 'Key needed',
   sessionMemorySuggestHint: 'Earlier turns were trimmed; click to distill a Memory Card',
+  crashRecoveryTitle: 'Something went wrong in the UI',
+  crashRecoveryDesc:
+    'Your local IndexedDB chats and API profiles remain safe on this device. Reload or export an emergency ZIP backup.',
+  crashRecoveryReload: 'Reload App',
+  crashRecoveryExport: 'Export Emergency Backup ZIP',
+  crashRecoveryExported: 'Exported {count} local chat(s) to emergency ZIP',
 } satisfies Record<keyof typeof zh, string>

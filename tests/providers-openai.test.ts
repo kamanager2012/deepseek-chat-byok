@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { ErrorBoundary } from '../src/components/base/ErrorBoundary.js'
 import { redactApiSecrets, request, streamProviderMessage } from '../src/services/api/client.js'
 import {
   buildOpenAIMessages,
@@ -325,6 +326,48 @@ describe('OpenAI protocol adapter', () => {
           url: '/_proxy?url=https%3A%2F%2Fapi.example.com%2Fv1%2Fmodels',
           token: 'bridge-secret-xyz',
         },
+        { url: 'https://api.example.com/v1/models', token: null },
+      ])
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('routes /_proxy via AndroidExportBridge.getProxyUrl() fallback and redacts ErrorBoundary errors', async () => {
+    expect(
+      ErrorBoundary.getDerivedStateFromError(
+        new Error('Crash with Bearer sk-secret9988776655 in state')
+      )
+    ).toEqual({
+      errorMessage: 'Crash with Bearer [REDACTED] in state',
+    })
+
+    const seenHeaders: Array<{ url: string; token: string | null }> = []
+    vi.stubGlobal('window', {
+      location: { origin: 'http://127.0.0.1:18787' },
+      AndroidExportBridge: {
+        getBridgeToken: () => 'fallback-port-secret',
+        getProxyUrl: () => 'http://127.0.0.1:18788/_proxy',
+      },
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const hdrs = new Headers(init?.headers)
+        seenHeaders.push({ url, token: hdrs.get('X-DS-Bridge-Token') })
+        return new Response('{"ok":true}', { status: 200 })
+      })
+    )
+
+    try {
+      const target = resolveFetchTarget('https://api.example.com/v1/models', true, '/_proxy')
+      expect(target).toBe(
+        'http://127.0.0.1:18788/_proxy?url=https%3A%2F%2Fapi.example.com%2Fv1%2Fmodels'
+      )
+      await request(target, { method: 'GET' })
+      await request('https://api.example.com/v1/models', { method: 'GET' })
+      expect(seenHeaders).toEqual([
+        { url: target, token: 'fallback-port-secret' },
         { url: 'https://api.example.com/v1/models', token: null },
       ])
     } finally {

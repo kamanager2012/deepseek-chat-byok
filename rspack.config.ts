@@ -93,6 +93,13 @@ export const createConfig = ({
           from: path.resolve(root, 'public/sw.js'),
           to: 'sw.js',
           toType: 'file',
+          transform: (content) =>
+            Buffer.from(
+              Buffer.isBuffer(content)
+                ? content.toString('utf8').replace('__APP_VERSION__', version)
+                : String(content).replace('__APP_VERSION__', version),
+              'utf8'
+            ),
         },
         {
           from: path.resolve(root, 'public/icon.svg'),

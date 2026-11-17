@@ -5,6 +5,7 @@ import {
   isProviderConfigured,
   type ProviderConfig,
 } from './api/providers.js'
+import { getDefaultCorsProxyUrl } from './api/androidBridge.js'
 import { normalizeLocation, type UserLocation } from './location.js'
 
 export type Locale = 'zh-CN' | 'en-US'
@@ -190,7 +191,7 @@ export const useSettings = create<Settings>(() => ({
   apiKey: initialActiveProvider.apiKey.trim() || null,
   providers: initProviderState.providers,
   activeProviderId: initProviderState.activeProviderId,
-  corsProxyUrl: read(KEYS.corsProxyUrl) ?? '/_proxy',
+  corsProxyUrl: read(KEYS.corsProxyUrl) ?? getDefaultCorsProxyUrl(),
   contextMaxRounds: readNonNegInt(KEYS.contextMaxRounds, 20),
   contextMaxTokens: readNonNegInt(KEYS.contextMaxTokens, 24000),
   systemPrompt: read(KEYS.systemPrompt) ?? DEFAULT_SYSTEM_PROMPT,

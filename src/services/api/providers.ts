@@ -1,3 +1,5 @@
+import { getAndroidBridgeToken, getDefaultCorsProxyUrl } from './androidBridge.js'
+
 export type ProviderProtocol = 'deepseek-anthropic' | 'anthropic' | 'openai'
 
 export type ProviderPresetId =
@@ -255,8 +257,14 @@ export const resolveFetchTarget = (
   useCorsProxy: boolean,
   corsProxyUrl: string
 ): string => {
-  const proxy = corsProxyUrl.trim()
-  if (!useCorsProxy || !proxy) {
+  const rawProxy = corsProxyUrl.trim()
+  if (!useCorsProxy) {
+    return targetUrl
+  }
+  const bridgeDefault = getDefaultCorsProxyUrl()
+  const proxy =
+    (!rawProxy || rawProxy === '/_proxy') && bridgeDefault !== '/_proxy' ? bridgeDefault : rawProxy
+  if (!proxy) {
     return targetUrl
   }
   if (proxy.includes('{url}')) {
@@ -279,7 +287,7 @@ export const shouldProbeLocalProxy = (protocol: string, hostname: string): boole
 
 let cachedLocalProxyProbe: Promise<boolean> | null = null
 
-/** 探测当前宿主（server.mjs 或 Android LocalBridgeServer）是否内置同源 /_proxy 转发服务 */
+/** 探测当前宿主（server.mjs 或 Android LocalBridgeServer）是否内置 /_proxy 转发服务 */
 export const probeLocalProxy = (): Promise<boolean> => {
   if (typeof window === 'undefined' || typeof fetch !== 'function') {
     return Promise.resolve(false)
@@ -288,8 +296,13 @@ export const probeLocalProxy = (): Promise<boolean> => {
   if (!shouldProbeLocalProxy(protocol, hostname)) {
     return Promise.resolve(false)
   }
-  // dev-server 没有 /_proxy；仅有 server.mjs / Android LocalBridge 会对无 ?url= 的 HEAD /_proxy 返回 400
-  return (cachedLocalProxyProbe ??= fetch('/_proxy', { method: 'HEAD' })
-    .then((res) => res.status === 400)
+  const proxyBase = getDefaultCorsProxyUrl()
+  const probeUrl = proxyBase.includes('?') ? `${proxyBase}&probe=1` : `${proxyBase}?probe=1`
+  const token = getAndroidBridgeToken()
+  return (cachedLocalProxyProbe ??= fetch(probeUrl, {
+    method: 'HEAD',
+    ...(token ? { headers: { 'X-DS-Bridge-Token': token } } : {}),
+  })
+    .then((res) => res.status === 204 || res.status === 400)
     .catch(() => false))
 }

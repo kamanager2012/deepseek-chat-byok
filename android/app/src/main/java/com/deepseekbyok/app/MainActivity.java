@@ -10,24 +10,31 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Base64;
+import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
 import android.webkit.JavascriptInterface;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,8 +46,11 @@ public final class MainActivity extends Activity {
   private static final int REQ_CREATE_DOCUMENT = 1002;
   private static final int MAX_EXPORT_SESSIONS = 4;
   private static final long MAX_EXPORT_BYTES = 256L * 1024 * 1024;
+  private static final String CANONICAL_ORIGIN =
+      "http://127.0.0.1:" + LocalBridgeServer.CANONICAL_WEB_PORT;
 
   private LocalBridgeServer bridgeServer;
+  private int bridgePort;
   private String bridgeToken;
   private WebView webView;
   private ValueCallback<Uri[]> filePathCallback;
@@ -81,7 +91,6 @@ public final class MainActivity extends Activity {
     return clean.isEmpty() ? "export.dat" : clean;
   }
 
-  @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -89,20 +98,26 @@ public final class MainActivity extends Activity {
     AssetManager assets = getAssets();
     bridgeToken = generateBridgeToken();
     bridgeServer = new LocalBridgeServer(rel -> assets.open("web/" + rel), bridgeToken);
-    int port;
+    bridgeServer.setExpectedOriginPort(LocalBridgeServer.CANONICAL_WEB_PORT);
     try {
-      port = bridgeServer.start();
+      bridgePort = bridgeServer.start(LocalBridgeServer.CANONICAL_WEB_PORT);
     } catch (IOException err) {
       Toast.makeText(this, "Local bridge failed: " + err.getMessage(), Toast.LENGTH_LONG).show();
       finish();
       return;
     }
 
-    webView = new WebView(this);
-    setContentView(webView);
+    attachWebView();
+  }
+
+  @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
+  private void attachWebView() {
+    WebView view = new WebView(this);
+    this.webView = view;
+    setContentView(view);
 
     if (Build.VERSION.SDK_INT >= 30) {
-      webView.setOnApplyWindowInsetsListener(
+      view.setOnApplyWindowInsetsListener(
           (v, windowInsets) -> {
             Insets insets =
                 windowInsets.getInsets(
@@ -113,7 +128,7 @@ public final class MainActivity extends Activity {
     }
     syncThemeChrome(getResources().getConfiguration());
 
-    WebSettings settings = webView.getSettings();
+    WebSettings settings = view.getSettings();
     settings.setJavaScriptEnabled(true);
     settings.setDomStorageEnabled(true);
     settings.setDatabaseEnabled(true);
@@ -121,17 +136,47 @@ public final class MainActivity extends Activity {
     settings.setAllowContentAccess(true);
     settings.setMediaPlaybackRequiresUserGesture(false);
 
-    webView.addJavascriptInterface(new ExportBridge(), "AndroidExportBridge");
+    view.addJavascriptInterface(new ExportBridge(), "AndroidExportBridge");
 
-    webView.setWebViewClient(
+    view.setWebViewClient(
         new WebViewClient() {
           @Override
-          public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+          public WebResourceResponse shouldInterceptRequest(
+              WebView targetView, WebResourceRequest request) {
             Uri uri = request.getUrl();
             String scheme =
                 uri.getScheme() != null ? uri.getScheme().toLowerCase(Locale.ROOT) : "";
             String host = uri.getHost() != null ? uri.getHost().toLowerCase(Locale.ROOT) : "";
-            if ("http".equals(scheme) && "127.0.0.1".equals(host) && uri.getPort() == port) {
+            if (!"http".equals(scheme)
+                || !"127.0.0.1".equals(host)
+                || uri.getPort() != LocalBridgeServer.CANONICAL_WEB_PORT) {
+              return null;
+            }
+            String reqMethod =
+                request.getMethod() != null ? request.getMethod().toUpperCase(Locale.ROOT) : "GET";
+            String path = uri.getPath() != null ? uri.getPath() : "/";
+            if ("/_proxy".equals(path)) {
+              return null;
+            }
+            if (!"GET".equals(reqMethod) && !"HEAD".equals(reqMethod)) {
+              return null;
+            }
+            LocalBridgeServer server = bridgeServer;
+            if (server == null) {
+              return null;
+            }
+            return toWebResourceResponse(server.resolveStaticAsset(path), "HEAD".equals(reqMethod));
+          }
+
+          @Override
+          public boolean shouldOverrideUrlLoading(WebView targetView, WebResourceRequest request) {
+            Uri uri = request.getUrl();
+            String scheme =
+                uri.getScheme() != null ? uri.getScheme().toLowerCase(Locale.ROOT) : "";
+            String host = uri.getHost() != null ? uri.getHost().toLowerCase(Locale.ROOT) : "";
+            if ("http".equals(scheme)
+                && "127.0.0.1".equals(host)
+                && uri.getPort() == LocalBridgeServer.CANONICAL_WEB_PORT) {
               return false;
             }
             if ("https".equals(scheme) || "http".equals(scheme) || "mailto".equals(scheme)) {
@@ -144,17 +189,56 @@ public final class MainActivity extends Activity {
           }
 
           @Override
-          public void onPageFinished(WebView view, String url) {
-            super.onPageFinished(view, url);
-            injectBlobExportHook(view);
+          public void onPageFinished(WebView targetView, String url) {
+            super.onPageFinished(targetView, url);
+            injectBlobExportHook(targetView);
+          }
+
+          @Override
+          public void onReceivedError(
+              WebView targetView, WebResourceRequest request, WebResourceError error) {
+            if (!request.isForMainFrame()) {
+              return;
+            }
+            String html =
+                "<!doctype html><html><meta charset='utf-8'><meta name='viewport'"
+                    + " content='width=device-width,initial-scale=1'><body"
+                    + " style='font-family:sans-serif;padding:32px;text-align:center'><h2>Page"
+                    + " load interrupted</h2><p>Local workspace failed to initialize cleanly.</p>"
+                    + "<button onclick=\"location.replace('"
+                    + CANONICAL_ORIGIN
+                    + "/')\" style='padding:10px"
+                    + " 18px;font-size:16px'>Reload</button></body></html>";
+            targetView.loadDataWithBaseURL(
+                CANONICAL_ORIGIN + "/", html, "text/html", "utf-8", null);
+          }
+
+          @Override
+          public boolean onRenderProcessGone(
+              WebView targetView, RenderProcessGoneDetail detail) {
+            if (targetView != webView) {
+              return false;
+            }
+            if (targetView.getParent() instanceof ViewGroup) {
+              ((ViewGroup) targetView.getParent()).removeView(targetView);
+            }
+            targetView.destroy();
+            webView = null;
+            Toast.makeText(
+                    MainActivity.this,
+                    "Reloading workspace after memory reclaim",
+                    Toast.LENGTH_SHORT)
+                .show();
+            attachWebView();
+            return true;
           }
         });
 
-    webView.setWebChromeClient(
+    view.setWebChromeClient(
         new WebChromeClient() {
           @Override
           public boolean onShowFileChooser(
-              WebView view,
+              WebView targetView,
               ValueCallback<Uri[]> fileCallback,
               FileChooserParams fileChooserParams) {
             if (filePathCallback != null) {
@@ -178,7 +262,32 @@ public final class MainActivity extends Activity {
           }
         });
 
-    webView.loadUrl("http://127.0.0.1:" + port + "/");
+    view.loadUrl(CANONICAL_ORIGIN + "/");
+  }
+
+  private static WebResourceResponse toWebResourceResponse(
+      LocalBridgeServer.StaticAssetResult asset, boolean headOnly) {
+    String baseMime = asset.mimeType;
+    String encoding = null;
+    int semi = baseMime.indexOf(';');
+    if (semi >= 0) {
+      String params = baseMime.substring(semi + 1).toLowerCase(Locale.ROOT);
+      baseMime = baseMime.substring(0, semi).trim();
+      if (params.contains("utf-8")) {
+        encoding = "utf-8";
+      }
+    }
+    Map<String, String> headers = new HashMap<>();
+    headers.put("X-Content-Type-Options", "nosniff");
+    headers.put("X-Frame-Options", "SAMEORIGIN");
+    headers.put("Referrer-Policy", "no-referrer");
+    if (asset.noCache) {
+      headers.put("Cache-Control", "no-cache");
+    }
+    String reason = asset.status == 200 ? "OK" : asset.status == 403 ? "Forbidden" : "Not Found";
+    byte[] payload = headOnly ? new byte[0] : asset.body;
+    return new WebResourceResponse(
+        baseMime, encoding, asset.status, reason, headers, new ByteArrayInputStream(payload));
   }
 
   private void syncThemeChrome(Configuration config) {
@@ -221,15 +330,16 @@ public final class MainActivity extends Activity {
             + "fetch(this.href).then(r=>r.blob()).then(async (b)=>{"
             + "const mime=b.type||'application/octet-stream';"
             + "const token=window.AndroidExportBridge.beginExport(filename,mime);"
-            + "if(!token)return;"
+            + "if(!token){window.AndroidExportBridge.notifyExportError('Too many active exports');return;}"
             + "try{"
             + "for(let off=0;off<b.size;off+=CHUNK){"
             + "const b64=await toBase64(b.slice(off,Math.min(b.size,off+CHUNK)));"
-            + "if(!window.AndroidExportBridge.appendExportChunk(token,b64))throw new Error('chunk failed');"
+            + "if(!window.AndroidExportBridge.appendExportChunk(token,b64))throw new Error('chunk failed or limit reached');"
             + "}"
             + "window.AndroidExportBridge.finishExport(token);"
-            + "}catch(e){window.AndroidExportBridge.abortExport(token);}"
-            + "}).catch(()=>{});return;}"
+            + "}catch(e){window.AndroidExportBridge.abortExport(token);"
+            + "window.AndroidExportBridge.notifyExportError(String(e&&e.message||e));}"
+            + "}).catch((e)=>{window.AndroidExportBridge.notifyExportError(String(e&&e.message||e));});return;}"
             + "return origClick.apply(this,arguments);"
             + "};})();";
     view.evaluateJavascript(js, null);
@@ -347,6 +457,21 @@ public final class MainActivity extends Activity {
     @JavascriptInterface
     public String getBridgeToken() {
       return bridgeToken != null ? bridgeToken : "";
+    }
+
+    @JavascriptInterface
+    public String getProxyUrl() {
+      return "http://127.0.0.1:" + bridgePort + "/_proxy";
+    }
+
+    @JavascriptInterface
+    public void notifyExportError(String message) {
+      String clean =
+          message != null && !message.trim().isEmpty() ? message.trim() : "Export failed";
+      runOnUiThread(
+          () ->
+              Toast.makeText(MainActivity.this, "Export error: " + clean, Toast.LENGTH_LONG)
+                  .show());
     }
 
     @JavascriptInterface

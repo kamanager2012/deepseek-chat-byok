@@ -3,6 +3,30 @@ $ErrorActionPreference = 'Stop'
 $RootDir = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $RootDir
 
+function Pause-OnFailure {
+  param([string]$Message)
+  Write-Host "`n[deepseek-chat-byok] ERROR: $Message" -ForegroundColor Red
+  Write-Host "Please install Node.js 22+ LTS from https://nodejs.org/ or use the Android APK / Web PWA."
+  if ($Host.Name -eq 'ConsoleHost') {
+    Read-Host "Press Enter to close" | Out-Null
+  }
+  exit 1
+}
+
+$NodeCmd = Get-Command node -ErrorAction SilentlyContinue
+if (-not $NodeCmd) {
+  Pause-OnFailure "Node.js 22+ was not found in PATH."
+}
+$NodeMajor = 0
+try {
+  $NodeMajor = [int]((node -p "process.versions.node.split('.')[0]").Trim())
+} catch {
+  $NodeMajor = 0
+}
+if ($NodeMajor -lt 22) {
+  Pause-OnFailure "Detected Node.js v$NodeMajor, but Node.js 22+ is required."
+}
+
 $HostAddr = if ($env:HOST) { $env:HOST } else { '127.0.0.1' }
 $Port = if ($env:PORT) { $env:PORT } else { '8787' }
 $Url = "http://${HostAddr}:${Port}"

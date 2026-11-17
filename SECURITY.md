@@ -14,21 +14,24 @@ DeepSeek Chat BYOK is a local-first, MIT-licensed client. User API keys remain s
 
 Both local forwarding layers (`server.mjs` for Node/Desktop/LAN and `LocalBridgeServer.java` for Android) enforce:
 
-- **Method & Header Filtering**: Allows only `GET`, `POST`, `DELETE`, `HEAD`; forwards only `authorization`, `x-api-key`, `anthropic-beta`, `anthropic-version`, `content-type`, and `accept`; strips `Cookie`, `Host`, `Origin`, `Referer`, `Set-Cookie`, and proxy headers.
-- **CSRF & DNS-Rebinding Defense**:
+- **Method & Header Filtering**: Allows only `GET`, `POST`, `DELETE`, `HEAD` (plus canonical loopback CORS `OPTIONS` preflight when Android falls back from port `18787`); forwards only `authorization`, `x-api-key`, `anthropic-beta`, `anthropic-version`, `content-type`, and `accept`; strips `Cookie`, `Host`, `Origin`, `Referer`, `Set-Cookie`, and proxy headers.
+- **CSRF, Canonical Origin & DNS-Rebinding Defense**:
   - Rejects `Origin: null`, cross-origin `Origin`/`Referer`, and cross-site `Sec-Fetch-Site`.
   - Enforces loopback-only `Host` (`127.0.0.1`, `localhost`, `[::1]`) when bound to loopback (Node `restrictLoopbackHost` and Android `LocalBridgeServer`).
-  - Android `MainActivity` generates a 256-bit `SecureRandom` per-launch `bridgeToken` exposed via `AndroidExportBridge.getBridgeToken()`. `client.ts` attaches `X-DS-Bridge-Token` exclusively on same-origin `/_proxy` calls (never to remote API URLs and never forwarded upstream), preventing unrelated Android apps from invoking `127.0.0.1:18787/_proxy?url=...`.
-- **SSRF & Payload Limits**:
+  - Android `MainActivity` locks the WebView origin to canonical `http://127.0.0.1:18787` by serving bundled assets in-process via `shouldInterceptRequest`, preventing origin drift across port conflicts while keeping `127.0.0.1:18787` IndexedDB/`localStorage` continuity across upgrades. If port `18787` is occupied, `/_proxy` seamlessly binds a fallback loopback port exposed via `AndroidExportBridge.getProxyUrl()`.
+  - Android `MainActivity` generates a 256-bit `SecureRandom` per-launch `bridgeToken` exposed via `AndroidExportBridge.getBridgeToken()`. `client.ts` attaches `X-DS-Bridge-Token` exclusively on local `/_proxy` calls (never to remote API URLs and never forwarded upstream), preventing unrelated Android apps from invoking `/_proxy?url=...`.
+- **SSRF, DNS Pinning & Payload Limits**:
+  - Both `server.mjs` and Android `LocalBridgeServer` pin the validated DNS-resolved IP address directly onto the upstream TCP/TLS socket (`SNIHostName` + strict `HTTPS` endpoint identification on Java `SSLSocket`), eliminating DNS-rebinding TOCTOU windows.
   - Remote targets require `https://` without embedded URL credentials (`user:pass@`).
   - Blocks loopback, RFC 1918, CGNAT (`100.64.0.0/10`), link-local / cloud metadata (`169.254.0.0/16`, `fe80::/10`), ULA (`fc00::/7`), NAT64 (`64:ff9b::/96`), deprecated site-local (`fec0::/10`), and multicast ranges. Loopback targets (`127.0.0.1`/`localhost`) are permitted only from loopback clients for local Ollama usage, with self-proxy recursion blocked.
   - Blocks `3xx` upstream redirects (`502`).
-  - Enforces `25 MB` request body cap (`413`).
-- **WebView & Markdown Isolation**:
+  - Enforces `25 MB` request body cap (`413`) and a bounded proxy worker pool (`MAX_WORKERS = 32`, `503` on saturation) on Android.
+- **WebView, Crash & Markdown Isolation**:
   - Markdown raw HTML renders as escaped text nodes; links allow only `http:`, `https:`, and `mailto:`; Mermaid runs with `securityLevel: 'strict'`; KaTeX keeps `trust: false`.
-  - Android `MainActivity` sets `android:allowBackup="false"`, restricts cleartext HTTP in `network_security_config.xml` strictly to `127.0.0.1` and `localhost`, opens only `http:`/`https:`/`mailto:` links externally, and caps SAF chunked exports (`MAX_EXPORT_SESSIONS = 4`, `MAX_EXPORT_BYTES = 256 MiB`) with filename sanitization.
+  - React wraps `<App />` in a top-level `ErrorBoundary` allowing redacted diagnostics and direct IndexedDB emergency ZIP backup if a rendering error occurs.
+  - Android `MainActivity` sets `android:allowBackup="false"`, restricts cleartext HTTP in `network_security_config.xml` strictly to `127.0.0.1` and `localhost`, opens only `http:`/`https:`/`mailto:` links externally, recovers from WebView `onRenderProcessGone` / load errors cleanly, and caps SAF chunked exports (`MAX_EXPORT_SESSIONS = 4`, `MAX_EXPORT_BYTES = 256 MiB`) with error surface via `Toast`.
 - **Known Residual Risks**:
-  - `server.mjs` eliminates upstream DNS-rebinding TOCTOU via custom `lookup` inside `http(s).request`. Android `LocalBridgeServer` validates `InetAddress.getAllByName` prior to `HttpURLConnection.openConnection()`; pinning arbitrary IPs across TLS SNI on legacy Android APIs is left as documented residual risk.
+  - Provider API keys remain stored in client-side `localStorage` (`chat-demo:providers-v1`) on Web/PWA and inside Android WebView app storage rather than hardware enclave / Android Keystore (protected on Android by private app sandbox, `allowBackup="false"`, `allowFileAccess="false"`, and XSS/Markdown sanitization).
   - `--host 0.0.0.0` (`scripts/start-lan.sh`) exposes the server on LAN without TLS; terminate HTTPS via a reverse proxy (e.g., Caddy, Nginx, Tailscale Serve) outside trusted loopback environments.
 
 ## 3. Android Release Keystore Setup (Formal Upgrade Path)

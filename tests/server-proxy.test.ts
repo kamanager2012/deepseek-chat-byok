@@ -121,6 +121,11 @@ describe('server.mjs static & hardened SSRF/CSRF-safe /_proxy', () => {
       const homeHtml = await home.text()
       expect(homeHtml).toContain('DeepSeek Chat BYOK')
 
+      const probeNoContent = await fetch(`${srv.url}/_proxy?probe=1`, { method: 'HEAD' })
+      expect(probeNoContent.status).toBe(204)
+      const legacyProbeBad = await fetch(`${srv.url}/_proxy`, { method: 'HEAD' })
+      expect(legacyProbeBad.status).toBe(400)
+
       const staticAssetMatch = /src="(static\/js\/[^"]+\.js)"/u.exec(homeHtml)
       if (staticAssetMatch?.[1]) {
         const assetRes = await fetch(`${srv.url}/${staticAssetMatch[1]}`)
