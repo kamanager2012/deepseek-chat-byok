@@ -9,3 +9,14 @@ ensureKatex()
 setupTheme()
 
 createRoot(document.getElementById('root') as HTMLElement).render(<App />)
+
+if (
+  'serviceWorker' in navigator &&
+  (window.location.protocol === 'https:' ||
+    (window.location.protocol === 'http:' &&
+      ['127.0.0.1', 'localhost', '::1', '[::1]'].includes(window.location.hostname)))
+) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('./sw.js').catch(() => {})
+  })
+}

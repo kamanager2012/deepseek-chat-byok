@@ -4,7 +4,7 @@
  * 声明 deepseek_web_search / deepseek_read_url 或设置 safety_check.level 为 high 时进入扩展模式。
  */
 
-export type ChatModel = 'deepseek-flash' | 'deepseek-v4-pro'
+export type ChatModel = string
 
 // ---------- 响应：内容块 ----------
 
@@ -129,10 +129,15 @@ export type TextBlockParam = { type: 'text'; text: string }
  * 文件块：引用经 Files API 上传的文件，图片用 image、其余用 document；
  * 图片请求需带 anthropic-beta: files-api-2025-04-14；扩展模式不支持 document，返回 400。
  */
-export type FileBlockParam = {
-  type: 'image' | 'document'
-  source: { type: 'file'; file_id: string }
-}
+export type FileBlockParam =
+  | {
+      type: 'image' | 'document'
+      source: { type: 'file'; file_id: string }
+    }
+  | {
+      type: 'image'
+      source: { type: 'base64'; media_type: string; data: string }
+    }
 
 /** 接口接受的调用块；历史只回传 kind 为 read_link 的调用 */
 export type ServerToolUseBlockParam = Pick<
@@ -176,10 +181,11 @@ export type CreateMessageRequest = {
   model: ChatModel
   system: string
   messages: MessageParam[]
-  thinking: { type: 'enabled' | 'disabled' }
-  tools: (DeepseekWebSearchTool | DeepseekReadUrlTool)[]
-  safety_check: { level: 'high' }
+  thinking?: { type: 'enabled' | 'disabled' }
+  tools?: (DeepseekWebSearchTool | DeepseekReadUrlTool)[]
+  safety_check?: { level: 'high' }
   title?: { enabled: boolean }
+  max_tokens?: number
 }
 
 // ---------- 响应：流式事件 ----------

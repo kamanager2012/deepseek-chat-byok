@@ -21,7 +21,17 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
   const sessions = useChatStore((state) => state.sessions)
   const activeId = useChatStore((state) => state.activeId)
   const [now, setNow] = useState(Date.now)
-  const groups = useMemo(() => groupSessions(sessions, now, t), [sessions, now, t])
+  const [query, setQuery] = useState('')
+  const filteredSessions = useMemo(() => {
+    const clean = query.trim().toLowerCase()
+    if (!clean) {
+      return sessions
+    }
+    return sessions.filter((session) =>
+      (session.title || t('untitledChat')).toLowerCase().includes(clean)
+    )
+  }, [sessions, query, t])
+  const groups = useMemo(() => groupSessions(filteredSessions, now, t), [filteredSessions, now, t])
   const [deleting, setDeleting] = useState<SessionSummary | null>(null)
   const [deletePending, setDeletePending] = useState(false)
 
@@ -74,8 +84,21 @@ export const Sider = ({ mobile = false }: { mobile?: boolean }) => {
         </span>
         {t('newChat')}
       </button>
+      {sessions.length > 0 ? (
+        <input
+          type="search"
+          aria-label={t('siderSearchPlaceholder')}
+          placeholder={t('siderSearchPlaceholder')}
+          className={styles.searchInput}
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      ) : null}
       <div className={styles.listWrap}>
         <div className={styles.list}>
+          {groups.length === 0 && query.trim() ? (
+            <div className={styles.emptySearch}>{t('siderSearchEmpty')}</div>
+          ) : null}
           {groups.map((group) => (
             <div key={group.key} className={styles.section}>
               <div className={styles.sectionHeader}>{group.label}</div>

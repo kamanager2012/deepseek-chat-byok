@@ -1,0 +1,44 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.deepseekbyok.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.deepseekbyok.app'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.1'
+    }
+
+    signingConfigs {
+        release {
+            def ksPath = System.getenv('DS_KEYSTORE_PATH')
+            if (ksPath) {
+                storeFile file(ksPath)
+                storePassword System.getenv('DS_KEYSTORE_PASSWORD') ?: ''
+                keyAlias System.getenv('DS_KEY_ALIAS') ?: ''
+                keyPassword System.getenv('DS_KEY_PASSWORD') ?: ''
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (System.getenv('DS_KEYSTORE_PATH')) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

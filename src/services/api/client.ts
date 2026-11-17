@@ -1,20 +1,32 @@
 import { translate, type TranslationMessage } from '../../i18n/index.js'
+import {
+  OpenAIStreamError,
+  buildOpenAIMessages,
+  parseOpenAIStream,
+  type OpenAIInlineAttachment,
+} from './openai.js'
 import { readMessageEvent } from './parseEvent.js'
+import {
+  createDefaultProvider,
+  resolveFetchTarget,
+  resolveProviderEndpoints,
+  type ProviderConfig,
+} from './providers.js'
 import { readServerSentEvents } from './sse.js'
 import type {
   ApiErrorBody,
   CreateMessageRequest,
+  FileBlockParam,
   FileObject,
   FilePurpose,
   MessageStreamEvent,
 } from './types.js'
 
-/** 构建期 API 地址，默认 https://api.deepseek.com；本地开发支持开发服务器代理 */
+/** 构建期默认 API 地址，用于初始化默认 DeepSeek 官方配置；支持运行时切换 */
 export const API_ORIGIN = __API_ORIGIN__
-/** Anthropic 兼容接口的前缀 */
-const ANTHROPIC_BASE_URL = `${API_ORIGIN}/anthropic/v1`
 /** 引用 Files API 上传的图片、调用 Anthropic 兼容 Files API 时必须携带 */
 const FILES_BETA = 'files-api-2025-04-14'
+const DEFAULT_ANTHROPIC_VERSION = '2023-06-01'
 
 export type ApiErrorKind =
   /** 非 2xx 响应 */
@@ -82,40 +94,107 @@ export const request = async (url: string, init: RequestInit): Promise<Response>
   return response
 }
 
-const anthropicHeaders = (apiKey: string, beta: boolean): Record<string, string> => ({
-  // DeepSeek 兼容接口的鉴权方式，也可使用 Authorization: Bearer。
-  'x-api-key': apiKey,
-  // Files API 和通过 file_id 引用图片时必传；纯文本聊天无需携带。
+const anthropicHeaders = (
+  apiKey: string,
+  beta: boolean,
+  includeVersion: boolean
+): Record<string, string> => ({
+  ...(apiKey ? { 'x-api-key': apiKey } : {}),
+  ...(includeVersion ? { 'anthropic-version': DEFAULT_ANTHROPIC_VERSION } : {}),
   ...(beta ? { 'anthropic-beta': FILES_BETA } : {}),
 })
 
-/** 用 GET /models 校验 API Key（不产生费用） */
-export const verifyApiKey = async (apiKey: string, signal?: AbortSignal): Promise<void> => {
-  await request(`${API_ORIGIN}/models`, {
+const hasFile = (body: CreateMessageRequest) =>
+  body.messages.some(
+    (message) =>
+      typeof message.content !== 'string' &&
+      message.content.some(
+        (block) =>
+          (block.type === 'image' || block.type === 'document') && block.source.type === 'file'
+      )
+  )
+
+const parseModelList = (raw: unknown): string[] => {
+  if (typeof raw !== 'object' || raw === null || !('data' in raw) || !Array.isArray(raw.data)) {
+    return []
+  }
+  const models: string[] = []
+  for (const item of raw.data) {
+    if (
+      typeof item === 'object' &&
+      item !== null &&
+      'id' in item &&
+      typeof item.id === 'string' &&
+      item.id.trim()
+    ) {
+      models.push(item.id.trim())
+    }
+  }
+  return models
+}
+
+/** 用 GET /models 校验 Provider 配置（不产生费用），返回可用模型 ID 列表 */
+export const verifyProvider = async (
+  provider: ProviderConfig,
+  corsProxyUrl = '',
+  signal?: AbortSignal
+): Promise<string[]> => {
+  const endpoints = resolveProviderEndpoints(provider)
+  const target = resolveFetchTarget(endpoints.modelsUrl, provider.useCorsProxy, corsProxyUrl)
+  const key = provider.apiKey.trim()
+  const headers: Record<string, string> =
+    provider.protocol === 'anthropic'
+      ? {
+          ...(key ? { 'x-api-key': key } : {}),
+          'anthropic-version': DEFAULT_ANTHROPIC_VERSION,
+        }
+      : key
+        ? { Authorization: `Bearer ${key}` }
+        : {}
+  const response = await request(target, {
     method: 'GET',
-    headers: { Authorization: `Bearer ${apiKey}` },
+    headers,
     signal,
   })
+  const text = await response.text().catch(() => '')
+  try {
+    return parseModelList(JSON.parse(text))
+  } catch {
+    return []
+  }
+}
+
+/** 向后兼容旧 API Key 校验入口 */
+export const verifyApiKey = async (apiKey: string, signal?: AbortSignal): Promise<void> => {
+  const provider = { ...createDefaultProvider(apiKey), baseUrl: API_ORIGIN }
+  await verifyProvider(provider, '', signal)
 }
 
 /**
- * POST /anthropic/v1/files 上传附件（不设过期时间，会话里的历史附件一直可用）。
- * purpose 为 null 时不传该字段（图片）；purpose 必须排在 file 之前。
+ * POST /anthropic/v1/files 上传附件（仅 deepseek-anthropic 协议支持）。
  */
 export const uploadFile = async (
   apiKey: string,
   file: File,
   purpose: FilePurpose | null,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  provider?: ProviderConfig,
+  corsProxyUrl = ''
 ): Promise<FileObject> => {
+  const resolved = provider ?? { ...createDefaultProvider(apiKey), baseUrl: API_ORIGIN }
+  const endpoints = resolveProviderEndpoints(resolved)
+  if (!endpoints.filesUrl) {
+    throw new ApiError('protocol', 'Current provider does not support DeepSeek Files API')
+  }
   const form = new FormData()
   if (purpose) {
     form.append('purpose', purpose)
   }
   form.append('file', file)
-  const response = await request(`${ANTHROPIC_BASE_URL}/files`, {
+  const target = resolveFetchTarget(endpoints.filesUrl, resolved.useCorsProxy, corsProxyUrl)
+  const response = await request(target, {
     method: 'POST',
-    headers: anthropicHeaders(apiKey, true),
+    headers: anthropicHeaders(resolved.apiKey || apiKey, true, false),
     body: form,
     signal,
   })
@@ -123,37 +202,213 @@ export const uploadFile = async (
 }
 
 /** DELETE /anthropic/v1/files/{file_id} */
-export const deleteFile = async (apiKey: string, fileId: string): Promise<void> => {
-  await request(`${ANTHROPIC_BASE_URL}/files/${encodeURIComponent(fileId)}`, {
+export const deleteFile = async (
+  apiKey: string,
+  fileId: string,
+  provider?: ProviderConfig,
+  corsProxyUrl = ''
+): Promise<void> => {
+  const resolved = provider ?? { ...createDefaultProvider(apiKey), baseUrl: API_ORIGIN }
+  const endpoints = resolveProviderEndpoints(resolved)
+  if (!endpoints.filesUrl) {
+    return
+  }
+  const target = resolveFetchTarget(
+    `${endpoints.filesUrl}/${encodeURIComponent(fileId)}`,
+    resolved.useCorsProxy,
+    corsProxyUrl
+  )
+  await request(target, {
     method: 'DELETE',
-    headers: anthropicHeaders(apiKey, true),
+    headers: anthropicHeaders(resolved.apiKey || apiKey, true, false),
   })
 }
 
-const hasFile = (body: CreateMessageRequest) =>
-  body.messages.some(
-    (message) =>
-      typeof message.content !== 'string' &&
-      message.content.some((block) => block.type === 'image' || block.type === 'document')
-  )
+const stripDataUrl = (dataUrl: string): { mediaType: string; data: string } | null => {
+  const match = /^data:([^;,]+);base64,(.+)$/u.exec(dataUrl)
+  return match ? { mediaType: match[1], data: match[2] } : null
+}
 
-/**
- * POST /anthropic/v1/messages（stream: true），逐个产出流式事件，收到 message_stop 时结束。
- * ping、保活注释与无法解析的内容不产出；中止请求时抛出 signal 的 AbortError。
- */
-export async function* streamMessage(
-  apiKey: string,
+/** 适配通用 Anthropic 第三方端点：展开 base64 内联附件、去掉 DeepSeek 私有字段，并为 thinking 补全 budget_tokens。 */
+export const sanitizeGenericAnthropicBody = (
   body: CreateMessageRequest,
+  inlineFiles: ReadonlyMap<string, OpenAIInlineAttachment>
+): Record<string, unknown> => {
+  const notes: string[] = []
+  const messages: Array<{ role: 'user' | 'assistant'; content: unknown }> = []
+
+  for (const message of body.messages) {
+    if (message.role === 'latest_reminder') {
+      if (message.content.trim()) {
+        notes.push(message.content.trim())
+      }
+      continue
+    }
+    if (message.role === 'user') {
+      const note = notes.length > 0 ? `[${notes.splice(0).join(' | ')}]\n` : ''
+      if (typeof message.content === 'string') {
+        if (note || message.content) {
+          messages.push({ role: 'user', content: note + message.content })
+        }
+        continue
+      }
+      const nextBlocks: Array<FileBlockParam | { type: 'text'; text: string }> = []
+      if (note) {
+        nextBlocks.push({ type: 'text', text: note.trimEnd() })
+      }
+      for (const block of message.content) {
+        if (block.type === 'text') {
+          nextBlocks.push(block)
+        } else if (block.source.type === 'file') {
+          const inline = inlineFiles.get(block.source.file_id)
+          if (inline?.isImage && inline.dataUrl) {
+            const parsed = stripDataUrl(inline.dataUrl)
+            if (parsed) {
+              nextBlocks.push({
+                type: 'image',
+                source: { type: 'base64', media_type: parsed.mediaType, data: parsed.data },
+              })
+            }
+          } else if (inline?.textExcerpt) {
+            nextBlocks.push({
+              type: 'text',
+              text: `\n[附件: ${inline.name}]\n${inline.textExcerpt}\n`,
+            })
+          }
+        }
+      }
+      if (nextBlocks.length > 0) {
+        messages.push({ role: 'user', content: nextBlocks })
+      }
+      continue
+    }
+
+    const assistantBlocks = message.content.flatMap(
+      (
+        block
+      ): Array<
+        { type: 'text'; text: string } | { type: 'thinking'; thinking: string; signature: string }
+      > => {
+        if (block.type === 'text' && block.text) {
+          return [{ type: 'text', text: block.text }]
+        }
+        if (block.type === 'thinking' && block.thinking.trim() && block.signature.trim()) {
+          return [{ type: 'thinking', thinking: block.thinking, signature: block.signature }]
+        }
+        return []
+      }
+    )
+    if (assistantBlocks.length > 0) {
+      messages.push({ role: 'assistant', content: assistantBlocks })
+    }
+  }
+
+  const thinkingEnabled = body.thinking?.type === 'enabled'
+  const baseMaxTokens = body.max_tokens ?? (thinkingEnabled ? 16_384 : 8192)
+  const thinkingBudget = 4096
+  const maxTokens = thinkingEnabled ? Math.max(baseMaxTokens, thinkingBudget + 4096) : baseMaxTokens
+
+  return {
+    model: body.model,
+    max_tokens: maxTokens,
+    ...(body.system ? { system: body.system } : {}),
+    messages,
+    ...(thinkingEnabled
+      ? { thinking: { type: 'enabled', budget_tokens: thinkingBudget } }
+      : body.thinking
+        ? { thinking: { type: 'disabled' } }
+        : {}),
+    stream: true,
+  }
+}
+
+export type StreamProviderOptions = {
+  provider: ProviderConfig
+  body: CreateMessageRequest
   signal: AbortSignal
-): AsyncGenerator<MessageStreamEvent> {
-  const response = await request(`${ANTHROPIC_BASE_URL}/messages`, {
+  corsProxyUrl?: string
+  inlineFiles?: ReadonlyMap<string, OpenAIInlineAttachment>
+}
+
+export async function* streamProviderMessage({
+  provider,
+  body,
+  signal,
+  corsProxyUrl = '',
+  inlineFiles = new Map(),
+}: StreamProviderOptions): AsyncGenerator<MessageStreamEvent> {
+  const endpoints = resolveProviderEndpoints(provider)
+  const target = resolveFetchTarget(endpoints.messagesUrl, provider.useCorsProxy, corsProxyUrl)
+  const apiKey = provider.apiKey.trim()
+
+  if (provider.protocol === 'openai') {
+    const openAiMessages = buildOpenAIMessages(body.system, body.messages, inlineFiles)
+    const requestOpenAi = (includeUsage: boolean) =>
+      request(target, {
+        method: 'POST',
+        headers: {
+          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify({
+          model: provider.model.trim() || body.model,
+          messages: openAiMessages,
+          stream: true,
+          ...(includeUsage ? { stream_options: { include_usage: true } } : {}),
+          ...(body.max_tokens ? { max_tokens: body.max_tokens } : {}),
+        }),
+        signal,
+      })
+
+    let response: Response
+    try {
+      response = await requestOpenAi(true)
+    } catch (error) {
+      if (
+        error instanceof ApiError &&
+        error.status === 400 &&
+        /stream_options/iu.test(error.message)
+      ) {
+        response = await requestOpenAi(false)
+      } else {
+        throw error
+      }
+    }
+    const contentType = response.headers.get('Content-Type') ?? ''
+    if (!response.body || !contentType.includes('text/event-stream')) {
+      throw await readErrorResponse(response, 'protocol', '')
+    }
+    try {
+      for await (const event of parseOpenAIStream(
+        response.body,
+        signal,
+        provider.model.trim() || body.model
+      )) {
+        yield event
+      }
+      return
+    } catch (error) {
+      if (error instanceof OpenAIStreamError) {
+        throw new ApiError(error.kind, error.message)
+      }
+      throw error
+    }
+  }
+
+  const isDeepSeek = provider.protocol === 'deepseek-anthropic'
+  const payload = isDeepSeek
+    ? { ...body, stream: true }
+    : sanitizeGenericAnthropicBody(body, inlineFiles)
+
+  const response = await request(target, {
     method: 'POST',
     headers: {
-      ...anthropicHeaders(apiKey, hasFile(body)),
+      ...anthropicHeaders(apiKey, isDeepSeek && hasFile(body), !isDeepSeek),
       'Content-Type': 'application/json',
       Accept: 'text/event-stream',
     },
-    body: JSON.stringify({ ...body, stream: true }),
+    body: JSON.stringify(payload),
     signal,
   })
   const contentType = response.headers.get('Content-Type') ?? ''
@@ -161,21 +416,21 @@ export async function* streamMessage(
     throw await readErrorResponse(response, 'protocol', '')
   }
   for await (const { event: eventName, data } of readServerSentEvents(response.body, signal)) {
-    let payload: unknown
+    let parsed: unknown
     try {
-      payload = JSON.parse(data)
+      parsed = JSON.parse(data)
     } catch {
       if (eventName !== 'error') {
         continue
       }
     }
-    if (isErrorBody(payload)) {
-      throw new ApiError('stream', payload.error.message)
+    if (isErrorBody(parsed)) {
+      throw new ApiError('stream', parsed.error.message)
     }
     if (eventName === 'error') {
       throw new ApiError('stream', data)
     }
-    const event = readMessageEvent(payload)
+    const event = readMessageEvent(parsed)
     if (!event) {
       continue
     }
@@ -184,6 +439,15 @@ export async function* streamMessage(
       return
     }
   }
-  // 服务端没有提供错误内容时保持为空，不推测断流原因。
   throw new ApiError('interrupted', '')
+}
+
+/** 向后兼容旧 streamMessage 签名（默认 DeepSeek 官方 Anthropic） */
+export async function* streamMessage(
+  apiKey: string,
+  body: CreateMessageRequest,
+  signal: AbortSignal
+): AsyncGenerator<MessageStreamEvent> {
+  const provider = { ...createDefaultProvider(apiKey), baseUrl: API_ORIGIN }
+  yield* streamProviderMessage({ provider, body, signal })
 }

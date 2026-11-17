@@ -1,75 +1,59 @@
-# chat-demo
+# DeepSeek Chat BYOK
 
 [English](README.md) | 简体中文
 
-基于 DeepSeek API 的静态聊天示例。无需应用后端，浏览器直接请求配置的 API 服务。
+基于 MIT 开源项目 [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo) 扩展的**完全本地、纯工具型（零后端收费/零套餐代销）BYOK 聊天、写作与 DeepSeek 导出历史迁移工具**。
 
-点击 [在线体验](https://deepseek-ai.github.io/chat-demo/) 即可使用，也可以前往 [Releases](https://github.com/deepseek-ai/deepseek-chat-demo/releases) 下载压缩包，解压后双击 `index.html` 在本地使用，无需安装或构建。首次使用时，请在设置中填写 API Key。
+## 核心特性
 
-## 运行
+1. **自带 API Key（BYOK）多服务商自由切换**
+   - 在 **设置 → 模型与 API** 支持保存多套配置并随时切换，所有 Key 仅保存在本机 `localStorage`（导出对话包时不会携带），支持未保存修改提示。
+   - 内置预设：
+     - **DeepSeek 官方（Anthropic + 原生工具）**：`https://api.deepseek.com`，完整保留官方联网搜索、文档解析、网页阅读与语音能力。
+     - **DeepSeek 官方（OpenAI 兼容）**：`https://api.deepseek.com/v1`。
+     - **OpenCode Go / Zen（个人订阅/按量 Key）**：预置 `https://opencode.ai/zen/go/v1` 与 `https://opencode.ai/zen/v1`，适配 `deepseek-v4.1-flash` / `deepseek-v4-pro` 等模型的思考链与正文流式输出。
+     - **硅基流动 SiliconFlow / OpenRouter / 本地 Ollama / 任意自定义端点**（兼容 OpenAI Chat Completions 与 Anthropic Messages）。
+   - 支持 **「测试并保存」** 与 **「直接保存」**（兼容未开放 `GET /models` 的网关）。
 
-准备 Node.js 22.12+ 和 pnpm：
+2. **大包不卡死：DeepSeek 官方导出包（`export_format_version: 3`）选择性合并导入**
+   - 一次性读取中央目录索引 `chat_session_index.json` 毫秒级展示全部会话，无需把 200 MB+ 归档全部解压进手机内存即可搜索、勾选需要迁移的会话。
+   - 默认支持 **合并导入（保留当前已有新对话及已有记忆卡）**，也保留 **覆盖替换** 选项；导入时默认可选剔除体积极大的历史联网搜索结果碎片。
+
+3. **对抗低缓存高费率：上下文预算裁剪 + 固定记忆卡 + 用量展示 + Markdown 导出**
+   - **发送前预算控制**：可按「携带最近 N 轮（默认 20 轮）」与「历史 Token 上限（默认 ~24K tokens）」自动裁剪超长历史；每条回答底部展示 `in / cache hit / out` Token 统计。
+   - **固定记忆卡（Memory Prefix）**：支持手工编辑人物设定/背景故事，或点击 **「用当前模型压缩早期对话」** 一键提炼（支持关闭弹窗/切换会话时自动取消请求），大幅降低无缓存输入费用。
+   - **一键导出 Markdown**：将当前会话整理为清爽 Markdown，方便本地留档或配合外部工具使用。
+
+4. **电脑版桌面窗口 + 手机 PWA + 安全加固本地转发服务**
+   - `pnpm build` 生成离线可用的 PWA 静态站点（含 `manifest.webmanifest`、矢量/PNG 图标与 `sw.js` 应用壳缓存，且不拦截 `/_proxy`）。
+   - 零依赖 Node 22 服务 `server.mjs` 提供 `/_proxy` 本地 CORS 转发，内置：同源 `Origin` / `Sec-Fetch-Site` 防跨站 CSRF 滥用、请求方法白名单、禁止 `3xx` 重定向 SSRF、DNS 解析防内网/云元数据 IP 回环绑定、`25 MB` 请求体上限保护。
+   - 提供开箱即用桌面端应用窗口脚本（macOS/Linux `./scripts/start-desktop.sh`、Windows `./scripts/start-desktop.ps1`）与容器化部署 `Dockerfile`。
+
+## 运行、验证与部署
+
+需要 Node.js 22+ 与 pnpm：
 
 ```sh
-git clone https://github.com/deepseek-ai/chat-demo.git
-cd chat-demo
 pnpm install
-pnpm dev
-```
-
-打开 http://localhost:8090 。
-
-生成静态产物：
-
-```sh
+pnpm format:check
+pnpm type
+pnpm lint && pnpm lint:extra
+pnpm test
 pnpm build
+pnpm test:e2e
+pnpm start
 ```
 
-产物位于 `dist/`，可部署到静态服务器，也可直接打开 `dist/index.html`。直接打开时，浏览器和 API 服务需允许 `file://` 页面的存储与跨域请求。
+- **电脑端桌面窗口一键启动**：
+  - macOS / Linux：`./scripts/start-desktop.sh`
+  - Windows PowerShell：`./scripts/start-desktop.ps1`
+- **原生 Android APK（内置 `127.0.0.1:18787` 本地流式 `/_proxy`、文件选择与原生文档导出，无需自建服务器即可在手机端直连任意兼容 API）**：
+  - `pnpm android:apk`（输出 `android/app/build/outputs/apk/debug/app-debug.apk`）
+- **自托管 Docker 部署（供多端 / 手机浏览器访问）**：
+  - `docker build -t deepseek-chat-byok . && docker run -p 8787:8787 deepseek-chat-byok`
 
-## 功能
-
-- 多会话、自动标题、重命名与删除；编辑提问、重新生成和切换消息分支。
-- 流式回答、深度思考、智能搜索、链接阅读与来源引用；支持停止和符合条件的继续生成。
-- 附件上传、粘贴与拖拽，语音输入和回复朗读；移动端录音时输入框首行显示实时频谱。
-- Markdown、代码高亮、KaTeX 公式和 Mermaid 图表。
-- 简体中文与英文、浅色与深色主题、移动端布局、位置设置、历史导入导出。
-
-## 数据
-
-API Key 和设置保存在浏览器 localStorage，会话及附件原件保存在 IndexedDB，本地数据按浏览器用户配置和站点源（origin）隔离。发送对话、上传附件和使用语音功能时，相应内容会提交给配置的 API 服务。
-
-设置中的历史导入导出使用 ZIP 格式。导入会在确认并校验成功后替换全部本地会话和附件；导出包含会话与本地可用的图片原件，不包含 API Key、设置或非图片附件原件。格式与保留范围见[历史导入导出](src/services/chat/history/README.md)。
-
-设置 → 数据管理 → 删除所有对话，会在确认后清空全部本地会话、附件原件和未发送的草稿，停止正在生成的回复并回到新对话。API Key 和其他设置保留，已上传到 API 服务的文件不受影响。
-
-## 开发
-
-| 命令          | 用途                |
-| ------------- | ------------------- |
-| `pnpm dev`    | 启动开发服务器      |
-| `pnpm build`  | 构建到 `dist/`      |
-| `pnpm type`   | TypeScript 类型检查 |
-| `pnpm lint`   | oxlint 检查         |
-| `pnpm format` | oxfmt 格式化        |
-
-[rspack.config.ts](rspack.config.ts) 默认连接 `https://api.deepseek.com`。`createConfig({ apiOrigin, devServer })` 支持自定义 API 地址和开发服务器代理。
-
-聊天默认使用 `deepseek-flash`，通过 Anthropic 兼容的 Messages / Files API 通信；语音使用 ASR / TTS 接口。请求使用搜索、链接阅读、标题和 `latest_reminder` 等扩展，接入服务需支持相应能力。附件实际支持的格式以服务端校验为准。
-
-```text
-src/
-  app/                 应用布局、主题与全局样式
-  components/          聊天、设置、Markdown 等界面组件
-  i18n/                中英文文案
-  services/
-    api/               API 请求、SSE 与协议类型
-    chat/              会话、消息分支、本地存储与历史导入导出
-    markdown/          Markdown 解析、代码高亮与图表
-    speech/            录音与朗读
-  utils/               通用工具
-```
+> 手机端提示：浏览器对 PWA 安装与 Service Worker 要求 HTTPS（或本机 `127.0.0.1`）。若在局域网或云服务器部署后用手机浏览器安装 PWA 与走同源 `/_proxy`，建议前置 Caddy / Nginx / Tailscale Serve 提供 HTTPS。
 
 ## 许可证
 
-[MIT](LICENSE)。构建会将许可证复制到 `dist/LICENSE`，分发时请一并保留；第三方依赖遵循各自的许可证。
+沿用上游 [MIT](LICENSE) 许可证。

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useIsMobile } from '../../app/viewport.js'
+import { useTranslate } from '../../i18n/index.js'
 import {
   buildMessageVersions,
   getVisibleMessages,
@@ -31,6 +32,8 @@ import styles from './MessageList.module.css'
 
 /** 距底部小于该值时视为在底部，流式内容增长时跟随 */
 const STICKY_THRESHOLD = 40
+const INITIAL_WINDOW_SIZE = 60
+const WINDOW_STEP = 60
 const EMPTY_VERSIONS: MessageVersions = { ids: [], index: -1 }
 
 export const MessageList = ({
@@ -42,13 +45,21 @@ export const MessageList = ({
   streaming: boolean
   footer: React.ReactNode
 }) => {
+  const t = useTranslate()
   const isMobile = useIsMobile()
   const scrollRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const stickyRef = useRef(true)
   const scrollTopRef = useRef(0)
   const restoreScrollRef = useRef<{ messageId: string; top: number } | null>(null)
-  const messages = getVisibleMessages(session)
+  const prependingAnchorRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null)
+  const [visibleLimit, setVisibleLimit] = useState(INITIAL_WINDOW_SIZE)
+  const messages = useMemo(() => getVisibleMessages(session), [session])
+
+  useEffect(() => {
+    setVisibleLimit(INITIAL_WINDOW_SIZE)
+    prependingAnchorRef.current = null
+  }, [session.id])
   const [previousVersions, setPreviousVersions] = useState(() =>
     buildMessageVersions(session, new Map())
   )
@@ -81,11 +92,21 @@ export const MessageList = ({
     return () => observer.disconnect()
   }, [isMobile, scrollToBottom])
 
-  // 切换版本后将选择器留在原位置，避免回答长短变化导致操作区跳出视口。
+  const lastIndex = messages.length - 1
+  const hiddenCount = Math.max(0, messages.length - visibleLimit)
+  const windowedMessages = hiddenCount > 0 ? messages.slice(hiddenCount) : messages
+  const uploadRetryId = getUploadRetryId(messages, streaming)
+
+  // 切换版本后将选择器留在原位置；若新分支更长导致锚点被折叠，先扩大窗口再恢复位置。
   useLayoutEffect(() => {
     const anchor = restoreScrollRef.current
     const scroll = scrollRef.current
     if (anchor && scroll) {
+      const anchorIndex = messages.findIndex((message) => message.id === anchor.messageId)
+      if (anchorIndex >= 0 && anchorIndex < hiddenCount) {
+        setVisibleLimit((prev) => Math.max(prev, messages.length - anchorIndex + 10))
+        return
+      }
       const switcher = scroll.querySelector<HTMLElement>(
         `[data-message-version="${CSS.escape(anchor.messageId)}"]`
       )
@@ -97,7 +118,7 @@ export const MessageList = ({
     }
     stickyRef.current = true
     scrollToBottom()
-  }, [session.id, lastMessageId, scrollToBottom])
+  }, [session.id, lastMessageId, hiddenCount, messages, scrollToBottom])
 
   useEffect(closeSearchPanel, [session.id, lastMessageId])
 
@@ -139,15 +160,58 @@ export const MessageList = ({
     return () => el.removeEventListener('scroll', onScroll)
   }, [isMobile, scrollToBottom])
 
-  const lastIndex = messages.length - 1
-  const uploadRetryId = getUploadRetryId(messages, streaming)
+  useLayoutEffect(() => {
+    const anchor = prependingAnchorRef.current
+    const scroll = scrollRef.current
+    if (!anchor || !scroll) {
+      return
+    }
+    scroll.scrollTop = anchor.scrollTop + (scroll.scrollHeight - anchor.scrollHeight)
+    scrollTopRef.current = scroll.scrollTop
+    prependingAnchorRef.current = null
+  }, [hiddenCount])
+
+  const expandWindow = (nextLimit: number) => {
+    const scroll = scrollRef.current
+    if (scroll) {
+      prependingAnchorRef.current = {
+        scrollHeight: scroll.scrollHeight,
+        scrollTop: scroll.scrollTop,
+      }
+      stickyRef.current = false
+    }
+    setVisibleLimit(nextLimit)
+  }
+
   return (
     <ScrollToBottomContext.Provider value={scrollToBottom}>
       <div ref={isMobile ? undefined : scrollRef} className={styles.container}>
         <div ref={isMobile ? scrollRef : undefined} className={styles.scroll}>
           <div ref={contentRef} className={styles.column}>
-            {messages.map((message, index) =>
-              message.role === 'user' ? (
+            {hiddenCount > 0 ? (
+              <div className={styles.windowBanner}>
+                <span>{t('messageWindowEarlier', { count: hiddenCount })}</span>
+                <div className={styles.windowActions}>
+                  <button
+                    type="button"
+                    className={styles.windowButton}
+                    onClick={() => expandWindow(visibleLimit + WINDOW_STEP)}
+                  >
+                    {t('messageWindowLoadMore')}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.windowButton}
+                    onClick={() => expandWindow(messages.length)}
+                  >
+                    {t('messageWindowShowAll')}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+            {windowedMessages.map((message, offset) => {
+              const index = hiddenCount + offset
+              return message.role === 'user' ? (
                 <UserMessage
                   key={message.id}
                   sessionId={session.id}
@@ -171,7 +235,7 @@ export const MessageList = ({
                   onSelectVersion={selectVersion}
                 />
               )
-            )}
+            })}
           </div>
         </div>
         {footer}

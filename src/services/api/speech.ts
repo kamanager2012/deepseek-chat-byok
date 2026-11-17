@@ -1,29 +1,43 @@
 import { ApiError, API_ORIGIN, request } from './client.js'
-
-/**
- * 语音接口：
- * - ASR：POST /v1/tools/asr，multipart 上传 WAV / Ogg Opus，一次返回全文
- * - TTS：POST /v1/tools/tts，返回音频字节流（产出首帧后即返回 200）
- * 鉴权都用 Authorization: Bearer。
- */
-const TOOLS_BASE_URL = `${API_ORIGIN}/v1/tools`
+import {
+  createDefaultProvider,
+  resolveFetchTarget,
+  resolveProviderEndpoints,
+  type ProviderConfig,
+} from './providers.js'
 
 export type TtsVoice = 'stella' | 'tide'
 
 /** TTS 输出的裸 PCM 参数：24kHz、单声道、16-bit 小端 */
 export const TTS_SAMPLE_RATE = 24000
 
+const resolveToolsBase = (provider?: ProviderConfig, apiKey = ''): ProviderConfig =>
+  provider ?? { ...createDefaultProvider(apiKey), baseUrl: API_ORIGIN }
+
+const requireToolsUrl = (provider: ProviderConfig, corsProxyUrl: string, path: string): string => {
+  const endpoints = resolveProviderEndpoints(provider)
+  if (!endpoints.toolsUrl) {
+    throw new ApiError('protocol', 'Speech endpoint requires DeepSeek Official Anthropic mode')
+  }
+  return resolveFetchTarget(`${endpoints.toolsUrl}${path}`, provider.useCorsProxy, corsProxyUrl)
+}
+
 /** 语音识别：audio 为 WAV（单声道 16-bit PCM）或 Ogg Opus，时长不超过 120 秒、大小不超过 8 MiB */
 export const transcribe = async (
   apiKey: string,
   audio: Blob,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  provider?: ProviderConfig,
+  corsProxyUrl = ''
 ): Promise<string> => {
+  const resolved = resolveToolsBase(provider, apiKey)
+  const target = requireToolsUrl(resolved, corsProxyUrl, '/asr')
+  const key = resolved.apiKey.trim() || apiKey
   const form = new FormData()
   form.append('file', audio, 'recording.wav')
-  const response = await request(`${TOOLS_BASE_URL}/asr`, {
+  const response = await request(target, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}` },
+    headers: { Authorization: `Bearer ${key}` },
     body: form,
     signal,
   })
@@ -50,11 +64,16 @@ export const synthesize = async (
   apiKey: string,
   text: string,
   voice: TtsVoice,
-  signal: AbortSignal
+  signal: AbortSignal,
+  provider?: ProviderConfig,
+  corsProxyUrl = ''
 ): Promise<ReadableStream<Uint8Array>> => {
-  const response = await request(`${TOOLS_BASE_URL}/tts`, {
+  const resolved = resolveToolsBase(provider, apiKey)
+  const target = requireToolsUrl(resolved, corsProxyUrl, '/tts')
+  const key = resolved.apiKey.trim() || apiKey
+  const response = await request(target, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, voice_id: voice, format: 'pcm', filter_markdown: true }),
     signal,
   })

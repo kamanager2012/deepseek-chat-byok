@@ -9,6 +9,7 @@ import {
   validateFiles,
   type UploadTask,
 } from '../attachments.js'
+import { getActiveProvider, useSettings } from '../settings.js'
 import type { FileAttachment } from './types.js'
 
 export type DraftAttachment = {
@@ -48,12 +49,15 @@ export const setDraftText = (sessionId: string | null, text: string) =>
 
 const upload = (attachment: DraftAttachment, apiKey: string) => {
   // 上传任务负责记录错误，输入框的附件卡片展示失败及重试入口。
+  const settings = useSettings.getState()
   void uploadAttachment(
     apiKey,
     attachment.id,
     attachment.file,
     attachment.file.name,
-    attachment.isImage
+    attachment.isImage,
+    getActiveProvider(settings),
+    settings.corsProxyUrl
   ).catch(() => {})
 }
 

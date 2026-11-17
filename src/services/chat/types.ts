@@ -114,6 +114,8 @@ export type Session = {
   messages: Message[]
   /** undefined 表示线性消息列表；null 表示空会话。 */
   rootMessageId?: string | null
+  /** 固定在当前会话上下文最前面的长期记忆/人设摘要，裁剪早期轮次时持续保留。 */
+  memoryPrompt?: string
 }
 
 /** 会话列表元数据；消息只在打开会话时加载。 */

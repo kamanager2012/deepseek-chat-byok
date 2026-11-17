@@ -14,8 +14,8 @@ import {
   clearHistory,
   exportHistory,
   importHistory,
+  type ImportBackupOptions,
 } from '../../services/chat/backup.js'
-import { useIsMobile } from '../../app/viewport.js'
 import { useChatStore } from '../../services/chat/store.js'
 import { regionCodes, getRegionName, provinces } from '../../services/location.js'
 import {
@@ -32,12 +32,13 @@ import { Button } from '../base/Button.js'
 import { Modal } from '../base/Modal.js'
 import { Select } from '../base/Select.js'
 import { showToast } from '../base/toastState.js'
-import { ApiKeyConfirm, ApiKeyField, useApiKeyEditor } from './ApiKeyField.js'
+import { ImportDialog } from './ImportDialog.js'
+import { ProviderSettings } from './ProviderSettings.js'
 import { closeSettings, useSettingsDialog, type SettingsSection } from './settingsDialogState.js'
 import styles from './Settings.module.css'
 
 /**
- * 设置弹窗：分「通用设置」（主题、语言、朗读音色、位置）与「数据管理」（API Key、导入、导出、删除）。
+ * 设置弹窗：分「通用设置」「模型与 API」「数据管理」三个分组。
  * 桌面端为居中弹窗、左侧导航；移动端为底部弹层、导航横排在内容上方
  */
 export const SettingsDialog = () => {
@@ -51,16 +52,18 @@ const sections: { value: SettingsSection; label: TranslationKey; icon: ReactNode
     label: 'settingDialogAsideGeneralOptionLabel',
     icon: <IconSettingsOutline16 />,
   },
+  {
+    value: 'api',
+    label: 'apiSettingsSectionLabel',
+    icon: <IconFollowsystemOutline16 />,
+  },
   { value: 'data', label: 'settingDialogAsideDataOptionLabel', icon: <IconDataOutline16 /> },
 ]
 
 const SettingsContent = () => {
   const t = useTranslate()
-  const isMobile = useIsMobile()
   // 打开时按调用方指定的分组选中，之后在弹窗内切换
   const [section, setSection] = useState(() => useSettingsDialog.getState().section)
-  // 切换分组不丢失正在输入的 API Key 与导入状态
-  const apiKeyEditor = useApiKeyEditor()
   const historyImport = useHistoryImport()
   const historyDelete = useHistoryDelete()
   const replacingHistory = useChatStore((state) => state.importingHistory)
@@ -73,7 +76,7 @@ const SettingsContent = () => {
         className={styles.dialog}
         mainClassName={styles.dialogMain}
         onClose={() => {
-          if (!historyDelete.busy) {
+          if (!historyDelete.busy && !historyImport.busy) {
             closeSettings()
           }
         }}
@@ -101,9 +104,10 @@ const SettingsContent = () => {
               <TtsVoiceSetting />
               <LocationSetting />
             </>
+          ) : section === 'api' ? (
+            <ProviderSettings />
           ) : (
             <>
-              <ApiKeyField editor={apiKeyEditor} />
               <ImportHistory historyImport={historyImport} disabled={historyBusy} />
               <ExportHistory disabled={historyBusy} />
               <SettingCell
@@ -121,12 +125,17 @@ const SettingsContent = () => {
                   </Button>
                 }
               />
-              {isMobile ? <ApiKeyConfirm editor={apiKeyEditor} /> : null}
             </>
           )}
         </div>
       </Modal>
-      {historyImport.file ? <ImportConfirm historyImport={historyImport} /> : null}
+      {historyImport.file ? (
+        <ImportDialog
+          file={historyImport.file}
+          onCancel={historyImport.cancel}
+          onConfirm={historyImport.confirm}
+        />
+      ) : null}
       {historyDelete.opened ? <DeleteAllConfirm historyDelete={historyDelete} /> : null}
     </>
   )
@@ -314,34 +323,6 @@ const TtsVoiceSetting = () => {
   )
 }
 
-/** 覆盖导入的二次确认，叠在设置弹窗上 */
-const ImportConfirm = ({
-  historyImport,
-}: {
-  historyImport: ReturnType<typeof useHistoryImport>
-}) => {
-  const t = useTranslate()
-  return (
-    <Modal
-      title={t('historyImportConfirmTitle')}
-      className={styles.importConfirm}
-      onClose={historyImport.cancel}
-      footer={
-        <>
-          <Button variant="outlined" size="m" autoFocus onClick={historyImport.cancel}>
-            {t('cancel')}
-          </Button>
-          <Button variant="dangerOutlined" size="m" onClick={() => void historyImport.confirm()}>
-            {t('historyImportConfirm')}
-          </Button>
-        </>
-      }
-    >
-      <div className={styles.importConfirmText}>{t('historyImportConfirmDescription')}</div>
-    </Modal>
-  )
-}
-
 const themeOptions: { value: ThemePreference; label: TranslationKey; icon: ReactNode }[] = [
   {
     value: 'light',
@@ -360,10 +341,6 @@ const themeOptions: { value: ThemePreference; label: TranslationKey; icon: React
   },
 ]
 
-/**
- * 主题项：标题下方浅色 / 深色 / 跟随系统三个选块。
- * 与下方语言选项连续排列。
- */
 const ThemeSetting = () => {
   const t = useTranslate()
   const themePreference = useSettings((state) => state.themePreference)
@@ -393,10 +370,8 @@ const ThemeSetting = () => {
   )
 }
 
-/** `reason` 为失败原因的文案 key，展示时按当前语言翻译后填入 `message` 参数。 */
 type Status = (TranslationMessage & { error?: boolean; reason?: TranslationKey }) | null
 
-/** 导出失败附带原因：预期的错误用对应文案作原因，其他错误用错误信息。 */
 const errorStatus = (key: TranslationKey, error: unknown): Status => ({
   key,
   ...(error instanceof BackupError
@@ -436,23 +411,24 @@ const SettingCell = ({
   )
 }
 
-/** 选文件后先提示覆盖；确认后才检查文件并执行导入，任何错误都提示导入失败。 */
+/** 选文件后弹出归档目录预览（支持按会话勾选合并或全量覆盖），确认后才解压写入。 */
 const useHistoryImport = () => {
   const [file, setFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState<Status>(null)
   const importing = useRef(false)
 
-  const confirm = async () => {
+  const confirm = async (options: ImportBackupOptions = {}) => {
     if (!file || importing.current) {
       return
     }
     importing.current = true
+    const currentFile = file
     setFile(null)
     setBusy(true)
     setStatus(null)
     try {
-      const count = await importHistory(file)
+      const count = await importHistory(currentFile, options)
       setStatus({ key: count === 1 ? 'historyImportedOne' : 'historyImported', params: { count } })
     } catch {
       setStatus({ key: 'historyImportFailed', error: true })

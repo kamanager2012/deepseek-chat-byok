@@ -35,3 +35,39 @@
   margin: 0 auto;
   padding-bottom: 24px;
 }
+
+.windowBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 12px 0 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.windowActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.windowButton {
+  padding: 3px 10px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dsw-alias-brand-text);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+  }
+}

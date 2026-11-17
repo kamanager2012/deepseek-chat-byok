@@ -26,6 +26,25 @@ import styles from './AssistantMessage.module.css'
 
 const TOP_UP_URL = 'https://platform.deepseek.com/top_up'
 
+const formatUsageCount = (value: number): string =>
+  value >= 1000 ? `${(value / 1000).toFixed(value >= 10_000 ? 0 : 1)}K` : String(value)
+
+const formatUsageSummary = (usage: AssistantMessageType['usage']): string | null => {
+  if (!usage) {
+    return null
+  }
+  const totalIn =
+    usage.input_tokens + usage.cache_creation_input_tokens + usage.cache_read_input_tokens
+  if (totalIn === 0 && usage.output_tokens === 0) {
+    return null
+  }
+  const hitPart =
+    usage.cache_read_input_tokens > 0
+      ? ` (hit ${formatUsageCount(usage.cache_read_input_tokens)})`
+      : ''
+  return `${formatUsageCount(totalIn)} in${hitPart} · ${formatUsageCount(usage.output_tokens)} out`
+}
+
 export const AssistantMessage = memo(function AssistantMessage({
   sessionId,
   message,
@@ -102,7 +121,7 @@ export const AssistantMessage = memo(function AssistantMessage({
                 <button
                   type="button"
                   className={styles.noticeAction}
-                  onClick={() => openSettings('data')}
+                  onClick={() => openSettings('api')}
                 >
                   {t('changeApiKey')}
                 </button>
@@ -157,6 +176,10 @@ export const AssistantMessage = memo(function AssistantMessage({
               }}
             />
           </div>
+          {(() => {
+            const usageSummary = formatUsageSummary(message.usage)
+            return usageSummary ? <span className={styles.usagePill}>{usageSummary}</span> : null
+          })()}
           {isLast && canContinueReply(message) ? (
             <Button
               variant="outlined"

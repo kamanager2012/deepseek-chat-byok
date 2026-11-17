@@ -71,8 +71,8 @@ export const ReplyArea = memo(function ReplyArea({
   if (view.steps.length === 0 && !(message.thinking && streaming)) {
     return null
   }
-  // 未记录请求开关时，按是否有思考内容显示标题。
-  const thinking = message.thinking ?? view.steps.some((step) => step.type === 'thinking')
+  // 只要请求开启了深度思考，或者兼容端点主动返回了思考/＜think＞步骤，都展示可折叠思考标题。
+  const thinking = Boolean(message.thinking) || view.steps.some((step) => step.type === 'thinking')
   const title = thinking ? getAreaTitle(view, streaming, Date.now(), hasResponse) : null
   const stopped = !streaming && !hasResponse
   return (

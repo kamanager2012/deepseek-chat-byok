@@ -82,7 +82,34 @@ export const createConfig = ({
     }),
     new rspack.DefinePlugin({ __API_ORIGIN__: JSON.stringify(apiOrigin) }),
     new rspack.CopyRspackPlugin({
-      patterns: [{ from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' }],
+      patterns: [
+        { from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' },
+        {
+          from: path.resolve(root, 'public/manifest.webmanifest'),
+          to: 'manifest.webmanifest',
+          toType: 'file',
+        },
+        {
+          from: path.resolve(root, 'public/sw.js'),
+          to: 'sw.js',
+          toType: 'file',
+        },
+        {
+          from: path.resolve(root, 'public/icon.svg'),
+          to: 'icon.svg',
+          toType: 'file',
+        },
+        {
+          from: path.resolve(root, 'public/icon-192.png'),
+          to: 'icon-192.png',
+          toType: 'file',
+        },
+        {
+          from: path.resolve(root, 'public/icon-512.png'),
+          to: 'icon-512.png',
+          toType: 'file',
+        },
+      ],
     }),
   ],
   performance: { hints: false },

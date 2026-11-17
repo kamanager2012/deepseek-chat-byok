@@ -7,7 +7,8 @@ import {
   IconStopFill16,
   IconThinkOutline14,
 } from '../base/icons.js'
-import { setSearch, setThinking, useSettings } from '../../services/settings.js'
+import { supportsNativeDeepseekTools } from '../../services/api/providers.js'
+import { getActiveProvider, setSearch, setThinking, useSettings } from '../../services/settings.js'
 import { useIsMobile } from '../../app/viewport.js'
 import { sendMessage, stopReply, useChatStore } from '../../services/chat/store.js'
 import {
@@ -53,6 +54,11 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
   const importingHistory = useChatStore((state) => state.importingHistory)
   const isMobile = useIsMobile()
   const search = useSettings((state) => state.search)
+  const providers = useSettings((state) => state.providers)
+  const activeProviderId = useSettings((state) => state.activeProviderId)
+  const supportsDeepseekTools = supportsNativeDeepseekTools(
+    getActiveProvider({ providers, activeProviderId })
+  )
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const togglesRef = useRef<HTMLDivElement>(null)
@@ -214,13 +220,18 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
               <span className={styles.toggleLabel}>{t('thinkingSwitch')}</span>
             </button>
           </Tooltip>
-          <Tooltip content={t('deactivatedSearchTooltip')}>
+          <Tooltip
+            content={
+              supportsDeepseekTools ? t('deactivatedSearchTooltip') : t('providerDeepseekToolsNote')
+            }
+          >
             <button
               type="button"
-              className={clsx(styles.toggle, search && styles.selected)}
+              className={clsx(styles.toggle, supportsDeepseekTools && search && styles.selected)}
               aria-label={t('search')}
-              aria-pressed={search}
-              onClick={() => setSearch(!search)}
+              aria-pressed={supportsDeepseekTools && search}
+              disabled={!supportsDeepseekTools}
+              onClick={() => supportsDeepseekTools && setSearch(!search)}
             >
               <IconGlobeLanguageOutline14 />
               <span className={styles.toggleLabel}>{t('search')}</span>
@@ -230,9 +241,13 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
         <div className={styles.right}>
           <VoiceButton
             status={voice.status}
-            disabled={!voice.available}
+            disabled={!voice.available || !supportsDeepseekTools}
             seconds={voice.seconds}
             onClick={() => {
+              if (!supportsDeepseekTools) {
+                showToast({ key: 'providerDeepseekToolsNote' })
+                return
+              }
               if (
                 voice.status !== 'idle' ||
                 (!useChatStore.getState().importingHistory && ensureApiKey())

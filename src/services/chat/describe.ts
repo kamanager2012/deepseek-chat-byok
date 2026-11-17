@@ -29,7 +29,7 @@ export const describeReply = (reply: AssistantMessage): Notice | null => {
       return { text: message || translate('uploadFileStatusFailed') }
     }
     if (kind === 'network') {
-      return { text: translate('commonNetworkErrorToast') }
+      return { text: translate('networkCorsHint') }
     }
     switch (classifyStatus(status)) {
       case 'unauthorized':
@@ -39,6 +39,9 @@ export const describeReply = (reply: AssistantMessage): Notice | null => {
       case 'rateLimited':
         return { text: translate('replyRateLimited') }
       case 'serverBusy':
+        if (status === 502 && message && !message.trimStart().startsWith('<')) {
+          return { text: message }
+        }
         return { text: translate('completionServerBusyToast') }
       default:
         return message ? { text: message } : null

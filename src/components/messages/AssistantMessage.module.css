@@ -108,6 +108,13 @@
   margin-left: auto;
 }
 
+.usagePill {
+  font-size: 11px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-dimmed);
+}
+
 .summary {
   display: flex;
   align-items: center;

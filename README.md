@@ -1,75 +1,41 @@
-# chat-demo
+# DeepSeek Chat BYOK
 
 English | [简体中文](README.zh-CN.md)
 
-A static chat demo powered by the DeepSeek API. No application backend is required: the browser connects directly to the configured API service.
-
-You can [try the app online](https://deepseek-ai.github.io/chat-demo/) or download the archive from [Releases](https://github.com/deepseek-ai/deepseek-chat-demo/releases), extract it, and double-click `index.html` to use it locally without installation or a build. Enter your API key in Settings before your first chat.
-
-## Getting started
-
-Install Node.js 22.12+ and pnpm, then run:
-
-```sh
-git clone https://github.com/deepseek-ai/chat-demo.git
-cd chat-demo
-pnpm install
-pnpm dev
-```
-
-Open http://localhost:8090.
-
-To build the static site:
-
-```sh
-pnpm build
-```
-
-The output is written to `dist/`. Deploy it to a static web server or open `dist/index.html` directly. Opening the file directly requires browser support for storage on `file://` pages and an API service that permits their cross-origin requests.
+A local-first, MIT-licensed **Bring-Your-Own-Key (BYOK)** chat client and DeepSeek official export migration tool extended from [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo). No hosted billing backend or shared API pool.
 
 ## Features
 
-- Multiple conversations with automatic titles, renaming, and deletion; edit prompts, regenerate replies, and switch between message branches.
-- Streaming replies, deep thinking, smart search, link reading, and source citations; stop generation or continue eligible replies.
-- Upload, paste, or drag and drop attachments; use voice input and read replies aloud. A live audio spectrum appears in the first row of the input area while recording on mobile.
-- Markdown, syntax highlighting, KaTeX math, and Mermaid diagrams.
-- Simplified Chinese and English, light and dark themes, mobile layouts, location settings, and chat history import and export.
+- **Multi-Provider BYOK (OpenAI Chat Completions + Anthropic Messages)**: Presets for DeepSeek Official (Anthropic + native search/files/speech), DeepSeek OpenAI (`https://api.deepseek.com/v1`), OpenCode Go (`https://opencode.ai/zen/go/v1`), OpenCode Zen (`https://opencode.ai/zen/v1`), SiliconFlow, OpenRouter, local Ollama (`http://127.0.0.1:11434/v1`), or custom endpoints. Keys are stored only in local browser storage and excluded from exports.
+- **Fast Index-First Selective ZIP Import (`export_format_version: 3`)**: Reads only the ZIP central directory and `chat_session_index.json` before decompressing, allowing searchable selective merge import (preserving existing chats and pinned Memory Cards) or full replace, plus optional stripping of bulky historical search blocks.
+- **Context Budget, Pinned Memory Prefix & Per-Reply Usage**: Trim outgoing history by max rounds or estimated token budget, maintain a pinned per-session memory/persona card (editable or distilled from trimmed early turns with abortable requests), monitor per-reply cached vs uncached tokens, and export clean session Markdown.
+- **Desktop App Mode, Mobile PWA & Hardened `/_proxy`**:
+  - Generates an offline-capable PWA (`manifest.webmanifest`, vector/PNG icons, Network-First App Shell `sw.js`).
+  - Zero-dependency Node 22 server (`server.mjs`) with an SSRF/CSRF-hardened `/_proxy` (same-origin check, method allowlist, blocked `3xx` redirects, DNS-resolved private/metadata IP block, `25 MB` payload cap).
+  - Turnkey desktop app launchers (`./scripts/start-desktop.sh`, `scripts/start-desktop.ps1`) and container self-hosting (`Dockerfile`).
 
-## Data and storage
+## Quick Start
 
-Your API key and settings are stored in the browser's localStorage. Conversations and original attachments are stored in IndexedDB. Local data is isolated by browser profile and site origin. Sending messages, uploading attachments, and using speech features sends the relevant content to the configured API service.
-
-History import and export in Settings use ZIP archives. After confirmation and successful validation, importing replaces all local conversations and attachments. Exports include conversations and locally available original images, but exclude API keys, settings, and original non-image attachments. See the [history import/export documentation (Chinese)](src/services/chat/history/README.md) for the archive format and preservation details.
-
-Settings → Data → Delete all chats clears all local conversations, original attachments, and unsent drafts after confirmation. It stops ongoing replies and returns to a new chat. Your API key and settings are preserved; files already uploaded to the API service are not deleted.
-
-## Development
-
-| Command       | Description                  |
-| ------------- | ---------------------------- |
-| `pnpm dev`    | Start the development server |
-| `pnpm build`  | Build into `dist/`           |
-| `pnpm type`   | Run TypeScript type checks   |
-| `pnpm lint`   | Lint with oxlint             |
-| `pnpm format` | Format with oxfmt            |
-
-[rspack.config.ts](rspack.config.ts) uses `https://api.deepseek.com` by default. Use `createConfig({ apiOrigin, devServer })` to customize the API origin and development server proxy.
-
-Chat uses `deepseek-flash` by default through Anthropic-compatible Messages / Files APIs. Speech features use ASR / TTS endpoints. Requests include extensions for search, link reading, titles, and `latest_reminder`, so the configured service must support the corresponding capabilities. Supported attachment formats are determined by server-side validation.
-
-```text
-src/
-  app/                 Application layout, themes, and global styles
-  components/          Chat, settings, Markdown, and other UI components
-  i18n/                English and Chinese translations
-  services/
-    api/               API requests, SSE, and protocol types
-    chat/              Conversations, message branches, storage, and history import/export
-    markdown/          Markdown parsing, syntax highlighting, and diagrams
-    speech/            Audio recording and read-aloud playback
-  utils/               Shared utilities
+```sh
+pnpm install
+pnpm format:check
+pnpm type
+pnpm lint && pnpm lint:extra
+pnpm test
+pnpm build
+pnpm test:e2e
+pnpm start
 ```
+
+Open `http://127.0.0.1:8787`, or launch directly as a standalone desktop window:
+
+- macOS / Linux: `./scripts/start-desktop.sh`
+- Windows PowerShell: `./scripts/start-desktop.ps1`
+- Native Android APK (embedded `127.0.0.1:18787` streaming `/_proxy`, file picker & SAF document export): `pnpm android:apk` (outputs `android/app/build/outputs/apk/debug/app-debug.apk`)
+- Self-hosted Docker (LAN / TLS reverse proxy): `docker build -t deepseek-chat-byok . && docker run -p 8787:8787 deepseek-chat-byok`
+
+> Mobile note: Accessing a remote server over plain HTTP LAN is restricted by browser secure-context APIs (such as Service Workers and clipboard/mic). For mobile PWA installation over LAN or VPS, terminate HTTPS via a reverse proxy (e.g., Caddy, Nginx, or Tailscale Serve).
 
 ## License
 
-[MIT](LICENSE). The build copies the license to `dist/LICENSE`; include it when distributing the app. Third-party dependencies are subject to their own licenses.
+[MIT](LICENSE)

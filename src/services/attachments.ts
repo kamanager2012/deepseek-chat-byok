@@ -1,8 +1,11 @@
 import { create } from 'zustand'
 import type { LinkedMessage, TranslationMessage } from '../i18n/index.js'
-import { uploadFile } from './api/client.js'
+import { ApiError, uploadFile } from './api/client.js'
 import { classifyApiError, getUploadErrorInfo, isRetryableApiError } from './api/errors.js'
+import type { OpenAIInlineAttachment } from './api/openai.js'
+import type { ProviderConfig } from './api/providers.js'
 import type { FilePurpose } from './api/types.js'
+import type { FileAttachment } from './chat/types.js'
 import { ACCEPT_FILE_EXTS } from './uploadExts.js'
 
 /** 允许上传的扩展名，按扩展名白名单过滤，清单见 uploadExts.ts */
@@ -57,11 +60,61 @@ export const validateFiles = (files: File[], currentCount: number): TranslationM
   return null
 }
 
+export const LOCAL_INLINE_PREFIX = 'local-inline:'
+
+export const isLocalInlineServerId = (serverId: string | null | undefined): boolean =>
+  typeof serverId === 'string' && serverId.startsWith(LOCAL_INLINE_PREFIX)
+
+/** 判断是否可以用本地纯文本摘录内联发送给兼容 OpenAI / 通用 Anthropic 端点 */
+const MAX_INLINE_TEXT_BYTES = 256 * 1024
+
+const bytesToBase64 = (bytes: Uint8Array): string => {
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(binary)
+}
+
+export const buildInlineAttachmentData = async (
+  file: FileAttachment,
+  blob: Blob
+): Promise<OpenAIInlineAttachment | null> => {
+  if (file.isImage) {
+    const bytes = new Uint8Array(await blob.arrayBuffer())
+    const mime = file.mimeType || blob.type || MIME_BY_EXT[getFileExt(file.name)] || 'image/png'
+    return {
+      fileId: file.serverId ?? `${LOCAL_INLINE_PREFIX}${file.id}`,
+      dataUrl: `data:${mime};base64,${bytesToBase64(bytes)}`,
+      name: file.name,
+      isImage: true,
+    }
+  }
+  if (!LAYOUT_RECOGNITION_EXTS.has(getFileExt(file.name))) {
+    const truncated = blob.size > MAX_INLINE_TEXT_BYTES
+    const rawSlice = truncated ? blob.slice(0, MAX_INLINE_TEXT_BYTES) : blob
+    const textExcerpt = await rawSlice.text()
+    return {
+      fileId: file.serverId ?? `${LOCAL_INLINE_PREFIX}${file.id}`,
+      textExcerpt: truncated
+        ? `${textExcerpt}\n\n[注：文件超过 256 KB，兼容模式已自动截取前 256 KB 内容]`
+        : textExcerpt,
+      name: file.name,
+      isImage: false,
+    }
+  }
+  return null
+}
+
 /**
  * 上传失败在附件上显示的文案：与设计稿状态对应的用具体原因，其余统一「上传失败」。
  * 服务端原文多为英文且较长，不直接展示。
  */
 export const describeUploadError = (error: unknown): TranslationMessage => {
+  if (error instanceof ApiError && error.localMessage) {
+    return error.localMessage
+  }
   if (classifyApiError(error) === 'serverBusy') {
     return { key: 'uploadServerBusy' }
   }
@@ -121,8 +174,10 @@ const enqueueUpload = (
   apiKey: string,
   file: Blob,
   name: string,
-  isImage: boolean,
-  signal: AbortSignal
+  isImageFile: boolean,
+  signal: AbortSignal,
+  provider?: ProviderConfig,
+  corsProxyUrl = ''
 ) =>
   new Promise<string>((resolve, reject) => {
     queue.push(async () => {
@@ -132,7 +187,18 @@ const enqueueUpload = (
       }
       try {
         const body = file instanceof File ? file : new File([file], name, { type: file.type })
-        resolve((await uploadFile(apiKey, body, getUploadPurpose(name, isImage), signal)).id)
+        resolve(
+          (
+            await uploadFile(
+              apiKey,
+              body,
+              getUploadPurpose(name, isImageFile),
+              signal,
+              provider,
+              corsProxyUrl
+            )
+          ).id
+        )
       } catch (error) {
         reject(error)
       }
@@ -163,21 +229,46 @@ const setTask = (id: string, task: UploadTask | null) =>
 
 const pending = new Map<string, { promise: Promise<string>; controller: AbortController }>()
 
-/** 开始（或复用进行中的）上传，返回服务端 file_id；失败时任务记为 error 并抛出原错误 */
+/** 开始（或复用进行中的）上传，返回服务端 file_id 或兼容本地内联标识；失败时任务记为 error */
 export const uploadAttachment = (
   apiKey: string,
   id: string,
   blob: Blob,
   name: string,
-  isImage: boolean
+  isImageFile: boolean,
+  provider?: ProviderConfig,
+  corsProxyUrl = ''
 ): Promise<string> => {
+  if (provider && provider.protocol !== 'deepseek-anthropic') {
+    if (!isImageFile && LAYOUT_RECOGNITION_EXTS.has(getFileExt(name))) {
+      const error = new ApiError('protocol', { key: 'uploadRequiresDeepseekFiles' })
+      setTask(id, {
+        status: 'error',
+        error: { key: 'uploadRequiresDeepseekFiles' },
+        retryable: false,
+      })
+      return Promise.reject(error)
+    }
+    const inlineId = `${LOCAL_INLINE_PREFIX}${id}`
+    setTask(id, { status: 'done', serverId: inlineId })
+    return Promise.resolve(inlineId)
+  }
+
   const current = pending.get(id)
   if (current) {
     return current.promise
   }
   const controller = new AbortController()
   setTask(id, { status: 'uploading' })
-  const promise = enqueueUpload(apiKey, blob, name, isImage, controller.signal)
+  const promise = enqueueUpload(
+    apiKey,
+    blob,
+    name,
+    isImageFile,
+    controller.signal,
+    provider,
+    corsProxyUrl
+  )
     .then((serverId) => {
       setTask(id, { status: 'done', serverId })
       return serverId

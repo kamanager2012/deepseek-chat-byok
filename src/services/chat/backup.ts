@@ -1,9 +1,11 @@
 import { formatDate } from '../../utils/format.js'
 import * as db from './db.js'
-import { replaceHistory, useChatStore } from './store.js'
+import type { SessionIndexEntry } from './history/format.js'
+import { commitHistoryChange, replaceHistory, useChatStore } from './store.js'
 import type { Session } from './types.js'
 
 export { BackupError } from './history/errors.js'
+export type { SessionIndexEntry }
 
 // 导入、导出与全部删除串行处理，避免读取归档时数据被清空或两个替换事务交错。
 let backupQueue: Promise<unknown> = Promise.resolve()
@@ -15,6 +17,12 @@ const enqueueBackup = <T>(run: () => Promise<T>): Promise<T> => {
 }
 
 const backupFileName = (date: Date) => `deepseek_data-${formatDate(date)}.zip`
+
+/** 毫秒级读取 ZIP 归档的会话目录清单（不解压正文和附件） */
+export const inspectBackupArchive = async (file: File): Promise<SessionIndexEntry[]> => {
+  const { inspectArchiveIndex } = await import('./history/importArchive.js')
+  return inspectArchiveIndex(file)
+}
 
 /** 导出为历史会话导出格式的 ZIP，可再次导入。 */
 export const exportHistory = (): Promise<{ name: string; blob: Blob }> =>
@@ -39,15 +47,26 @@ export const exportHistory = (): Promise<{ name: string; blob: Blob }> =>
     return { name: backupFileName(now), blob }
   })
 
+export type ImportBackupOptions = {
+  selectedIds?: ReadonlySet<string>
+  mode?: 'merge' | 'replace'
+  stripSearchBlocks?: boolean
+}
+
 /**
- * 确认覆盖后调用：先检查 ZIP 格式与版本，校验失败时保留正在生成的回答；
- * 通过后从 ZIP 流式写入暂存，成功才替换原有会话与图片原件。返回导入的会话数。
+ * 校验并导入历史对话归档；支持选择指定会话、增量合并（默认保留已有记录）或覆盖替换。
+ * 返回实际写入本次的会话数量。
  */
-export const importHistory = (file: File): Promise<number> =>
+export const importHistory = (file: File, options: ImportBackupOptions = {}): Promise<number> =>
   enqueueBackup(async () => {
+    const { selectedIds, mode = 'replace', stripSearchBlocks = false } = options
     const { checkArchiveFormat, importArchive } = await import('./history/importArchive.js')
     await checkArchiveFormat(file)
-    return replaceHistory(() => importArchive(file))
+    let importedCount = 0
+    await commitHistoryChange(mode, async () => {
+      importedCount = await importArchive(file, { selectedIds, stripSearchBlocks })
+    })
+    return importedCount
   })
 
 /** 确认删除后调用：以空历史原子替换全部本地会话与附件，保留 API Key 和其他设置。 */
