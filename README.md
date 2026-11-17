@@ -1,20 +1,25 @@
 # DeepSeek Chat BYOK
 
+[![Latest Release](https://img.shields.io/github/v/release/kamanager2012/deepseek-chat-byok?label=Release)](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest)
+[![Live Web / PWA](https://img.shields.io/badge/Web%20%2F%20PWA-Live%20App-4d6bfe)](https://kamanager2012.github.io/deepseek-chat-byok/)
+[![CI](https://github.com/kamanager2012/deepseek-chat-byok/actions/workflows/ci.yml/badge.svg)](https://github.com/kamanager2012/deepseek-chat-byok/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 English | [简体中文](README.zh-CN.md)
 
 - **Live Web / PWA**: https://kamanager2012.github.io/deepseek-chat-byok/
-- **Downloads (Android APK & Portable Server ZIP)**: https://github.com/kamanager2012/deepseek-chat-byok/releases
+- **Downloads (Android Release APK & Portable Desktop ZIP)**: https://github.com/kamanager2012/deepseek-chat-byok/releases/latest
 - **Security & Release Signing Guide**: [SECURITY.md](SECURITY.md)
 
 A local-first, MIT-licensed **Bring-Your-Own-Key (BYOK)** chat client, creative writing workspace, and DeepSeek official export migration tool extended from [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo). Zero hosted billing backend and zero shared API keys.
 
 ## Why DeepSeek Chat BYOK (30-Second Overview)
 
-| How you want to use it                | Recommended Entry                                                                                 | Local CORS `/_proxy`              | Best For                                                      |
-| :------------------------------------ | :------------------------------------------------------------------------------------------------ | :-------------------------------- | :------------------------------------------------------------ |
-| **Zero-Install Browser / Mobile PWA** | [Open Live Web App](https://kamanager2012.github.io/deepseek-chat-byok/)                          | None (direct browser fetch)       | CORS-enabled APIs & local archive inspection                  |
-| **Android Native App**                | `android-debug.apk` from [Releases](https://github.com/kamanager2012/deepseek-chat-byok/releases) | Built-in `127.0.0.1:18787` bridge | Phone daily driver, any BYOK endpoint, SAF file export        |
-| **Portable Desktop / Local Server**   | `portable.zip` or `./scripts/start-desktop.*`                                                     | Built-in Node 22 `/_proxy`        | Desktop windowed mode, strict third-party APIs & local Ollama |
+| How you want to use it                | Recommended Entry                                                                                                                           | Local CORS `/_proxy`              | Best For                                                      |
+| :------------------------------------ | :------------------------------------------------------------------------------------------------------------------------------------------ | :-------------------------------- | :------------------------------------------------------------ |
+| **Zero-Install Browser / Mobile PWA** | [Open Live Web App](https://kamanager2012.github.io/deepseek-chat-byok/)                                                                    | None (direct browser fetch)       | CORS-enabled APIs & local archive inspection                  |
+| **Android Native App**                | **`*-android-release.apk`** from [Latest Release](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest)                      | Built-in `127.0.0.1:18787` bridge | Phone daily driver, any BYOK endpoint, SAF file export        |
+| **Portable Desktop / Local Server**   | **`*-portable.zip`** ([Latest Release](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest)) or `./scripts/start-desktop.*` | Built-in Node 22 `/_proxy`        | Desktop windowed mode, strict third-party APIs & local Ollama |
 
 1. **Migrate Locked/Older Chats in Seconds**: Export `deepseek_data-*.zip` from DeepSeek Settings -> Data Export, drop it into **Settings -> Data -> Import Chat History**, preview the archive index immediately, and **merge** selected conversations without wiping your existing sessions or Memory Cards.
 2. **Switch Providers Freely (BYOK)**: Keep multiple profiles in `localStorage` across DeepSeek Official (Anthropic + native search/files/TTS), DeepSeek OpenAI, OpenCode Go / Zen, Anthropic Messages, SiliconFlow, OpenRouter, Local Ollama, or custom endpoints.
@@ -35,7 +40,7 @@ A local-first, MIT-licensed **Bring-Your-Own-Key (BYOK)** chat client, creative 
    - Static GitHub Pages only calls APIs directly from your browser; endpoints that block browser CORS require the Android APK or Portable Desktop (`server.mjs`).
 3. **Import & Continue**: In **Settings -> Data**, pick your ZIP, select sessions to merge, optionally pin a **Memory Card**, and keep writing.
 
-> Android Upgrade Note: Current public releases ship a CI debug-signed APK (`android-debug.apk`). Because ephemeral debug signatures differ across CI builds, **export your chats first** (`Settings -> Data -> Export all chats`), uninstall the prior debug build, install the new APK, re-import your backup ZIP, and re-enter your API key(s). See [SECURITY.md](SECURITY.md) for permanent release keystore setup.
+> **Android Install & Upgrade Note**: Starting with `v0.2.2+`, public releases provide **`*-android-release.apk`** signed with a persistent Release certificate (SHA-256 `86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7`), supporting direct in-place updates while keeping local chats, Memory Cards, and API keys intact. Only users upgrading from older ephemeral debug builds (`v0.2.0`, `v0.2.1`, or `*-android-debug.apk`) should export their chats once (**Settings -> Data -> Export all chats**) and uninstall the debug build before installing `*-android-release.apk`. See [SECURITY.md](SECURITY.md) for verification fingerprints.
 
 ## Build & Verify From Source
 
@@ -58,14 +63,16 @@ pnpm start
 
 > Mobile LAN / VPS note: Browsers restrict PWA installation, clipboard, and Service Workers on plain HTTP outside `127.0.0.1` / `localhost`. Terminate HTTPS via Caddy, Nginx, or Tailscale Serve if hosting remotely.
 
-## Trial Feedback Checklist
+## Feedback & Bug Reports
 
-Trying out `v0.2.2`? Share reproducible feedback in [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues) with:
+Found a bug or UX bottleneck? Use the [De-identified Feedback Form](https://github.com/kamanager2012/deepseek-chat-byok/issues/new?template=pilot-feedback.yml) (or open a [GitHub Issue](https://github.com/kamanager2012/deepseek-chat-byok/issues)) with:
 
-1. Platform & version (`GitHub Pages`, `Portable Desktop`, or `Android APK v0.2.2`)
+1. Platform & release version (`GitHub Pages`, `Portable Desktop`, or `Android Release APK v0.2.3`)
 2. Provider preset / protocol (`deepseek-anthropic`, `openai`, `anthropic`, or `ollama`)
 3. Whether archive merge (`deepseek_data-*.zip`) succeeded and approximate session count / ZIP size
-4. Any friction in first-run key setup, streaming, Memory Card distillation, or CORS errors
+4. Reproduction steps or sanitized console/UI error messages (**never attach API keys or personal chat ZIPs**)
+
+> Looking for a developer terminal harness / multi-agent remote controller instead of a daily chat client? See the independent sister repository [DSH Community](https://github.com/kamanager2012/dsh-community) (maintained separately).
 
 ## License
 
