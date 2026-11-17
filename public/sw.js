@@ -2,6 +2,7 @@ const CACHE_NAME = 'deepseek-chat-byok-__APP_VERSION__'
 const APP_SHELL_URLS = [
   './',
   './index.html',
+  './get-started.html',
   './manifest.webmanifest',
   './icon.svg',
   './icon-192.png',

@@ -84,6 +84,7 @@ export const createConfig = ({
     new rspack.CopyRspackPlugin({
       patterns: [
         { from: path.resolve(root, 'LICENSE'), to: 'LICENSE', toType: 'file' },
+        { from: path.resolve(root, 'public/get-started.html'), to: 'get-started.html', toType: 'file' },
         {
           from: path.resolve(root, 'public/manifest.webmanifest'),
           to: 'manifest.webmanifest',

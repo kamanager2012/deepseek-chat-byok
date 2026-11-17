@@ -7,6 +7,7 @@
 
 [English](README.md) | 简体中文
 
+- **新手入口（不用翻 GitHub 仓库）**：https://kamanager2012.github.io/deepseek-chat-byok/get-started.html
 - **在线网页 / PWA 版**：https://kamanager2012.github.io/deepseek-chat-byok/
 - **安装包下载（Android 正式版 APK & 便携桌面端 ZIP）**：https://github.com/kamanager2012/deepseek-chat-byok/releases/latest
 - **安全架构与正式签名校验**：[SECURITY.md](SECURITY.md)
@@ -34,6 +35,8 @@
 | ![选择性合并导入预览弹窗](docs/images/import-selective-merge.png) | ![移动端多服务商 BYOK 配置](docs/images/mobile-byok-settings.png) |
 
 ## 三步快速上手
+
+> **普通用户建议先看 [安装与迁移引导](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html)**：导入、查看本机历史不需要 API Key；在线续聊需要自备 Key，并按服务商实际价格计费。快捷下载仍使用 GitHub Releases 托管的正式文件，无法访问 GitHub 的网络也可能无法下载。本工具不赠送模型额度。
 
 1. **准备官方导出包（可选）**：在 DeepSeek 官网或 App「设置 → 个人资料 / 数据导出」下载 `deepseek_data-YYYY-MM-DD.zip`。
 2. **填入自己的 API Key**：打开 **设置 → 模型与 API**，选中预设并填入个人 Key，点击 **「测试并保存」**（若网关未开放 `GET /models`，可直接点 **「直接保存」**）。
