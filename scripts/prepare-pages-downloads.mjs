@@ -1,13 +1,24 @@
 import { createHash } from 'node:crypto'
-import { createReadStream } from 'node:fs'
+import { createReadStream, existsSync } from 'node:fs'
 import { copyFile, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+
+const DOC_SCREENSHOTS = [
+  'desktop-byok-workspace.png',
+  'import-selective-merge.png',
+  'mobile-byok-settings.png',
+]
 
 /**
  * Only mirror an existing, immutable public Release. The bytes stay unchanged:
  * compare them with that Release's SHA256SUMS before publishing to GitHub Pages.
  */
-export const preparePagesDownloads = async (sourceDir, siteDir, tag) => {
+export const preparePagesDownloads = async (
+  sourceDir,
+  siteDir,
+  tag,
+  docsImagesDir = path.join(process.cwd(), 'docs', 'images')
+) => {
   if (!/^v\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.-]+)?$/.test(tag)) {
     throw new Error('Invalid release tag')
   }
@@ -55,6 +66,21 @@ export const preparePagesDownloads = async (sourceDir, siteDir, tag) => {
     path.join(outputDir, 'manifest.json'),
     JSON.stringify({ schemaVersion: 1, tag, ...staged }, null, 2) + '\n'
   )
+
+  // Mirror real UI screenshots onto GitHub Pages without bloating the Android APK bundle.
+  if (docsImagesDir && existsSync(docsImagesDir)) {
+    const existingImages = DOC_SCREENSHOTS.filter((name) =>
+      existsSync(path.join(docsImagesDir, name))
+    )
+    if (existingImages.length > 0) {
+      const siteImagesDir = path.join(siteDir, 'docs', 'images')
+      await mkdir(siteImagesDir, { recursive: true })
+      for (const name of existingImages) {
+        await copyFile(path.join(docsImagesDir, name), path.join(siteImagesDir, name))
+      }
+    }
+  }
+
   return { tag, ...staged }
 }
 

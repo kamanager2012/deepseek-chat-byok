@@ -225,13 +225,19 @@ jobs:
             printf '%s\n' \
               "## DeepSeek Chat BYOK ${RELEASE_TAG}" \
               "" \
+              "> **DeepSeek Chat BYOK 是一个独立、免费、开源的 DeepSeek 聊天客户端，支持导入官方导出的聊天记录、本地记忆卡和自带 API Key 对话。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。**" \
+              "> **Independent, free, open-source DeepSeek chat client with official history import, memory cards, and BYOK chat. Not an official DeepSeek product and not a Harness plugin bundle.**" \
+              "" \
+              "- **新手指南与本站 SHA-256 校验下载 / Verified Downloads & Evidence**: https://kamanager2012.github.io/deepseek-chat-byok/get-started.html" \
               "- **Source Provenance**: Tag \`${RELEASE_TAG}\` at commit \`${GITHUB_SHA}\`" \
               "- **Web / PWA**: https://kamanager2012.github.io/deepseek-chat-byok/" \
               "- **Security Policy & Signing Guide**: [SECURITY.md](https://github.com/${GITHUB_REPOSITORY}/blob/${RELEASE_TAG}/SECURITY.md)" \
               "" \
-              "### Included Hardening & Upgrade Guidance" \
-              "- Enforces non-destructive same-ID archive merge (keeps existing local turns by default with explicit conflict options), per-session verified emergency backups, and CI-gated Pages/Release provenance checks." \
-              "- Includes loopback DNS-rebinding \`Host\` header checks on \`/_proxy\`, DNS-pinned TLS upstream connections, Android \`X-DS-Bridge-Token\` + canonical \`127.0.0.1:18787\` origin isolation, API error secret redaction (\`redactApiSecrets()\`), SAF export bounds, and strict external link filtering."
+              "### What's New & Hardening" \
+              "- **Cross-Platform Keyless Migration + OS Share / Drag-and-Drop**: Supports DeepSeek (\`deepseek_data-*.zip\`), ChatGPT, and Claude (\`conversations.json\`) official ZIPs via desktop drag-and-drop or Android system Share/Open-With; enforces non-destructive same-ID archive merge (keeps existing local turns by default with explicit conflict options) and verified per-session emergency backups." \
+              "- **AndroidKeyStore AES-256-GCM Key Vault + Security Baseline**: Encrypts saved API keys inside \`AndroidKeyStore\` (auto-migrating & scrubbing legacy plaintext keys on upgrade), plus loopback DNS-rebinding \`Host\` header checks on \`/_proxy\`, DNS-pinned TLS upstream connections, Android \`X-DS-Bridge-Token\` + \`127.0.0.1:18787\` origin isolation, secret redaction (\`redactApiSecrets()\`), and SAF export bounds." \
+              "- **Cache-Aware USD Cost Estimator & Memory Cards**: Shows per-reply & cumulative estimated USD cost alongside cache-hit savings (\`in (hit X) · out\`) plus pinned Memory Cards and round/token budget trimming." \
+              "- **Release Integrity**: CI-gated Pages/Release provenance checks before publishing."
             if [ "${HAS_RELEASE_APK}" = "true" ]; then
               printf '%s\n' \
                 "- **Android Release APK (\`*-android-release.apk\`) — Recommended**: Signed with the persistent release certificate (SHA-256 \`86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7\`). Upgrading between \`v0.2.2+\` \`android-release.apk\` builds preserves local chats, Memory Cards, and API keys without uninstalling. If migrating from an older CI debug build (\`v0.2.0\`, \`v0.2.1\`, or \`*-android-debug.apk\`), export your chats first (**Settings -> Data -> Export all chats**), uninstall the debug APK, install \`*-android-release.apk\`, and re-import your backup." \
