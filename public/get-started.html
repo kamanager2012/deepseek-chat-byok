@@ -206,9 +206,7 @@
         </div>
       </section>
       <div class="disclaimer">
-        <strong>下载提醒：</strong>安装包目前仍由 GitHub Releases
-        托管。此页面只省去在仓库中翻找文件的步骤，无法解决 GitHub
-        网络访问受限的问题；请勿从陌生网盘下载修改版安装包。
+        <strong>下载提醒：</strong>发行源为 GitHub Releases；本站发布流水线会校验 SHA-256 后镜像原始安装包，优先提供本站直接下载。无法访问 GitHub Pages 的网络仍可能下载失败；也可使用官方 Release 备用入口。请勿从陌生网盘下载修改版安装包。
       </div>
       <section class="card" style="margin-top: 16px">
         <h2>第一次使用，只需要三步</h2>
@@ -230,8 +228,47 @@
         const status = document.getElementById('download-status')
         const android = document.getElementById('android-download')
         const desktop = document.getElementById('desktop-download')
+        const releasePage = 'https://github.com/kamanager2012/deepseek-chat-byok/releases/latest'
         const prefix = '/kamanager2012/deepseek-chat-byok/releases/download/'
-        const safeAssetUrl = (assets, suffix) => {
+        const isDigest = (value) => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value)
+
+        const verifiedMirrorUrl = (item, tag, suffix) => {
+          if (
+            !item ||
+            typeof item.filename !== 'string' ||
+            item.filename !== `deepseek-chat-byok-${tag}${suffix}` ||
+            !isDigest(item.sha256)
+          ) {
+            return null
+          }
+          return new URL(`./downloads/${encodeURIComponent(item.filename)}`, location.href).href
+        }
+
+        const trySameSiteDownloads = async () => {
+          const response = await fetch('./downloads/manifest.json', { cache: 'no-store' })
+          if (!response.ok) throw new Error('No mirror manifest')
+          const manifest = await response.json()
+          if (
+            manifest?.schemaVersion !== 1 ||
+            typeof manifest.tag !== 'string' ||
+            !/^v\\d+\\.\\d+\\.\\d+(?:[-.][0-9A-Za-z.-]+)?$/.test(manifest.tag)
+          ) {
+            throw new Error('Unrecognized mirror manifest')
+          }
+          const apk = verifiedMirrorUrl(manifest.android, manifest.tag, '-android-release.apk')
+          const zip = verifiedMirrorUrl(manifest.desktop, manifest.tag, '-portable.zip')
+          if (!apk || !zip) throw new Error('Missing mirrored installers')
+          android.href = apk
+          android.download = manifest.android.filename
+          android.textContent = `直接下载安卓正式版（${manifest.tag}）`
+          desktop.href = zip
+          desktop.download = manifest.desktop.filename
+          desktop.textContent = `直接下载电脑便携包（${manifest.tag}）`
+          status.textContent = '优先从本站下载：发布时已核对发行包 SHA-256；如无法访问本站，可查看 GitHub Releases。'
+          return true
+        }
+
+        const safeGithubAssetUrl = (assets, suffix) => {
           const asset = assets.find(
             (item) =>
               typeof item.name === 'string' &&
@@ -250,39 +287,38 @@
             return null
           }
         }
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 8000)
-        fetch('https://api.github.com/repos/kamanager2012/deepseek-chat-byok/releases/latest', {
-          signal: controller.signal,
-          cache: 'no-store',
-        })
-          .then((response) => {
+
+        const tryGithubRelease = async () => {
+          const controller = new AbortController()
+          const timeout = setTimeout(() => controller.abort(), 8000)
+          try {
+            const response = await fetch(
+              'https://api.github.com/repos/kamanager2012/deepseek-chat-byok/releases/latest',
+              { signal: controller.signal, cache: 'no-store' }
+            )
             if (!response.ok) throw new Error('Release lookup failed')
-            return response.json()
-          })
-          .then((release) => {
+            const release = await response.json()
             if (!release || release.draft || release.prerelease || !Array.isArray(release.assets)) {
               throw new Error('Invalid release')
             }
-            const apk = safeAssetUrl(release.assets, '-android-release.apk')
-            const zip = safeAssetUrl(release.assets, '-portable.zip')
-            if (apk) {
-              android.href = apk
-              android.textContent = '下载安卓正式版 APK'
-            }
-            if (zip) {
-              desktop.href = zip
-              desktop.textContent = '下载电脑便携 ZIP'
-            }
-            status.textContent = apk
-              ? '已找到正式版 APK，可以直接下载。'
-              : '未找到符合条件的正式版 APK，请查看发布页。'
-          })
-          .catch(() => {
-            status.textContent =
-              '无法查询最新下载地址。可尝试打开发布页；如果 GitHub 无法访问，下载可能失败。'
-          })
-          .finally(() => clearTimeout(timeout))
+            const apk = safeGithubAssetUrl(release.assets, '-android-release.apk')
+            const zip = safeGithubAssetUrl(release.assets, '-portable.zip')
+            if (!apk || !zip) throw new Error('Release files not found')
+            android.href = apk
+            android.textContent = '下载安卓正式版 APK（GitHub）'
+            desktop.href = zip
+            desktop.textContent = '下载电脑便携 ZIP（GitHub）'
+            status.textContent = '本站直接下载暂不可用，已找到 GitHub 正式版安装包。'
+          } catch {
+            android.href = releasePage
+            desktop.href = releasePage
+            status.textContent = '暂时无法查到安装包，请在 GitHub 正式发布页查看；若网络无法访问 GitHub，下载可能失败。'
+          } finally {
+            clearTimeout(timeout)
+          }
+        }
+
+        void trySameSiteDownloads().catch(() => tryGithubRelease())
       })()
     </script>
   </body>

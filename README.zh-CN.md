@@ -9,7 +9,7 @@
 
 - **新手入口（不用翻 GitHub 仓库）**：https://kamanager2012.github.io/deepseek-chat-byok/get-started.html
 - **在线网页 / PWA 版**：https://kamanager2012.github.io/deepseek-chat-byok/
-- **安装包下载（Android 正式版 APK & 便携桌面端 ZIP）**：https://github.com/kamanager2012/deepseek-chat-byok/releases/latest
+- **安卓正式版及便携电脑包直达入口**：https://kamanager2012.github.io/deepseek-chat-byok/get-started.html （优先本站校验镜像；源码与签名见 GitHub Releases）
 - **安全架构与正式签名校验**：[SECURITY.md](SECURITY.md)
 
 基于 MIT 开源项目 [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo) 扩展的**完全本地、纯工具型（零后端收费 / 零共享密钥）BYOK 聊天、长文写作与 DeepSeek 官方导出历史迁移工具**。

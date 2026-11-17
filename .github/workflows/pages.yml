@@ -82,6 +82,22 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Mirror checksum-verified Release downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.tag_name')"
+          test -n "$TAG"
+          ARTIFACT_DIR="${RUNNER_TEMP}/byok-release-artifacts"
+          mkdir -p "$ARTIFACT_DIR"
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern "deepseek-chat-byok-*-android-release.apk" \
+            --pattern "deepseek-chat-byok-*-portable.zip" \
+            --pattern "SHA256SUMS.txt" \
+            --dir "$ARTIFACT_DIR"
+          node scripts/prepare-pages-downloads.mjs "$ARTIFACT_DIR" dist "$TAG"
+
       - name: Upload site
         uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

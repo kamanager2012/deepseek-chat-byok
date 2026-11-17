@@ -9,7 +9,7 @@ English | [简体中文](README.zh-CN.md)
 
 - **Beginner start page (no GitHub file navigation)**: https://kamanager2012.github.io/deepseek-chat-byok/get-started.html
 - **Live Web / PWA**: https://kamanager2012.github.io/deepseek-chat-byok/
-- **Downloads (Android Release APK & Portable Desktop ZIP)**: https://github.com/kamanager2012/deepseek-chat-byok/releases/latest
+- **Beginner downloads (signed Android APK & portable desktop ZIP)**: https://kamanager2012.github.io/deepseek-chat-byok/get-started.html (site-hosted release snapshot, checksum checked during build; GitHub Release remains the origin)
 - **Security & Release Signing Guide**: [SECURITY.md](SECURITY.md)
 
 A local-first, MIT-licensed **Bring-Your-Own-Key (BYOK)** chat client, creative writing workspace, and DeepSeek official export migration tool extended from [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo). Zero hosted billing backend and zero shared API keys.
