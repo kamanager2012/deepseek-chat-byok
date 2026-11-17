@@ -12,6 +12,7 @@ import {
   isProviderConfigured,
   resolveFetchTarget,
   resolveProviderEndpoints,
+  shouldProbeLocalProxy,
   type ProviderConfig,
 } from '../src/services/api/providers.js'
 
@@ -286,5 +287,13 @@ describe('OpenAI protocol adapter', () => {
     } finally {
       vi.unstubAllGlobals()
     }
+  })
+
+  it('skips local /_proxy probing on static hosting domains and file:// origins', () => {
+    expect(shouldProbeLocalProxy('https:', 'kamanager2012.github.io')).toBe(false)
+    expect(shouldProbeLocalProxy('https:', 'demo.pages.dev')).toBe(false)
+    expect(shouldProbeLocalProxy('file:', '')).toBe(false)
+    expect(shouldProbeLocalProxy('http:', '127.0.0.1')).toBe(true)
+    expect(shouldProbeLocalProxy('https:', 'chat.custom-vps.example')).toBe(true)
   })
 })

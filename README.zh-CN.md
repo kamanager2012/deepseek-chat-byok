@@ -2,6 +2,9 @@
 
 [English](README.md) | 简体中文
 
+- **在线网页 / PWA 版**：https://kamanager2012.github.io/deepseek-chat-byok/
+- **版本下载（Android APK & 便携版压缩包）**：https://github.com/kamanager2012/deepseek-chat-byok/releases
+
 基于 MIT 开源项目 [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo) 扩展的**完全本地、纯工具型（零后端收费/零套餐代销）BYOK 聊天、写作与 DeepSeek 导出历史迁移工具**。
 
 ## 核心特性

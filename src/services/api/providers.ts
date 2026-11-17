@@ -266,6 +266,17 @@ export const resolveFetchTarget = (
   return `${proxy}${sep}url=${encodeURIComponent(targetUrl)}`
 }
 
+const STATIC_PROXYLESS_HOST_SUFFIXES = ['.github.io', '.pages.dev', '.netlify.app', '.vercel.app']
+
+/** 判断当前宿主是否可尝试探测同源 /_proxy（跳过纯静态托管域名以避免 404 控制台报错） */
+export const shouldProbeLocalProxy = (protocol: string, hostname: string): boolean => {
+  if (protocol !== 'http:' && protocol !== 'https:') {
+    return false
+  }
+  const lower = hostname.toLowerCase()
+  return !STATIC_PROXYLESS_HOST_SUFFIXES.some((suffix) => lower.endsWith(suffix))
+}
+
 let cachedLocalProxyProbe: Promise<boolean> | null = null
 
 /** 探测当前宿主（server.mjs 或 Android LocalBridgeServer）是否内置同源 /_proxy 转发服务 */
@@ -274,11 +285,10 @@ export const probeLocalProxy = (): Promise<boolean> => {
     return Promise.resolve(false)
   }
   const { protocol, hostname } = window.location
-  if (protocol !== 'http:' && protocol !== 'https:') {
+  if (!shouldProbeLocalProxy(protocol, hostname)) {
     return Promise.resolve(false)
   }
   // dev-server 没有 /_proxy；仅有 server.mjs / Android LocalBridge 会对无 ?url= 的 HEAD /_proxy 返回 400
-  void hostname
   return (cachedLocalProxyProbe ??= fetch('/_proxy', { method: 'HEAD' })
     .then((res) => res.status === 400)
     .catch(() => false))

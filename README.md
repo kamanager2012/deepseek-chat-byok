@@ -2,6 +2,9 @@
 
 English | [简体中文](README.zh-CN.md)
 
+- **Online Web / PWA**: https://kamanager2012.github.io/deepseek-chat-byok/
+- **Releases (Android APK & Portable ZIP)**: https://github.com/kamanager2012/deepseek-chat-byok/releases
+
 A local-first, MIT-licensed **Bring-Your-Own-Key (BYOK)** chat client and DeepSeek official export migration tool extended from [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo). No hosted billing backend or shared API pool.
 
 ## Features
