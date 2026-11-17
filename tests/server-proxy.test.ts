@@ -261,6 +261,8 @@ describe('server.mjs static & hardened SSRF/CSRF-safe /_proxy', () => {
     expect(isPrivateOrMetadataIp('224.0.0.1')).toBe(true)
     expect(isPrivateOrMetadataIp('::ffff:7f00:1')).toBe(true)
     expect(isPrivateOrMetadataIp('fe80::1')).toBe(true)
+    expect(isPrivateOrMetadataIp('fec0::1')).toBe(true)
+    expect(isPrivateOrMetadataIp('64:ff9b::127.0.0.1')).toBe(true)
     expect(isPrivateOrMetadataIp('8.8.8.8')).toBe(false)
     expect(isPrivateOrMetadataIp('1.1.1.1')).toBe(false)
 
@@ -272,6 +274,17 @@ describe('server.mjs static & hardened SSRF/CSRF-safe /_proxy', () => {
       })
     ).toBeNull()
     expect(
+      checkProxyOrigin(
+        {
+          host: 'rebind.evil:8787',
+          origin: 'http://rebind.evil:8787',
+          'sec-fetch-site': 'same-origin',
+        },
+        new Set(),
+        { restrictLoopbackHost: true }
+      )
+    ).toContain('DNS-rebinding')
+    expect(
       checkProxyOrigin({
         host: '127.0.0.1:8787',
         origin: 'https://attacker.tld',
@@ -282,5 +295,41 @@ describe('server.mjs static & hardened SSRF/CSRF-safe /_proxy', () => {
       await checkProxyTargetAllowed(new URL('http://127.0.0.1:11434/v1/models'), false)
     ).toContain('loopback')
     expect(await checkProxyTargetAllowed(new URL('https://8.8.8.8/v1/models'), false)).toBeNull()
+  })
+
+  it('blocks DNS-rebinding Host headers over HTTP when bound to loopback', async () => {
+    const upstream = await startMockUpstream((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end('{"ok":true}')
+    })
+    const srv = await listenInProcess({ restrictLoopbackHost: true })
+    try {
+      const serverPort = Number(new URL(srv.url).port)
+      const rebindStatus = await new Promise<number>((resolve, reject) => {
+        const req = http.request(
+          {
+            host: '127.0.0.1',
+            port: serverPort,
+            path: `/_proxy?url=${encodeURIComponent(`http://127.0.0.1:${upstream.port}/ok`)}`,
+            method: 'POST',
+            headers: {
+              Host: `evil.rebind:${serverPort}`,
+              Origin: `http://evil.rebind:${serverPort}`,
+              'Sec-Fetch-Site': 'same-origin',
+            },
+          },
+          (res) => {
+            res.resume()
+            res.on('end', () => resolve(res.statusCode ?? 0))
+          }
+        )
+        req.on('error', reject)
+        req.end('{}')
+      })
+      expect(rebindStatus).toBe(403)
+    } finally {
+      await srv.close()
+      await upstream.close()
+    }
   })
 })

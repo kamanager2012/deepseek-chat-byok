@@ -24,6 +24,7 @@ import java.nio.file.Paths;
 public final class BridgeHarness {
   public static void main(String[] args) throws Exception {
     final Path distRoot = Paths.get(args[0]).toAbsolutePath().normalize();
+    String token = args.length > 1 && !args[1].isEmpty() ? args[1] : null;
     LocalBridgeServer server = new LocalBridgeServer(rel -> {
       Path candidate = distRoot.resolve(rel).normalize();
       if (!candidate.startsWith(distRoot)) {
@@ -34,7 +35,7 @@ public final class BridgeHarness {
         throw new FileNotFoundException(rel);
       }
       return new FileInputStream(f);
-    });
+    }, token);
     int port = server.start(0);
     System.out.println("BRIDGE_READY http://127.0.0.1:" + port);
     System.out.flush();
@@ -46,10 +47,14 @@ public final class BridgeHarness {
 
 const startJavaBridge = (
   classesDir: string,
-  distDir: string
+  distDir: string,
+  bridgeToken?: string
 ): Promise<{ url: string; port: number; close: () => Promise<void> }> =>
   new Promise((resolve, reject) => {
-    const child = spawn('java', ['-cp', classesDir, 'BridgeHarness', distDir], {
+    const args = bridgeToken
+      ? ['-cp', classesDir, 'BridgeHarness', distDir, bridgeToken]
+      : ['-cp', classesDir, 'BridgeHarness', distDir]
+    const child = spawn('java', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
     })
     let out = ''
@@ -96,6 +101,7 @@ const startMockUpstream = (): Promise<{ port: number; close: () => Promise<void>
         return
       }
       expect(req.headers.authorization).toBe('Bearer android-byok-key')
+      expect(req.headers['x-ds-bridge-token']).toBeUndefined()
       res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8' })
       res.write('data: {"id":"a1","choices":[{"delta":{"reasoning_content":"think"}}]}\n\n')
       res.write(
@@ -198,9 +204,73 @@ describe('Android LocalBridgeServer.java static & SSRF/CSRF-safe streaming /_pro
         expect(sseText).toContain('"reasoning_content":"think"')
         expect(sseText).toContain('"content":"android-ok"')
         expect(sseText).toContain('data: [DONE]')
+
+        const rebindStatus = await new Promise<number>((resolve, reject) => {
+          const req = http.request(
+            {
+              host: '127.0.0.1',
+              port: bridge.port,
+              path: `/_proxy?url=${encodeURIComponent(`http://127.0.0.1:${upstream.port}/v1/chat/completions`)}`,
+              method: 'POST',
+              headers: {
+                Host: `rebind.evil:${bridge.port}`,
+                Origin: `http://rebind.evil:${bridge.port}`,
+                'Sec-Fetch-Site': 'same-origin',
+              },
+            },
+            (res) => {
+              res.resume()
+              res.on('end', () => resolve(res.statusCode ?? 0))
+            }
+          )
+          req.on('error', reject)
+          req.end('{}')
+        })
+        expect(rebindStatus).toBe(403)
       } finally {
         await upstream.close()
         await bridge.close()
+      }
+
+      const tokenBridge = await startJavaBridge(tmpDir, distDir, 'android-secret-token-123')
+      const tokenUpstream = await startMockUpstream()
+      try {
+        const probeRes = await fetch(`${tokenBridge.url}/_proxy`, { method: 'HEAD' })
+        expect(probeRes.status).toBe(400)
+
+        const missingToken = await fetch(
+          `${tokenBridge.url}/_proxy?url=${encodeURIComponent(`http://127.0.0.1:${tokenUpstream.port}/v1/chat/completions`)}`,
+          { method: 'POST', body: '{}' }
+        )
+        expect(missingToken.status).toBe(403)
+
+        const wrongToken = await fetch(
+          `${tokenBridge.url}/_proxy?url=${encodeURIComponent(`http://127.0.0.1:${tokenUpstream.port}/v1/chat/completions`)}`,
+          {
+            method: 'POST',
+            headers: { 'X-DS-Bridge-Token': 'wrong-token' },
+            body: '{}',
+          }
+        )
+        expect(wrongToken.status).toBe(403)
+
+        const authedRes = await fetch(
+          `${tokenBridge.url}/_proxy?url=${encodeURIComponent(`http://127.0.0.1:${tokenUpstream.port}/v1/chat/completions`)}`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: 'Bearer android-byok-key',
+              'Content-Type': 'application/json',
+              'X-DS-Bridge-Token': 'android-secret-token-123',
+            },
+            body: JSON.stringify({ model: 'deepseek-chat', stream: true }),
+          }
+        )
+        expect(authedRes.status).toBe(200)
+        expect(await authedRes.text()).toContain('"content":"android-ok"')
+      } finally {
+        await tokenUpstream.close()
+        await tokenBridge.close()
       }
 
       const apkPath = path.join(ROOT, 'android/app/build/outputs/apk/debug/app-debug.apk')

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { streamProviderMessage } from '../src/services/api/client.js'
+import { redactApiSecrets, request, streamProviderMessage } from '../src/services/api/client.js'
 import {
   buildOpenAIMessages,
   OpenAIStreamError,
@@ -295,5 +295,40 @@ describe('OpenAI protocol adapter', () => {
     expect(shouldProbeLocalProxy('file:', '')).toBe(false)
     expect(shouldProbeLocalProxy('http:', '127.0.0.1')).toBe(true)
     expect(shouldProbeLocalProxy('https:', 'chat.custom-vps.example')).toBe(true)
+  })
+
+  it('redacts echoed API secrets from gateway errors and scopes X-DS-Bridge-Token strictly to /_proxy', async () => {
+    expect(redactApiSecrets('Invalid Authorization: Bearer sk-secret1234567890')).toBe(
+      'Invalid Authorization: Bearer [REDACTED]'
+    )
+    expect(redactApiSecrets('Key sk-proj_abc123456789 rejected')).toBe('Key [REDACTED] rejected')
+
+    const seenHeaders: Array<{ url: string; token: string | null }> = []
+    vi.stubGlobal('window', {
+      location: { origin: 'http://127.0.0.1:18787' },
+      AndroidExportBridge: { getBridgeToken: () => 'bridge-secret-xyz' },
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        const hdrs = new Headers(init?.headers)
+        seenHeaders.push({ url, token: hdrs.get('X-DS-Bridge-Token') })
+        return new Response('{"ok":true}', { status: 200 })
+      })
+    )
+
+    try {
+      await request('/_proxy?url=https%3A%2F%2Fapi.example.com%2Fv1%2Fmodels', { method: 'GET' })
+      await request('https://api.example.com/v1/models', { method: 'GET' })
+      expect(seenHeaders).toEqual([
+        {
+          url: '/_proxy?url=https%3A%2F%2Fapi.example.com%2Fv1%2Fmodels',
+          token: 'bridge-secret-xyz',
+        },
+        { url: 'https://api.example.com/v1/models', token: null },
+      ])
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })

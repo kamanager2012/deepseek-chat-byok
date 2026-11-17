@@ -26,8 +26,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,8 +37,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class MainActivity extends Activity {
   private static final int REQ_FILE_CHOOSER = 1001;
   private static final int REQ_CREATE_DOCUMENT = 1002;
+  private static final int MAX_EXPORT_SESSIONS = 4;
+  private static final long MAX_EXPORT_BYTES = 256L * 1024 * 1024;
 
   private LocalBridgeServer bridgeServer;
+  private String bridgeToken;
   private WebView webView;
   private ValueCallback<Uri[]> filePathCallback;
   private File pendingExportFile;
@@ -47,6 +52,7 @@ public final class MainActivity extends Activity {
     final String mimeType;
     final File file;
     final FileOutputStream stream;
+    long writtenBytes;
 
     ExportSession(String fileName, String mimeType, File file, FileOutputStream stream) {
       this.fileName = fileName;
@@ -56,13 +62,33 @@ public final class MainActivity extends Activity {
     }
   }
 
+  private static String generateBridgeToken() {
+    byte[] bytes = new byte[32];
+    new SecureRandom().nextBytes(bytes);
+    StringBuilder hex = new StringBuilder(bytes.length * 2);
+    for (byte b : bytes) {
+      hex.append(Character.forDigit((b >>> 4) & 0x0f, 16));
+      hex.append(Character.forDigit(b & 0x0f, 16));
+    }
+    return hex.toString();
+  }
+
+  private static String sanitizeExportFileName(String raw) {
+    if (raw == null || raw.isEmpty()) {
+      return "export.dat";
+    }
+    String clean = raw.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]+", "_").trim();
+    return clean.isEmpty() ? "export.dat" : clean;
+  }
+
   @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
     AssetManager assets = getAssets();
-    bridgeServer = new LocalBridgeServer(rel -> assets.open("web/" + rel));
+    bridgeToken = generateBridgeToken();
+    bridgeServer = new LocalBridgeServer(rel -> assets.open("web/" + rel), bridgeToken);
     int port;
     try {
       port = bridgeServer.start();
@@ -97,19 +123,22 @@ public final class MainActivity extends Activity {
 
     webView.addJavascriptInterface(new ExportBridge(), "AndroidExportBridge");
 
-    final String baseOrigin = "http://127.0.0.1:" + port;
     webView.setWebViewClient(
         new WebViewClient() {
           @Override
           public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             Uri uri = request.getUrl();
-            String url = uri.toString();
-            if (url.startsWith(baseOrigin)) {
+            String scheme =
+                uri.getScheme() != null ? uri.getScheme().toLowerCase(Locale.ROOT) : "";
+            String host = uri.getHost() != null ? uri.getHost().toLowerCase(Locale.ROOT) : "";
+            if ("http".equals(scheme) && "127.0.0.1".equals(host) && uri.getPort() == port) {
               return false;
             }
-            try {
-              startActivity(new Intent(Intent.ACTION_VIEW, uri));
-            } catch (Exception ignored) {
+            if ("https".equals(scheme) || "http".equals(scheme) || "mailto".equals(scheme)) {
+              try {
+                startActivity(new Intent(Intent.ACTION_VIEW, uri));
+              } catch (Exception ignored) {
+              }
             }
             return true;
           }
@@ -149,7 +178,7 @@ public final class MainActivity extends Activity {
           }
         });
 
-    webView.loadUrl(baseOrigin + "/");
+    webView.loadUrl("http://127.0.0.1:" + port + "/");
   }
 
   private void syncThemeChrome(Configuration config) {
@@ -316,12 +345,21 @@ public final class MainActivity extends Activity {
 
   private final class ExportBridge {
     @JavascriptInterface
+    public String getBridgeToken() {
+      return bridgeToken != null ? bridgeToken : "";
+    }
+
+    @JavascriptInterface
     public String beginExport(String fileName, String mimeType) {
+      if (exportSessions.size() >= MAX_EXPORT_SESSIONS) {
+        return "";
+      }
       String token = UUID.randomUUID().toString();
       try {
         File tmp = File.createTempFile("ds-export-", ".tmp", getCacheDir());
         FileOutputStream fos = new FileOutputStream(tmp);
-        exportSessions.put(token, new ExportSession(fileName, mimeType, tmp, fos));
+        exportSessions.put(
+            token, new ExportSession(sanitizeExportFileName(fileName), mimeType, tmp, fos));
         return token;
       } catch (IOException err) {
         return "";
@@ -331,12 +369,17 @@ public final class MainActivity extends Activity {
     @JavascriptInterface
     public boolean appendExportChunk(String token, String base64Chunk) {
       ExportSession session = exportSessions.get(token);
-      if (session == null) {
+      if (session == null || base64Chunk == null) {
         return false;
       }
       try {
         byte[] bytes = Base64.decode(base64Chunk, Base64.DEFAULT);
+        if (session.writtenBytes + bytes.length > MAX_EXPORT_BYTES) {
+          abortExport(token);
+          return false;
+        }
         session.stream.write(bytes);
+        session.writtenBytes += bytes.length;
         return true;
       } catch (Exception err) {
         return false;

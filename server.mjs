@@ -102,7 +102,13 @@ export const isPrivateOrMetadataIp = (rawIp) => {
       ip.startsWith('fe9') ||
       ip.startsWith('fea') ||
       ip.startsWith('feb') ||
+      ip.startsWith('fec') ||
+      ip.startsWith('fed') ||
+      ip.startsWith('fee') ||
+      ip.startsWith('fef') ||
       ip.startsWith('ff') ||
+      ip.startsWith('64:ff9b:') ||
+      ip.startsWith('100::') ||
       ip.startsWith('2001:db8:') ||
       ip.startsWith('::ffff:')
     )
@@ -113,13 +119,31 @@ export const isPrivateOrMetadataIp = (rawIp) => {
 const isLocalhostName = (hostname) =>
   hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1'
 
-export const checkProxyOrigin = (headers, allowedOrigins = new Set()) => {
+const parseAuthorityHostname = (authority) => {
+  if (!authority) {
+    return ''
+  }
+  try {
+    return new URL(`http://${authority}`).hostname.replace(/^\[|\]$/gu, '').toLowerCase()
+  } catch {
+    return ''
+  }
+}
+
+export const checkProxyOrigin = (headers, allowedOrigins = new Set(), options = {}) => {
   const hostHeader = typeof headers.host === 'string' ? headers.host.trim().toLowerCase() : ''
   const rawOrigin = typeof headers.origin === 'string' ? headers.origin.trim() : ''
   const secFetchSite =
     typeof headers['sec-fetch-site'] === 'string'
       ? headers['sec-fetch-site'].trim().toLowerCase()
       : ''
+
+  if (options.restrictLoopbackHost) {
+    const hostOnly = parseAuthorityHostname(hostHeader)
+    if (!isLocalhostName(hostOnly)) {
+      return 'Non-loopback Host header blocked by proxy DNS-rebinding policy'
+    }
+  }
 
   let originAllowedExplicitly = false
   if (rawOrigin) {
@@ -351,7 +375,9 @@ const handleProxy = async (req, res, urlObj, options) => {
     return
   }
 
-  const originError = checkProxyOrigin(req.headers, options.allowedOrigins)
+  const originError = checkProxyOrigin(req.headers, options.allowedOrigins, {
+    restrictLoopbackHost: options.restrictLoopbackHost,
+  })
   if (originError) {
     res.writeHead(403, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' })
     res.end(originError)
@@ -531,6 +557,7 @@ export const createAppServer = (options = {}) => {
   const maxBodyBytes = options.maxBodyBytes ?? DEFAULT_MAX_BODY_BYTES
   const connectTimeoutMs = options.connectTimeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS
   const allowedOrigins = new Set(options.allowedOrigins ?? [])
+  const restrictLoopbackHost = options.restrictLoopbackHost === true
 
   return http.createServer((req, res) => {
     let urlObj
@@ -546,6 +573,7 @@ export const createAppServer = (options = {}) => {
         maxBodyBytes,
         connectTimeoutMs,
         allowedOrigins,
+        restrictLoopbackHost,
       })
       return
     }
@@ -588,7 +616,11 @@ const isEntrypoint = () => {
 
 if (isEntrypoint()) {
   const { host, port, allowedOrigins } = parseArgs()
-  const server = createAppServer({ allowedOrigins })
+  const cleanBindHost = host.replace(/^\[|\]$/gu, '').toLowerCase()
+  const server = createAppServer({
+    allowedOrigins,
+    restrictLoopbackHost: isLocalhostName(cleanBindHost),
+  })
 
   const shutdown = () => {
     server.closeAllConnections?.()

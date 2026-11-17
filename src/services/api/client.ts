@@ -60,6 +60,41 @@ const isErrorBody = (value: unknown): value is ApiErrorBody =>
   'error' in value &&
   typeof (value as ApiErrorBody).error?.message === 'string'
 
+/** 对错误文本做防御性脱敏，避免故障网关回显将 API Key 或 Bearer 凭据写入界面与历史库 */
+export const redactApiSecrets = (raw: string): string =>
+  raw
+    .replace(/(Bearer\s+)[A-Za-z0-9._\-+=/:]{8,}/giu, '$1[REDACTED]')
+    .replace(/\b(sk-[A-Za-z0-9_-]{8,})\b/gu, '[REDACTED]')
+
+const getAndroidBridgeToken = (): string | null => {
+  if (typeof window === 'undefined') {
+    return null
+  }
+  const bridge = (window as Window & { AndroidExportBridge?: { getBridgeToken?: () => string } })
+    .AndroidExportBridge
+  try {
+    const token = bridge?.getBridgeToken?.()
+    return typeof token === 'string' && token.length > 0 ? token : null
+  } catch {
+    return null
+  }
+}
+
+const isLocalProxyRequestUrl = (url: string): boolean => {
+  if (url === '/_proxy' || url.startsWith('/_proxy?')) {
+    return true
+  }
+  if (
+    typeof window !== 'undefined' &&
+    window.location.origin &&
+    window.location.origin !== 'null'
+  ) {
+    const prefix = `${window.location.origin}/_proxy`
+    return url === prefix || url.startsWith(`${prefix}?`)
+  }
+  return false
+}
+
 const readErrorResponse = async (
   response: Response,
   kind: 'http' | 'protocol' = 'http',
@@ -75,18 +110,29 @@ const readErrorResponse = async (
   } catch {
     // 非 JSON 响应体直接展示原文
   }
-  return new ApiError(kind, message, response.status)
+  return new ApiError(kind, redactApiSecrets(message), response.status)
 }
 
 export const request = async (url: string, init: RequestInit): Promise<Response> => {
+  const token = isLocalProxyRequestUrl(url) ? getAndroidBridgeToken() : null
+  let finalInit = init
+  if (token) {
+    const headers = new Headers(init.headers)
+    headers.set('X-DS-Bridge-Token', token)
+    finalInit = { ...init, headers }
+  }
+
   let response: Response
   try {
-    response = await fetch(url, init)
+    response = await fetch(url, finalInit)
   } catch (error) {
-    if (init.signal?.aborted) {
+    if (finalInit.signal?.aborted) {
       throw error
     }
-    throw new ApiError('network', error instanceof Error ? error.message : String(error))
+    throw new ApiError(
+      'network',
+      redactApiSecrets(error instanceof Error ? error.message : String(error))
+    )
   }
   if (!response.ok) {
     throw await readErrorResponse(response)
@@ -390,7 +436,7 @@ export async function* streamProviderMessage({
       return
     } catch (error) {
       if (error instanceof OpenAIStreamError) {
-        throw new ApiError(error.kind, error.message)
+        throw new ApiError(error.kind, redactApiSecrets(error.message))
       }
       throw error
     }
@@ -425,10 +471,10 @@ export async function* streamProviderMessage({
       }
     }
     if (isErrorBody(parsed)) {
-      throw new ApiError('stream', parsed.error.message)
+      throw new ApiError('stream', redactApiSecrets(parsed.error.message))
     }
     if (eventName === 'error') {
-      throw new ApiError('stream', data)
+      throw new ApiError('stream', redactApiSecrets(data))
     }
     const event = readMessageEvent(parsed)
     if (!event) {

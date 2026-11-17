@@ -17,6 +17,7 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -68,13 +69,19 @@ public final class LocalBridgeServer implements Closeable {
   }
 
   private final AssetOpener assetOpener;
+  private final String bridgeToken;
   private final ExecutorService executor = Executors.newCachedThreadPool();
   private volatile ServerSocket serverSocket;
   private volatile boolean running;
   private volatile int boundPort;
 
   public LocalBridgeServer(AssetOpener assetOpener) {
+    this(assetOpener, null);
+  }
+
+  public LocalBridgeServer(AssetOpener assetOpener, String bridgeToken) {
     this.assetOpener = assetOpener;
+    this.bridgeToken = bridgeToken == null || bridgeToken.isEmpty() ? null : bridgeToken;
   }
 
   public int start() throws IOException {
@@ -226,6 +233,16 @@ public final class LocalBridgeServer implements Closeable {
     if (targetParam == null || targetParam.isEmpty()) {
       sendText(out, 400, "Missing ?url= parameter");
       return;
+    }
+
+    if (bridgeToken != null) {
+      String suppliedToken = headers.getOrDefault("x-ds-bridge-token", "");
+      if (!MessageDigest.isEqual(
+          bridgeToken.getBytes(StandardCharsets.UTF_8),
+          suppliedToken.getBytes(StandardCharsets.UTF_8))) {
+        sendText(out, 403, "Missing or invalid bridge token");
+        return;
+      }
     }
 
     URI targetUri;
@@ -403,6 +420,10 @@ public final class LocalBridgeServer implements Closeable {
     String secFetchSite =
         headers.getOrDefault("sec-fetch-site", "").trim().toLowerCase(Locale.ROOT);
 
+    if (!hostHeader.isEmpty() && !isLoopbackAuthority(hostHeader, expectedPort)) {
+      return "Non-loopback Host header blocked by proxy DNS-rebinding policy";
+    }
+
     if (!origin.isEmpty()) {
       if ("null".equalsIgnoreCase(origin)) {
         return "Null Origin blocked by proxy CSRF policy";
@@ -440,12 +461,23 @@ public final class LocalBridgeServer implements Closeable {
     return null;
   }
 
+  private static boolean isLoopbackAuthority(String authority, int port) {
+    if (authority == null || authority.isEmpty()) {
+      return false;
+    }
+    return ("127.0.0.1:" + port).equalsIgnoreCase(authority)
+        || ("localhost:" + port).equalsIgnoreCase(authority)
+        || ("[::1]:" + port).equalsIgnoreCase(authority);
+  }
+
   private static boolean isMatchingLocalHost(String headerAuthority, String hostHeader, int port) {
+    if (!isLoopbackAuthority(headerAuthority, port)) {
+      return false;
+    }
     if (!hostHeader.isEmpty()) {
       return headerAuthority.equalsIgnoreCase(hostHeader);
     }
-    return ("127.0.0.1:" + port).equals(headerAuthority)
-        || ("localhost:" + port).equals(headerAuthority);
+    return true;
   }
 
   private static String formatAuthorityHost(URI uri) {
@@ -541,6 +573,12 @@ public final class LocalBridgeServer implements Closeable {
       }
       if (first == 0xfe && (b[1] & 0xc0) == 0x80) {
         return true; // fe80::/10 link-local
+      }
+      if (first == 0xfe && (b[1] & 0xc0) == 0xc0) {
+        return true; // fec0::/10 deprecated site-local
+      }
+      if (b[0] == 0x00 && b[1] == 0x64 && b[2] == (byte) 0xff && b[3] == (byte) 0x9b) {
+        return true; // 64:ff9b::/96 NAT64
       }
       if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x0d && b[3] == (byte) 0xb8) {
         return true; // 2001:db8::/32 documentation
