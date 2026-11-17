@@ -94,6 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
@@ -103,3 +104,15 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+      - name: Check out verified source for live acceptance
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Verify live installer bytes against published Release digests
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SITE_URL: ${{ steps.deployment.outputs.page_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/verify-live-downloads.mjs "$SITE_URL"
