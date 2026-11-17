@@ -95,8 +95,8 @@ const scrollUntilVisible = async (
   maxCyRatio = 0.85
 ) => {
   const x = Math.round(screen.width * 0.5)
-  const yStart = Math.round(screen.height * 0.52)
-  const yEnd = Math.round(screen.height * 0.24)
+  const yStart = Math.round(screen.height * 0.48)
+  const yEnd = Math.round(screen.height * 0.2)
   const maxCy = Math.round(screen.height * maxCyRatio)
   let lastNodes = []
   for (let i = 0; i <= maxSwipes; i += 1) {
@@ -177,7 +177,7 @@ const keyField = await scrollUntilVisible(
   'API Key EditText',
   screen,
   6,
-  0.48
+  0.58
 )
 
 console.log(`Tapping visible API Key EditText at (${keyField.cx}, ${keyField.cy})`)
@@ -192,7 +192,7 @@ const saveBtn = await scrollUntilVisible(
   'Save Directly button',
   screen,
   6,
-  0.56
+  0.66
 )
 
 console.log(`Tapping visible Save Directly at (${saveBtn.cx}, ${saveBtn.cy})`)

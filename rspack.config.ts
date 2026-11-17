@@ -121,6 +121,11 @@ export const createConfig = ({
           to: 'icon-512.png',
           toType: 'file',
         },
+        {
+          from: path.resolve(root, 'public/llms.txt'),
+          to: 'llms.txt',
+          toType: 'file',
+        },
       ],
     }),
   ],
