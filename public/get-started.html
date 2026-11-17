@@ -6,31 +6,31 @@
     <meta name="theme-color" content="#4d6bfe" />
     <meta
       name="description"
-      content="DeepSeek Chat BYOK 是一个独立、免费、开源的 DeepSeek 聊天客户端，支持导入官方导出的聊天记录、本地记忆卡和自带 API Key 对话。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。支持免 Key 导入 DeepSeek/ChatGPT/Claude 导出 ZIP，提供本站 SHA-256 校验安卓 APK 与电脑便携包直接下载。"
+      content="AI 聊天搬家助手（DeepSeek Chat BYOK）是一个独立、免费、开源的 DeepSeek 聊天客户端，支持免 API Key 导入 DeepSeek / ChatGPT / Claude 官方导出的聊天记录、保存重要内容和自带 API Key 续聊；非 DeepSeek 官方产品，也不是 Harness 插件集合。"
     />
     <meta
       name="keywords"
-      content="DeepSeek 聊天记录迁移,DeepSeek 聊天记录导入,DeepSeek 本地聊天客户端,免费开源,BYOK,DeepSeek chat export importer,local-first,BYOK client,deepseek_data zip"
+      content="AI聊天搬家助手,DeepSeek聊天记录迁移,DeepSeek聊天记录导入,DeepSeek本地聊天客户端,免费开源,BYOK,DeepSeek chat export importer"
     />
     <meta
       property="og:title"
-      content="DeepSeek Chat BYOK｜独立开源 DeepSeek 聊天记录迁移与客户端下载与使用指南"
+      content="AI 聊天搬家助手（DeepSeek Chat BYOK）｜旧聊天导入与客户端下载与使用指南"
     />
     <meta
       property="og:description"
-      content="独立开源 DeepSeek 聊天客户端与聊天记录搬家工具：免 Key 预览选择性合并 DeepSeek / ChatGPT / Claude 导出 ZIP，含 SHA-256 可验证安卓 APK、电脑便携版与在线网页版。"
+      content="你的旧聊天，不用从头开始：免 Key 导入 DeepSeek / ChatGPT / Claude 聊天记录压缩包，保存重要设定与对话，支持免安装网页版与安卓独立安装包。"
     />
     <meta property="og:type" content="website" />
     <link
       rel="canonical"
       href="https://kamanager2012.github.io/deepseek-chat-byok/get-started.html"
     />
-    <title>DeepSeek Chat BYOK｜独立开源 DeepSeek 聊天记录迁移与客户端下载与使用指南</title>
+    <title>AI 聊天搬家助手（DeepSeek Chat BYOK）｜旧聊天导入与客户端下载与使用指南</title>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "DeepSeek Chat BYOK",
+        "name": "AI 聊天搬家助手 (DeepSeek Chat BYOK)",
         "applicationCategory": "UtilitiesApplication",
         "operatingSystem": "Android 8.0+, Windows, macOS, Linux, Web",
         "isAccessibleForFree": true,
@@ -38,7 +38,7 @@
         "url": "https://kamanager2012.github.io/deepseek-chat-byok/get-started.html",
         "downloadUrl": "https://kamanager2012.github.io/deepseek-chat-byok/get-started.html",
         "codeRepository": "https://github.com/kamanager2012/deepseek-chat-byok",
-        "description": "DeepSeek Chat BYOK 是一个独立、免费、开源的 DeepSeek 聊天客户端，支持导入官方导出的聊天记录、本地记忆卡和自带 API Key 对话。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。"
+        "description": "DeepSeek Chat BYOK（AI 聊天搬家助手）是一个独立、免费、开源的 DeepSeek 聊天客户端，支持导入官方导出的聊天记录、本地记忆卡和自带 API Key 对话。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。"
       }
     </script>
     <script type="application/ld+json">
@@ -51,7 +51,15 @@
             "name": "如何把 DeepSeek 聊天记录导入这个客户端？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "先在 DeepSeek 官方导出聊天记录 ZIP，然后在网页版或桌面端直接拖入压缩包（安卓可在文件管理器点「分享 / 用其他应用打开」），也可以在「设置 → 数据管理」选取文件。扫描目录后勾选要恢复的会话执行合并导入，整个过程不需要填写 API Key，且默认保留本地已有会话不覆盖。"
+              "text": "三步导入旧聊天：1）在 DeepSeek、ChatGPT 或 Claude 官方导出聊天记录压缩包（.zip）；2）打开本客户端网页版直接拖入，或在安卓文件管理器对 .zip 点「分享 / 用其他应用打开」；3）勾选需要的对话导入即可。前两步完全免费且不需要 API Key，默认安全导入不会覆盖本地已有聊天。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "导入和查看旧聊天要钱吗？需要 API Key 吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "软件按 MIT 协议免费开源，导入和查看本地聊天记录完全免费且不需要 API Key。只有当你想让 AI 继续生成新回复时，才需要填写自己的模型服务商 API Key 并由服务商按实际用量计费；本工具不卖共享账号，也不赠送免费额度。"
             }
           },
           {
@@ -59,23 +67,15 @@
             "name": "它和官方 deepseek-chat-import 插件有什么区别？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "官方 deepseek-chat-import 是 deepseek-ai/deepseek-harness 里的实验性命令行导入插件；而 DeepSeek Chat BYOK 是已打包发行的独立客户端，自带可视化预览/选择性合并、记忆卡、上下文预算裁剪、费用估算和网页/安卓/桌面界面。若需要重型多 Agent Harness 终端与远程工作台（对标 DSH Go），可查看独立维护的兄弟项目 DSH Community。"
+              "text": "官方 deepseek-chat-import 是依赖 Harness 环境的实验性插件；而 DeepSeek Chat BYOK（AI 聊天搬家助手）是无需安装 Harness 环境、直接给普通人使用的独立客户端，内置网页/安卓/桌面界面、导出教学、选择性导入、重要记忆保存和人民币参考花费提示。"
             }
           },
           {
             "@type": "Question",
-            "name": "导入旧记录需要 API Key 吗？客户端免费吗？",
+            "name": "普通电脑用户必须安装 Node.js 吗？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "客户端本身按 MIT 协议免费开源，导入和查看本机旧对话完全免费且不需要填写 API Key。只有当你希望模型继续生成新回复时，才需要在设置里填写自己的 API Key，并由你所选的模型服务商按实际用量计费；本项目不卖共享账号，也不赠送免费额度。"
-            }
-          },
-          {
-            "@type": "Question",
-            "name": "桌面便携版为什么需要 Node.js 22+？不想装 Node.js 怎么办？",
-            "acceptedAnswer": {
-              "@type": "Answer",
-              "text": "电脑便携版内置了轻量零三方依赖的本地 Node.js HTTP/CORS 转发服务（server.mjs），用来避免浏览器跨域报错并让 API Key 与对话仅留在本地设备，因此需要本机预先安装 Node.js 22+ LTS。如果只想免安装体验或只导入查看历史，建议直接使用在线网页版，或在安卓手机上安装 2.24 MB 的独立 Release APK。"
+              "text": "不需要。如果你只想在电脑上导入、查看旧对话或连接支持浏览器直连的服务，直接点击打开本页面的免安装网页版即可，不需要装任何环境；只有进阶区的「电脑便携包（portable.zip）」需要本机预先安装 Node.js 22+ LTS。"
             }
           }
         ]
@@ -99,15 +99,15 @@
         line-height: 1.65;
       }
       main {
-        max-width: 860px;
+        max-width: 820px;
         margin: auto;
         padding: 36px 20px 64px;
       }
       h1 {
-        font-size: clamp(27px, 4.8vw, 36px);
-        line-height: 1.26;
+        font-size: clamp(28px, 5vw, 38px);
+        line-height: 1.24;
         letter-spacing: -0.03em;
-        margin: 6px 0 12px;
+        margin: 8px 0 12px;
       }
       h2 {
         font-size: 19px;
@@ -124,21 +124,16 @@
         color: #4565b6;
         font-size: 12px;
         font-weight: 700;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.04em;
       }
-      .definition {
-        padding: 14px 16px;
-        background: #ffffff;
-        border-left: 4px solid #4668ed;
-        border-radius: 10px;
-        border-top: 1px solid #e5e8f0;
-        border-right: 1px solid #e5e8f0;
-        border-bottom: 1px solid #e5e8f0;
-        font-size: 15px;
+      .lead {
+        font-size: 16px;
+        color: #36455d;
+        margin-bottom: 16px;
       }
       .notice {
         margin: 16px 0;
-        padding: 14px;
+        padding: 14px 16px;
         background: #eff4ff;
         border: 1px solid #dce5f9;
         border-radius: 12px;
@@ -171,8 +166,8 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 43px;
-        padding: 9px 16px;
+        min-height: 44px;
+        padding: 10px 18px;
         border-radius: 10px;
         background: #4668ed;
         color: white;
@@ -189,13 +184,48 @@
         outline: 3px solid #a7bcff;
         outline-offset: 3px;
       }
-      .disclaimer {
-        margin-top: 16px;
-        padding: 13px 15px;
-        background: #fffaf0;
-        border: 1px solid #f0dfb1;
+      .guide-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        margin-top: 12px;
+      }
+      .guide-box {
+        background: #f8fafe;
+        border: 1px solid #e2e8f5;
         border-radius: 12px;
-        font-size: 13px;
+        padding: 14px;
+        font-size: 13.5px;
+      }
+      .guide-box strong {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 14px;
+      }
+      .shots-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 14px;
+        margin-top: 12px;
+      }
+      figure {
+        margin: 0;
+        background: #f8fafe;
+        border: 1px solid #e5e8f0;
+        border-radius: 12px;
+        padding: 10px;
+      }
+      figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        border: 1px solid #e5e8f0;
+      }
+      figcaption {
+        margin-top: 8px;
+        font-size: 12.5px;
+        color: #4e5d73;
       }
       .facts-grid {
         display: grid;
@@ -222,30 +252,13 @@
         font-size: 12.5px;
         word-break: break-all;
       }
-      .shots-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 14px;
-        margin-top: 12px;
-      }
-      figure {
-        margin: 0;
-        background: #f8fafe;
-        border: 1px solid #e5e8f0;
+      .disclaimer {
+        margin-top: 14px;
+        padding: 13px 15px;
+        background: #fffaf0;
+        border: 1px solid #f0dfb1;
         border-radius: 12px;
-        padding: 10px;
-      }
-      figure img {
-        display: block;
-        width: 100%;
-        height: auto;
-        border-radius: 8px;
-        border: 1px solid #e5e8f0;
-      }
-      figcaption {
-        margin-top: 8px;
-        font-size: 12.5px;
-        color: #4e5d73;
+        font-size: 13px;
       }
       .table-wrap {
         overflow-x: auto;
@@ -275,6 +288,19 @@
       li {
         margin: 7px 0;
       }
+      details.advanced-panel {
+        margin-top: 18px;
+        background: white;
+        border: 1px solid #e5e8f0;
+        border-radius: 16px;
+        padding: 16px 20px;
+      }
+      details.advanced-panel > summary {
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 15px;
+        color: #36455d;
+      }
       footer {
         margin-top: 28px;
         color: #5b6880;
@@ -289,7 +315,8 @@
         main {
           padding: 24px 15px 42px;
         }
-        .card {
+        .card,
+        details.advanced-panel {
           padding: 16px;
         }
         .buttons a {
@@ -300,96 +327,39 @@
   </head>
   <body>
     <main>
-      <div class="eyebrow">DEEPSEEK CHAT BYOK · 独立开源客户端 · 非官方 / 非插件组合</div>
-      <h1>把 DeepSeek / ChatGPT / Claude 旧聊天记录搬进独立本地客户端</h1>
-      <p class="definition">
-        <strong>标准定位：</strong>DeepSeek Chat BYOK 是一个独立、免费、开源的 DeepSeek
-        聊天客户端，支持导入官方导出的聊天记录、本地记忆卡和自带 API Key 对话。它不是 DeepSeek
-        官方产品，也不是 Harness 插件集合。（基于 MIT 协议从
-        <code>deepseek-ai/chat-demo</code> 独立扩展。）
+      <div class="eyebrow">AI 聊天搬家助手（DeepSeek Chat BYOK）· 独立开源工具 · 非官方产品</div>
+      <h1>你的旧聊天，不用从头开始</h1>
+      <p class="lead">
+        把以前在 DeepSeek、ChatGPT 或 Claude 的聊天记录搬过来，想看就看，重要内容继续保存。
       </p>
 
       <div class="notice">
-        <strong>费用与密钥说明：</strong>客户端免费开源。<strong
-          >导入、预览与阅读旧聊天记录不需要 API Key</strong
-        >；只有需要在线 AI 生成新回复时，才填写自己的 API Key
-        并由所选模型服务商计费。本项目不卖共享账号，不提供无限免费额度。
+        <strong>先把费用说明白：</strong>导入和查看旧聊天记录<strong
+          >完全免费，不需要 API Key</strong
+        >；只有你想让 AI
+        继续回复新内容时，才需要填你自己的模型接口并按用量付费（本工具不卖共享账号，也不赠送免费额度）。
       </div>
 
-      <section class="card" aria-label="可验证发布状态">
-        <h2>可验证发布状态（Immutable Release 证据）</h2>
-        <p class="muted">
-          GitHub Immutable Releases（不可篡改发行tag）+ Actions CI（代码检查 / Playwright / Android
-          模拟器跨版本覆盖升级）+ 本站同源 SHA-256 下载校验：
-        </p>
-        <div class="facts-grid">
-          <div class="fact-box">
-            <strong>当前镜像版本与许可证</strong>
-            <div id="release-tag">正在读取 ./downloads/manifest.json …</div>
-            <div class="muted">MIT 开源 · 独立仓 kamanager2012/deepseek-chat-byok</div>
-          </div>
-          <div class="fact-box">
-            <strong>Android 正式签名 APK</strong>
-            <div id="android-meta">等待校验清单（约 2.24 MB，持久化 Release 签名证书）</div>
-            <div class="muted">
-              证书 SHA-256：<code
-                >86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7</code
-              >
-            </div>
-          </div>
-          <div class="fact-box">
-            <strong>Windows / macOS / Linux 便携包</strong>
-            <div id="desktop-meta">等待校验清单（约 2.24 MB，含双击启动脚本，需 Node.js 22+）</div>
-            <div class="muted">
-              <a href="./downloads/manifest.json">manifest.json</a> ·
-              <a
-                href="https://github.com/kamanager2012/deepseek-chat-byok/releases"
-                rel="noopener noreferrer"
-                >GitHub Releases</a
-              >
-              ·
-              <a
-                href="https://github.com/kamanager2012/deepseek-chat-byok/actions"
-                rel="noopener noreferrer"
-                >CI 状态</a
-              >
-              ·
-              <a
-                href="https://github.com/kamanager2012/deepseek-chat-byok/blob/main/SECURITY.md"
-                rel="noopener noreferrer"
-                >验签说明</a
-              >
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="steps" aria-label="多端下载与开始使用">
+      <section class="steps" aria-label="开始搬家入口">
         <div class="card">
-          <h2>① 免安装网页版：先导入旧聊天体验</h2>
+          <h2>方式一：直接用网页版开始搬家（免安装，手机电脑都能用）</h2>
           <p>
-            支持 <strong>DeepSeek（<code>deepseek_data-*.zip</code>）</strong>、<strong
-              >ChatGPT</strong
-            >
-            与 <strong>Claude（<code>conversations.json</code>）</strong> 官方导出
-            ZIP。桌面浏览器可直接将
-            <code>.zip</code> 拖进页面，秒开目录索引、选择性合并（默认保留本地已有会话不覆盖）。
+            不用懂技术、不用下载任何软件。点下面「开始搬家」，把官方导出的 <code>.zip</code>
+            文件拖进去或选进来，就能直接搜索、重读以前的对话，重要设定也可以保存成记忆卡。
           </p>
-          <div class="buttons"><a class="button" href="./">打开网页版（免安装）</a></div>
-          <p class="muted">
-            数据留在当前浏览器 IndexedDB，不上传任何服务器。若需严格隔离敏感 API
-            Key（或调用未开浏览器 CORS 的第三方网关），请使用下方安卓正式版 APK 或电脑便携版。
-          </p>
+          <div class="buttons">
+            <a class="button" href="./">开始搬家（打开网页版）</a>
+            <a class="button secondary" href="#export-guide">不知道怎么导出？看教程</a>
+          </div>
+          <p class="muted">聊天记录只存在你当前设备浏览器里，不上传第三方服务器。</p>
         </div>
 
         <div class="card">
-          <h2>② 安卓手机：下载正式签名版 APK</h2>
+          <h2>方式二：下载安卓手机 App（独立安装包，约 2.25 MB）</h2>
           <p>
-            请认准 <strong>android-release.apk</strong>（不要下
-            debug.apk）。支持从系统文件管理器直接对 <code>.zip</code> 点
-            <strong>「分享 / 用其他应用打开 → DeepSeek Chat BYOK」</strong> 导入；Android
-            <code>v0.4.0+</code> 使用硬件级 <code>AndroidKeyStore</code> AES-256-GCM 加密保管已填
-            API Key。
+            习惯在手机上看旧聊天或长期写小说的朋友，推荐安装安卓正式版。支持在系统文件管理器对
+            <code>.zip</code> 点 <strong>「分享 / 用其他应用打开」</strong> 直达导入，并使用
+            <code>AndroidKeyStore</code> 管理加密密钥。
           </p>
           <div class="buttons">
             <a
@@ -401,22 +371,120 @@
             >
           </div>
           <p id="download-status" class="muted" role="status" aria-live="polite">
-            正在查找本站校验镜像安装包…
+            正在查找最新正式版安装包…
           </p>
           <small>
-            Android 8.0+；<code>v0.2.2+</code> 同证书正式版可直接覆盖升级并保留历史会话、记忆卡与
-            Key（早期 debug 包迁移前请先导出本地备份）。
+            支持 Android 8.0+。请认准正式版安装包，后续新版可直接覆盖升级并保留原有聊天与设置。
           </small>
         </div>
+      </section>
 
-        <div class="card">
-          <h2>③ 电脑：下载便携包（Windows / macOS / Linux）</h2>
+      <section class="card" id="export-guide" aria-label="三步导出旧聊天教程">
+        <h2>不知道怎么导出？按你以前用的软件看这 3 步</h2>
+        <p class="muted">
+          下载下来的 <strong>.zip 压缩包不需要手动解压</strong>，直接选进本工具就能导入：
+        </p>
+        <div class="guide-grid">
+          <div class="guide-box">
+            <strong>DeepSeek 导出方法</strong>
+            <ol>
+              <li>打开 DeepSeek 网页或 App，点击头像进「设置」。</li>
+              <li>进「个人资料 / 数据与隐私 → 导出数据」。</li>
+              <li>保存邮箱或下载列表里的 <code>.zip</code> 压缩包。</li>
+            </ol>
+          </div>
+          <div class="guide-box">
+            <strong>ChatGPT 导出方法</strong>
+            <ol>
+              <li>点击头像进入「设置 Settings → 数据控制 Data Controls」。</li>
+              <li>点击「导出数据 Export data」确认。</li>
+              <li>打开邮件里的下载链接，保存 <code>.zip</code> 压缩包。</li>
+            </ol>
+          </div>
+          <div class="guide-box">
+            <strong>Claude 导出方法</strong>
+            <ol>
+              <li>点击左下角账号进入「Settings → Account / Privacy」。</li>
+              <li>点击「Export data」申请导出聊天记录。</li>
+              <li>从邮件把官方 <code>.zip</code> 压缩包存到手机或电脑。</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-label="三步导入旧聊天与真实界面">
+        <h2>三步导入旧聊天：实机界面展示</h2>
+        <ol>
+          <li>打开上方网页版或安卓版，点「导入旧对话（无需密钥）」。</li>
+          <li>选进刚刚下载好的官方 <code>.zip</code> 压缩包，勾选想留下的对话。</li>
+          <li>点确认导入后即可翻看全部原文；重要内容记到「记忆卡」，想继续聊时再接模型服务。</li>
+        </ol>
+        <div class="shots-grid">
+          <figure>
+            <img
+              src="./docs/images/desktop-byok-workspace.png"
+              alt="客户端主界面、保存重要记忆卡与对话列表截图"
+              loading="lazy"
+            />
+            <figcaption>主界面：完整浏览导入的旧对话，可随时保存重要内容继续接写</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="./docs/images/import-selective-merge.png"
+              alt="选择要导入的旧对话列表界面截图"
+              loading="lazy"
+            />
+            <figcaption>选择性导入：按标题查找并勾选要留下的聊天，不覆盖你现有的记录</figcaption>
+          </figure>
+          <figure>
+            <img
+              src="./docs/images/mobile-byok-settings.png"
+              alt="手机端模型与 API 配置截图"
+              loading="lazy"
+            />
+            <figcaption>手机端操作界面：需要 AI 续写时按步骤贴入密钥即可开始</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="card" aria-label="常见问题 FAQ">
+        <h2>常见疑问</h2>
+        <h3>1. 这个工具和官方产品有什么关系？</h3>
+        <p>
+          <strong>这不是 DeepSeek 官方软件，也不是几个零散插件的组合方案。</strong>技术项目名为
+          <code>DeepSeek Chat BYOK</code>，是基于官方开源基础代码独立开发的完整 MIT 开源客户端。
+        </p>
+
+        <h3>2. 我以前从来没听过 API Key，能先用吗？</h3>
+        <p>
+          可以。导入和翻看以前导出的聊天记录、保存重要内容，都不需要填任何 API
+          Key。只有当你希望工具帮你调用在线大模型继续往下写时，才需要在「设置 → 模型与
+          API」跟着指引贴入一次自己的密钥；每次回答旁边还会直接用通俗人民币估算大概花了多少元。
+        </p>
+
+        <h3>3. 这个免费开源项目是个人独立维护的吗？</h3>
+        <p>
+          是的。它由开源仓库
+          <a href="https://github.com/kamanager2012/deepseek-chat-byok" rel="noopener noreferrer"
+            >kamanager2012/deepseek-chat-byok</a
+          >
+          独立构建和公开发布；不收集你的对话，也不存在后台会员收费。
+        </p>
+      </section>
+
+      <details class="advanced-panel">
+        <summary>
+          进阶用户专区：电脑便携版下载（需 Node.js 22+）、SHA-256 校验与同类技术对比
+        </summary>
+        <div style="margin-top: 14px">
+          <h3>电脑便携包（Windows / macOS / Linux，需先装 Node.js 22+ LTS）</h3>
           <p>
-            解压后双击 <code>Start-Windows.bat</code> 或
-            <code>Start-macOS.command</code> 即可在本地端口运行（内置
-            <code>/_proxy</code> 解决第三方模型跨域与本机 Ollama）。<strong
-              >真实前提：便携包仍需本机先安装 Node.js 22+ LTS</strong
-            >；若仅查看旧聊天记录，直接使用网页版即可，无需 Node.js。
+            如果你需要在电脑本地端口运行独立窗口（或访问本地 Ollama
+            及不支持浏览器跨域的第三方接口），可以下载便携包解压后双击
+            <code>Start-Windows.bat</code> / <code>Start-macOS.command</code>。<strong
+              >提示：该便携包要求电脑已安装 Node.js 22+
+              LTS；普通用户只看旧聊天请优先用页面上方的免安装网页版。</strong
+            >
           </p>
           <div class="buttons">
             <a
@@ -427,183 +495,111 @@
               >查看电脑便携包</a
             >
           </div>
+
+          <div class="disclaimer">
+            <strong>校验提醒：</strong>本站安装包在构建阶段会逐字节核对 GitHub Immutable Releases 的
+            <code>SHA256SUMS.txt</code> 后镜像发布，确保与源包完全一致。
+          </div>
+
+          <h3 style="margin-top: 16px">可验证发布状态（Immutable Release 证据）</h3>
+          <div class="facts-grid">
+            <div class="fact-box">
+              <strong>当前镜像版本</strong>
+              <div id="release-tag">正在读取 ./downloads/manifest.json …</div>
+              <div class="muted">MIT 开源 · kamanager2012/deepseek-chat-byok</div>
+            </div>
+            <div class="fact-box">
+              <strong>Android 正式安装包校验</strong>
+              <div id="android-meta">等待校验清单</div>
+              <div class="muted">
+                签名 SHA-256：<code
+                  >86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7</code
+                >
+              </div>
+            </div>
+            <div class="fact-box">
+              <strong>电脑便携包校验</strong>
+              <div id="desktop-meta">等待校验清单</div>
+              <div class="muted">
+                <a href="./downloads/manifest.json">manifest.json</a> ·
+                <a
+                  href="https://github.com/kamanager2012/deepseek-chat-byok/releases"
+                  rel="noopener noreferrer"
+                  >GitHub Releases</a
+                >
+                ·
+                <a
+                  href="https://github.com/kamanager2012/deepseek-chat-byok/actions"
+                  rel="noopener noreferrer"
+                  >CI 状态</a
+                >
+                ·
+                <a
+                  href="https://github.com/kamanager2012/deepseek-chat-byok/blob/main/SECURITY.md"
+                  rel="noopener noreferrer"
+                  >验签说明</a
+                >
+              </div>
+            </div>
+          </div>
+
+          <h3 style="margin-top: 18px">
+            与官方 <code>deepseek-chat-import</code> 插件、<code>DSH Go</code> /
+            <code>DSH Community</code> 的定位区分
+          </h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>项目 / 工具</th>
+                  <th>定位与适用人群</th>
+                  <th>关键差异</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>DeepSeek Chat BYOK</strong>（本项目）</td>
+                  <td>独立、免费、开源的轻量聊天与历史迁移客户端</td>
+                  <td>
+                    无需安装 Harness 环境，打开即用；专注 DeepSeek / ChatGPT / Claude
+                    旧记录搬家、保存重要设定与日常续聊。
+                  </td>
+                </tr>
+                <tr>
+                  <td>官方 <code>deepseek-chat-import</code></td>
+                  <td><code>deepseek-ai/deepseek-harness</code> 里的实验性插件</td>
+                  <td>
+                    依赖 Harness 环境运行的实验性插件（支持 CLI 与 Harness 界面），面向已经使用
+                    Harness 工作台的开发者。
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>DSH Community</code> vs <code>DSH Go</code></td>
+                  <td>多 Agent Terminal / Harness 工作台与远程控制端</td>
+                  <td>
+                    若你需要工程级多 Agent 工具链与远程桌面审批（对应
+                    <code>DSH Go</code> 赛道），见我们独立维护的兄弟仓库
+                    <a
+                      href="https://github.com/kamanager2012/dsh-community"
+                      rel="noopener noreferrer"
+                      >kamanager2012/dsh-community</a
+                    >。
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </section>
-
-      <div class="disclaimer">
-        <strong>下载优先顺序提醒：</strong>发布流水线会在构建 GitHub Pages 时逐字节核对官方 Release
-        的 <code>SHA256SUMS.txt</code> 后镜像到本站，因此优先提供本站直接下载（GitHub Releases
-        作为原始备份入口）。请勿从陌生网盘下载未经校验指纹验证的修改包。
-      </div>
-
-      <section class="card" aria-label="这不是什么">
-        <h2>这不是什么（功能与消费边界声明）</h2>
-        <ul>
-          <li>
-            <strong>不是 DeepSeek 官方客户端，也不是几个零散开源插件的组合脚本：</strong
-            >它是单一仓打包构建、已有独立版本号和持久化签名 APK 的完整应用。
-          </li>
-          <li>
-            <strong>不卖共享账号、不提供免费模型额度：</strong
-            >客户端本身零收费，不代理或倒卖额度；模型对话费用由你选择的 API 服务商（如 DeepSeek
-            开放平台 / 硅基流动 / Anthropic / OpenRouter 或本地免费 Ollama）直接收取或承担。
-          </li>
-          <li>
-            <strong>电脑便携版并非零依赖原生 C++/Rust 可执行文件：</strong
-            ><code>portable.zip</code> 依赖本机安装 <strong>Node.js 22+ LTS</strong> 启动
-            <code>server.mjs</code>；不愿装环境的桌面用户可使用免安装网页版。
-          </li>
-        </ul>
-      </section>
-
-      <section class="card" aria-label="真实界面截图">
-        <h2>实机界面截图与 30 秒搬家流程</h2>
-        <ol>
-          <li>
-            在 DeepSeek / ChatGPT / Claude 导出官方聊天记录
-            <code>.zip</code>（勿把隐私原始包交给第三方在线转换站）。
-          </li>
-          <li>
-            无需填写 API Key，直接拖入网页或从安卓「分享 /
-            用其他应用打开」导入，预览、搜索、勾选需要的对话执行合并。
-          </li>
-          <li>
-            若需继续追问或长文续写，在「设置 → 模型与 API」填写自己的
-            Key，钉住「记忆卡」并按轮数控制发送预算（可显示预估 USD 花费与缓存命中）。
-          </li>
-        </ol>
-        <div class="shots-grid">
-          <figure>
-            <img
-              src="./docs/images/import-selective-merge.png"
-              alt="官方导出 ZIP 预览与选择性合并弹窗界面截图"
-              loading="lazy"
-            />
-            <figcaption>
-              免 Key 打开官方 ZIP 预览目录、搜索并选择性合并导入（保留分支与原对话）
-            </figcaption>
-          </figure>
-          <figure>
-            <img
-              src="./docs/images/desktop-byok-workspace.png"
-              alt="桌面端多服务商 BYOK、固定记忆卡与上下文预算界面截图"
-              loading="lazy"
-            />
-            <figcaption>长文写作记忆卡 + 历史轮数预算 + 多服务商 BYOK 切换与用量显示</figcaption>
-          </figure>
-          <figure>
-            <img
-              src="./docs/images/mobile-byok-settings.png"
-              alt="移动端 390px 自适应 BYOK 接口配置截图"
-              loading="lazy"
-            />
-            <figcaption>
-              手机端自适应模型配置页（含取 Key 引导、自定义端点与 Android Keystore 保管）
-            </figcaption>
-          </figure>
-        </div>
-      </section>
-
-      <section class="card" aria-label="同类工具定位对比">
-        <h2>
-          与官方 <code>deepseek-chat-import</code> 插件、<code>DSH Go</code>、<code
-            >DSH Community</code
-          >
-          的区别
-        </h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>产品 / 工具</th>
-                <th>定位与形态</th>
-                <th>历史搬家与聊天体验差异</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>DeepSeek Chat BYOK</strong>（本项目）</td>
-                <td>
-                  独立、免费、开源的轻量聊天与历史迁移客户端（Web / 2.24MB Android APK /
-                  电脑便携包）
-                </td>
-                <td>
-                  面向日常对话、长文写作与多平台存档（DeepSeek + ChatGPT +
-                  Claude），无需命令行，可先免 Key
-                  预览选择性合并、钉住记忆卡并追踪缓存命中与预估花费。
-                </td>
-              </tr>
-              <tr>
-                <td>官方 <code>deepseek-chat-import</code></td>
-                <td><code>deepseek-ai/deepseek-harness</code> 仓库中的实验性插件</td>
-                <td>
-                  主要把官方 DeepSeek ZIP 转为 Harness CLI/工作台会话；依赖 Harness
-                  环境，不是面向普通手机/浏览器用户的轻量独立聊天端。
-                </td>
-              </tr>
-              <tr>
-                <td><strong>DSH Community</strong> vs <code>DSH Go</code></td>
-                <td>均属重型多 Agent Terminal / Harness 工作台与远程控制端</td>
-                <td>
-                  若你需要完整的 Agent Loop、代码工具审批与桌面端 E2EE 远程控制（对应
-                  <code>DSH Go</code> 的工程赛道），请使用我们独立维护的兄弟项目
-                  <a href="https://github.com/kamanager2012/dsh-community" rel="noopener noreferrer"
-                    >kamanager2012/dsh-community</a
-                  >；本客户端故意不加入重型 Agent 引擎以保持纯粹轻快。
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section class="card" aria-label="常见问题 FAQ">
-        <h2>常见问题（FAQ）</h2>
-        <h3>Q1：如何把 DeepSeek 聊天记录导入这个客户端？</h3>
-        <p>
-          先在 DeepSeek 官方导出聊天记录
-          <code>.zip</code>，然后在网页版/桌面版把文件直接拖进页面（安卓可在文件管理器中选「分享 /
-          用其他应用打开」），或点击「设置 →
-          数据管理」挑选文件；预览清单后勾选所需会话点合并导入即可，遇到同 ID
-          会话默认保留本机现有内容。
-        </p>
-
-        <h3>Q2：导入旧记录需要 API Key 吗？安全吗？</h3>
-        <p>
-          完全不需要。读取 ZIP、保留分支和浏览旧记录都在本地完成，不发外网请求。之后填 API Key
-          时，网页版存浏览器站点本地（因 GitHub Pages
-          子路径与同账号其他站点同源，敏感密钥建议改用安卓正式版 APK 或电脑便携版），Android
-          <code>v0.4.0+</code> 使用系统级 <code>AndroidKeyStore</code> AES-256-GCM 加密保管。
-        </p>
-
-        <h3>Q3：它和官方 <code>deepseek-chat-import</code> 插件有什么区别？</h3>
-        <p>
-          官方 <code>deepseek-chat-import</code> 是面向
-          <code>deepseek-harness</code> 的实验性导入插件；DeepSeek Chat BYOK
-          则是已经完整集成界面、独立分发、免命令行就能浏览多平台历史、管记忆卡和对接多家 BYOK API
-          的独立客户端。
-        </p>
-
-        <h3>Q4：桌面版为什么还要 Node.js 22+？</h3>
-        <p>
-          便携包使用自带的零第三方依赖 Node.js 22 服务（<code>server.mjs</code>）充当本地应用网关与
-          <code>/_proxy</code>，以绕过浏览器跨域限制并将所有聊天与密钥留在自己电脑。如果不想安装
-          Node.js，推荐使用本页面的免安装网页版或安卓 APK。
-        </p>
-      </section>
+      </details>
 
       <footer>
-        DeepSeek Chat BYOK · MIT 开源 · 基于 DeepSeek 官方开源 chat-demo 独立扩展，非 DeepSeek
-        官方产品。
+        AI 聊天搬家助手（DeepSeek Chat BYOK）· MIT 开源 · 基于官方开源 chat-demo 独立扩展，非
+        DeepSeek 官方产品。
         <a href="https://github.com/kamanager2012/deepseek-chat-byok" rel="noopener noreferrer"
           >GitHub 源码仓库</a
         >
         ·
-        <a href="./llms.txt">纯文本 AI 检索摘要 (llms.txt)</a>
-        ·
-        <a href="https://github.com/kamanager2012/dsh-community" rel="noopener noreferrer"
-          >兄弟项目：DSH Community</a
-        >
+        <a href="./llms.txt">纯文本摘要 (llms.txt)</a>
       </footer>
     </main>
     <script>
@@ -663,8 +659,7 @@
           if (desktopMetaEl) {
             desktopMetaEl.textContent = `${manifest.desktop.filename} · ${formatMb(manifest.desktop.bytes)} · SHA-256 ${manifest.desktop.sha256.slice(0, 16)}…`
           }
-          status.textContent =
-            '优先从本站下载：发布时已核对发行包 SHA-256；如无法访问本站，可查看 GitHub Releases。'
+          status.textContent = '已准备好当前最新正式版安卓安装包（可直接点击下载）。'
           return true
         }
 
@@ -711,15 +706,14 @@
             if (releaseTagEl && typeof release.tag_name === 'string') {
               releaseTagEl.textContent = `${release.tag_name}（GitHub API 在线查询）`
             }
-            status.textContent = '本站直接下载暂不可用，已找到 GitHub 正式版安装包。'
+            status.textContent = '已找到最新官方安卓正式版安装包。'
           } catch {
             android.href = releasePage
             desktop.href = releasePage
             if (releaseTagEl) {
               releaseTagEl.textContent = '请查看 GitHub Releases 最新正式发行'
             }
-            status.textContent =
-              '暂时无法查到安装包，请在 GitHub 正式发布页查看；若网络无法访问 GitHub，下载可能失败。'
+            status.textContent = '暂时无法加载下载地址；如果当前网络访问海外站点受限，可稍后再试。'
           } finally {
             clearTimeout(timeout)
           }

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslate } from '../../i18n/index.js'
 import { getVisibleMessages } from '../../services/chat/branches.js'
 import { applyContextBudget, sessionToMarkdown } from '../../services/chat/contextBudget.js'
-import { estimateSessionCost, formatUsdCost } from '../../services/api/pricing.js'
+import { estimateSessionCost, formatCnyCost, formatUsdCost } from '../../services/api/pricing.js'
 import { isProviderConfigured } from '../../services/api/providers.js'
 import { distillSessionMemory, updateSessionMemory } from '../../services/chat/store.js'
 import type { Session } from '../../services/chat/types.js'
@@ -130,18 +130,25 @@ export const ContextBar = ({ session }: { session: Session | null }) => {
           ? t('contextBudgetTrimmedHint', { dropped: budget.droppedRounds.length })
           : '') +
         (sessionCost && sessionCost.totalCostUsd > 0
-          ? ` · ~${formatUsdCost(sessionCost.totalCostUsd)}`
+          ? t('contextCostShort', {
+              cny: formatCnyCost(sessionCost.totalCostUsd),
+              usd: formatUsdCost(sessionCost.totalCostUsd),
+            })
           : '')
       : `${provider.name} · ${provider.model}`) +
     (providerReady ? '' : ` · ${t('providerNeedKeyTag')}`)
 
   const chipTitle =
     sessionCost && sessionCost.totalCostUsd > 0
-      ? `${provider.baseUrl} · Est. ~${formatUsdCost(sessionCost.totalCostUsd)}${
-          sessionCost.totalSavedUsd > 0
-            ? ` (cache saved ~${formatUsdCost(sessionCost.totalSavedUsd)})`
-            : ''
-        }`
+      ? `${provider.baseUrl} · ${t(
+          sessionCost.totalSavedUsd > 0 ? 'contextCostTooltipSaved' : 'contextCostTooltip',
+          {
+            cny: formatCnyCost(sessionCost.totalCostUsd),
+            usd: formatUsdCost(sessionCost.totalCostUsd),
+            savedCny: formatCnyCost(sessionCost.totalSavedUsd),
+            savedUsd: formatUsdCost(sessionCost.totalSavedUsd),
+          }
+        )}`
       : provider.baseUrl
 
   const memorySuggested = budget.droppedRounds.length > 0 && !session?.memoryPrompt

@@ -39,6 +39,35 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
+.safeBanner {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent);
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.advancedOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.advancedSummary {
+  cursor: pointer;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  user-select: none;
+}
+
+.advancedBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+}
+
 .list {
   display: flex;
   flex-direction: column;

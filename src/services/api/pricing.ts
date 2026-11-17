@@ -110,3 +110,17 @@ export const formatUsdCost = (usd: number): string => {
   }
   return `$${usd.toFixed(3)}`
 }
+
+const USD_TO_CNY = 7.25
+
+/** 按参考汇率换算为通俗人民币（元），便于非技术用户理解大致花费 */
+export const formatCnyCost = (usd: number): string => {
+  if (!Number.isFinite(usd) || usd <= 0) {
+    return '¥0.00 元'
+  }
+  const cny = usd * USD_TO_CNY
+  if (cny < 0.01) {
+    return '< ¥0.01 元'
+  }
+  return `¥${cny.toFixed(2)} 元`
+}

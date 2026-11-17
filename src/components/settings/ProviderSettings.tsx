@@ -250,7 +250,7 @@ export const ProviderSettings = () => {
         </div>
 
         <div className={styles.fieldGrid}>
-          <div className={styles.field}>
+          <div className={`${styles.field} ${styles.fieldFull}`}>
             <span className={styles.fieldLabel}>{t('providerPresetLabel')}</span>
             <Select
               ariaLabel={t('providerPresetLabel')}
@@ -261,6 +261,45 @@ export const ProviderSettings = () => {
               }))}
               onChange={(val) => applyPreset(val as ProviderPresetId)}
             />
+          </div>
+
+          <div className={`${styles.field} ${styles.fieldFull}`}>
+            <div className={styles.keyLabelRow}>
+              <label htmlFor={apiKeyId} className={styles.fieldLabel}>
+                {t('providerApiKeyLabel')}
+              </label>
+              {presetMeta.keyUrl ? (
+                <a
+                  href={presetMeta.keyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.keyLink}
+                >
+                  {t('providerGetApiKeyLink')}
+                </a>
+              ) : null}
+            </div>
+            <div className={styles.keyRow}>
+              <input
+                id={apiKeyId}
+                type={showApiKey ? 'text' : 'password'}
+                className={styles.input}
+                value={draft.apiKey}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder={
+                  presetMeta.requiresApiKey ? t('apiKeyPlaceholder') : t('providerApiKeyOptional')
+                }
+                onChange={(e) => setDraft((prev) => ({ ...prev, apiKey: e.target.value }))}
+              />
+              <Button
+                variant="outlined"
+                size="m"
+                onClick={() => setShowApiKey((visible) => !visible)}
+              >
+                {showApiKey ? t('providerHideApiKey') : t('providerShowApiKey')}
+              </Button>
+            </div>
           </div>
 
           <div className={styles.field}>
@@ -306,7 +345,7 @@ export const ProviderSettings = () => {
             </datalist>
           </label>
 
-          <label className={`${styles.field} ${styles.fieldFull}`}>
+          <label className={styles.field}>
             <span className={styles.fieldLabel}>{t('providerBaseUrlLabel')}</span>
             <input
               type="url"
@@ -317,45 +356,6 @@ export const ProviderSettings = () => {
               onChange={(e) => setDraft((prev) => ({ ...prev, baseUrl: e.target.value }))}
             />
           </label>
-
-          <div className={`${styles.field} ${styles.fieldFull}`}>
-            <div className={styles.keyLabelRow}>
-              <label htmlFor={apiKeyId} className={styles.fieldLabel}>
-                {t('providerApiKeyLabel')}
-              </label>
-              {presetMeta.keyUrl ? (
-                <a
-                  href={presetMeta.keyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.keyLink}
-                >
-                  {t('providerGetApiKeyLink')}
-                </a>
-              ) : null}
-            </div>
-            <div className={styles.keyRow}>
-              <input
-                id={apiKeyId}
-                type={showApiKey ? 'text' : 'password'}
-                className={styles.input}
-                value={draft.apiKey}
-                autoComplete="off"
-                spellCheck={false}
-                placeholder={
-                  presetMeta.requiresApiKey ? t('apiKeyPlaceholder') : t('providerApiKeyOptional')
-                }
-                onChange={(e) => setDraft((prev) => ({ ...prev, apiKey: e.target.value }))}
-              />
-              <Button
-                variant="outlined"
-                size="m"
-                onClick={() => setShowApiKey((visible) => !visible)}
-              >
-                {showApiKey ? t('providerHideApiKey') : t('providerShowApiKey')}
-              </Button>
-            </div>
-          </div>
         </div>
 
         <div className={styles.hint}>

@@ -1,6 +1,6 @@
-name: Pilot Feedback / Bug Report (试用反馈与问题报告)
-description: Report first-run onboarding, DeepSeek archive migration, or Day-2 usage feedback (v0.2.2+).
-title: '[Pilot v0.2.2] '
+name: Pilot Feedback / 试用体验与冷启动卡点反馈
+description: Report first-run onboarding, export tutorial, archive migration, or reply setup issues (v0.4.0+).
+title: '[Pilot v0.4.1] '
 labels:
   - pilot-feedback
 body:
@@ -8,71 +8,72 @@ body:
     attributes:
       value: |
         > **Privacy Notice / 隐私安全提醒**
-        > NEVER paste API keys (`sk-...`), Bearer tokens, raw chat messages, or personal `deepseek_data-*.zip` archives into public issues. Share only de-identified steps, device/browser details, and error codes.
+        > 严禁在公开 Issue 中粘贴 API Key（`sk-...`）、个人聊天正文或原始导出 `.zip` 压缩包！仅填写卡住的步骤与脱敏提示。
 
   - type: dropdown
     id: platform
     attributes:
-      label: Platform / 运行端形态
+      label: Platform / 使用方式
       options:
-        - Web / PWA (GitHub Pages)
-        - Android APK (v0.2.2+ android-release.apk)
-        - Android APK (legacy debug build)
-        - Portable Desktop (Windows / macOS / Linux Node 22)
-        - Docker
+        - Web / PWA (在线网页版)
+        - Android APK (v0.4.0+ android-release.apk)
+        - Portable Desktop (Node.js 22+ 便携包)
     validations:
       required: true
 
   - type: input
     id: app_version
     attributes:
-      label: App Version & Device/Browser / 版本号与设备环境
-      placeholder: 'e.g. v0.2.2 · Android 14 (Pixel 7) or Chrome 131 on Windows 11'
+      label: App Version & Device/Browser / 版本号、设备与网络环境
+      placeholder: '例如：v0.4.1 · 华为/小米安卓浏览器直连，国内宽带未开代理'
     validations:
       required: true
 
-  - type: input
-    id: provider
+  - type: checkboxes
+    id: funnel_steps
     attributes:
-      label: Provider Type (No Keys!) / 模型服务商类型（严禁填密钥）
-      placeholder: 'e.g. DeepSeek Official / OpenAI / Anthropic / OpenRouter / Custom NewAPI'
+      label: 4 个关键节点完成情况（请勾选你顺利完成了哪几步）
+      options:
+        - label: ① 顺利找到并打开了产品主页 / 安装页（国内网络可达）
+        - label: ② 成功从 DeepSeek / ChatGPT / Claude 导出了 .zip 压缩包
+        - label: ③ 不填 API Key 成功导入了旧聊天，并能找到以前的某一段对话
+        - label: ④ 理解导入免费 vs 续聊按模型服务商计费，并完成了首次配置续聊
 
   - type: dropdown
     id: first_run_result
     attributes:
-      label: First-Run BYOK Setup / 首次配置体验
+      label: First-Run Setup / 首次完成情况
       options:
-        - Completed independently and chatted successfully
-        - Completed with friction / confusing UI
-        - Blocked before first reply
+        - 独立完成了搬家并成功续聊
+        - 仅完成了导入和查看旧聊天，卡在配置模型/API Key
+        - 卡在找不到导出入口或无法导入 ZIP
+        - 打不开网页或下载安装包失败
     validations:
       required: true
 
   - type: dropdown
     id: migration_result
     attributes:
-      label: History ZIP Migration / 历史导入专项
+      label: Archive Source / 导入包来源
       options:
-        - Not tested
-        - Small DeepSeek ZIP (< 10 MB) - Succeeded cleanly
-        - Large DeepSeek ZIP (>= 10 MB) - Succeeded cleanly
-        - Import failed or hit performance/UI issue
-        - Native BYOK backup ZIP export/import
+        - DeepSeek 官方导出 ZIP
+        - ChatGPT 官方导出 ZIP
+        - Claude 官方导出 ZIP
+        - 尚未导出
+    validations:
+      required: true
 
-  - type: dropdown
-    id: day2_status
+  - type: input
+    id: provider
     attributes:
-      label: Usage Continuity / 次日回访情况
-      options:
-        - First-day trial only
-        - Returned on Day 2 and kept using
-        - Unlikely to continue (please explain below)
+      label: Provider Used / 续聊所用服务商（严禁填密钥）
+      placeholder: '例如：还没配模型（仅看旧记录）/ DeepSeek 官方 / 硅基流动 / 本地 Ollama'
 
   - type: textarea
     id: details
     attributes:
-      label: Steps, Blockers & Expected Behavior / 复现步骤、卡点与改进建议（已脱敏）
-      placeholder: 'Describe what worked, where you got stuck, console/UI error messages (without API keys), or what stopped you from reusing on Day 2.'
+      label: 卡在哪一步或有哪些地方没看懂？（已脱敏）
+      placeholder: '请直接用大白话告诉我们：哪句话没看懂、哪个按钮找不到、或者报了什么提示。'
     validations:
       required: true
 
@@ -81,5 +82,5 @@ body:
     attributes:
       label: Privacy Confirmation / 脱敏确认
       options:
-        - label: I confirm this report contains NO API keys, auth headers, personal chat transcripts, or raw archive ZIPs. / 我确认已脱敏，未包含 API Key、个人对话内容或原始导出包。
+        - label: 我确认未包含 API Key、个人对话原文或原始聊天导出压缩包。
           required: true

@@ -3,7 +3,7 @@ import clsx from 'clsx'
 import { memo } from 'react'
 import { IconRefreshOutline16, IconWarningOutline16 } from '../base/icons.js'
 import { describeReply } from '../../services/chat/describe.js'
-import { estimateMessageCost, formatUsdCost } from '../../services/api/pricing.js'
+import { estimateMessageCost, formatCnyCost, formatUsdCost } from '../../services/api/pricing.js'
 import { canContinueReply } from '../../services/chat/reply.js'
 import { continueReply, regenerateReply } from '../../services/chat/store.js'
 import { stopReadAloud } from '../../services/speech/readAloud.js'
@@ -189,13 +189,17 @@ export const AssistantMessage = memo(function AssistantMessage({
                 {cost && cost.costUsd > 0 ? (
                   <span
                     className={styles.usagePill}
-                    title={
-                      cost.savedUsd > 0
-                        ? `Est. ~${formatUsdCost(cost.costUsd)} (cache saved ~${formatUsdCost(cost.savedUsd)})`
-                        : `Est. ~${formatUsdCost(cost.costUsd)}`
-                    }
+                    title={t(cost.savedUsd > 0 ? 'replyCostTooltipSaved' : 'replyCostTooltip', {
+                      cny: formatCnyCost(cost.costUsd),
+                      usd: formatUsdCost(cost.costUsd),
+                      savedCny: formatCnyCost(cost.savedUsd),
+                      savedUsd: formatUsdCost(cost.savedUsd),
+                    })}
                   >
-                    ~{formatUsdCost(cost.costUsd)}
+                    {t('replyCostShort', {
+                      cny: formatCnyCost(cost.costUsd),
+                      usd: formatUsdCost(cost.costUsd),
+                    })}
                   </span>
                 ) : null}
               </>
