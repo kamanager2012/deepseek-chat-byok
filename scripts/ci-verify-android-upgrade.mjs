@@ -148,12 +148,26 @@ if (!meta1.vc) throw new Error('Failed to read V1 versionCode')
 
 adb('shell', 'am', 'start', '-W', '-n', ACTIVITY)
 
-// 1. Wait until WebView renders Settings -> Models & API
-await waitForNode(
-  (n) => n.w > 0 && n.h > 0 && /Models & API|模型与 API|Provider/iu.test(`${n.text} ${n.desc}`),
-  'Settings Models & API tab inside V1 WebView',
+// 1. Wait until WebView renders Settings -> Models & API (or keyless Welcome onboarding in v0.3.2+)
+const { found: v1Entry } = await waitForNode(
+  (n) =>
+    n.w > 0 &&
+    n.h > 0 &&
+    /Models & API|模型与 API|Provider|Set up a model to chat|设置模型，开始聊天/iu.test(
+      `${n.text} ${n.desc}`
+    ),
+  'Settings Models & API tab or Welcome model setup button inside V1 WebView',
   45_000
 )
+if (/Set up a model to chat|设置模型，开始聊天/iu.test(`${v1Entry.text} ${v1Entry.desc}`)) {
+  console.log('Detected keyless onboarding screen; tapping model setup button...')
+  adb('shell', 'input', 'tap', String(v1Entry.cx), String(v1Entry.cy))
+  await waitForNode(
+    (n) => n.w > 0 && n.h > 0 && /Models & API|模型与 API|Provider/iu.test(`${n.text} ${n.desc}`),
+    'Settings Models & API tab after tapping onboarding button',
+    20_000
+  )
+}
 
 // 2. Scroll to password EditText (API Key input) in upper half and fill test BYOK secret
 const keyField = await scrollUntilVisible(
@@ -310,7 +324,7 @@ const { nodes: v2Nodes } = await waitForNode(
 )
 
 const joinedV2 = v2Nodes.map((n) => `${n.text} ${n.desc}`).join(' | ')
-if (/Key needed|未填 Key/u.test(joinedV2)) {
+if (/Key needed|未填 Key|Set up a model to chat|设置模型，开始聊天/u.test(joinedV2)) {
   throw new Error(`Saved BYOK key was lost after in-place upgrade! Visible UI text: ${joinedV2}`)
 }
 if (/Save Directly|直接保存/u.test(joinedV2)) {

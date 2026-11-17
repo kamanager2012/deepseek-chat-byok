@@ -34,6 +34,7 @@ export type ProviderPreset = {
   defaultModel: string
   modelSuggestions: string[]
   requiresApiKey: boolean
+  keyUrl?: string
   hintZh: string
   hintEn: string
 }
@@ -50,6 +51,7 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     defaultModel: 'deepseek-flash',
     modelSuggestions: ['deepseek-flash', 'deepseek-v4-pro'],
     requiresApiKey: true,
+    keyUrl: 'https://platform.deepseek.com/api_keys',
     hintZh: '直连官方 Anthropic 协议接口，支持联网搜索、文件解析与语音朗读。',
     hintEn: 'Official DeepSeek Anthropic endpoint with search, file upload, and ASR/TTS.',
   },
@@ -62,6 +64,7 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     defaultModel: 'deepseek-chat',
     modelSuggestions: ['deepseek-chat', 'deepseek-reasoner', 'deepseek-flash', 'deepseek-v4-pro'],
     requiresApiKey: true,
+    keyUrl: 'https://platform.deepseek.com/api_keys',
     hintZh: '标准 OpenAI 协议，纯文本/思考与图片问答，便于对比或切换模型 ID。',
     hintEn: 'Standard OpenAI Chat Completions compatibility for DeepSeek models.',
   },
@@ -98,6 +101,7 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     defaultModel: 'claude-sonnet-4-5',
     modelSuggestions: ['claude-sonnet-4-5', 'claude-opus-4-1', 'claude-haiku-4-5'],
     requiresApiKey: true,
+    keyUrl: 'https://console.anthropic.com/settings/keys',
     hintZh: '标准 Anthropic Messages 协议，自动处理思考预算（budget_tokens）与图片内联。',
     hintEn: 'Standard Anthropic Messages API with thinking budget_tokens and inline images.',
   },
@@ -110,6 +114,7 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     defaultModel: 'deepseek-ai/DeepSeek-V3',
     modelSuggestions: ['deepseek-ai/DeepSeek-V3', 'deepseek-ai/DeepSeek-R1'],
     requiresApiKey: true,
+    keyUrl: 'https://cloud.siliconflow.cn/account/ak',
     hintZh: '填入硅基流动 API Key 与对应 DeepSeek 托管模型 ID。',
     hintEn: 'Use your SiliconFlow API key with DeepSeek hosted model IDs.',
   },
@@ -122,6 +127,7 @@ export const PROVIDER_PRESETS: readonly ProviderPreset[] = [
     defaultModel: 'deepseek/deepseek-chat',
     modelSuggestions: ['deepseek/deepseek-chat', 'deepseek/deepseek-r1'],
     requiresApiKey: true,
+    keyUrl: 'https://openrouter.ai/keys',
     hintZh: '支持 OpenRouter Key，注意查看模型是否带 :free 或对应上下文上限。',
     hintEn: 'OpenRouter unified endpoint. Check model ID and context window.',
   },

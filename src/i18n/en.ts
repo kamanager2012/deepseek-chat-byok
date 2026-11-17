@@ -206,6 +206,9 @@ export const en = {
   providerModelLabel: 'Model ID',
   providerApiKeyLabel: 'API Key (stored locally)',
   providerApiKeyOptional: 'Optional for local Ollama',
+  providerGetApiKeyLink: 'Get API Key for this provider ↗',
+  providerBeginnerSteps:
+    'Quick setup: 1. Pick a preset -> 2. Paste your API key -> 3. Click "Test & Save"',
   providerCorsProxyToggle: 'Use local CORS proxy (required for some 3rd-party gateways in browser)',
   providerCorsProxyUrlLabel: 'Local Proxy URL',
   providerSaveVerify: 'Test & Save',

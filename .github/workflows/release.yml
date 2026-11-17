@@ -13,6 +13,7 @@ on:
 permissions:
   contents: write
   checks: read
+  actions: write
 
 jobs:
   publish:
@@ -184,6 +185,22 @@ jobs:
           cp -r dist "$STAGE_DIR/dist"
           cp server.mjs package.json LICENSE README.md README.zh-CN.md SECURITY.md Dockerfile "$STAGE_DIR/"
           cp scripts/start-desktop.sh scripts/start-desktop.ps1 scripts/start-lan.sh "$STAGE_DIR/scripts/"
+          cp scripts/start-desktop-windows.bat "$STAGE_DIR/Start-Windows.bat"
+          cp scripts/start-desktop-macos.command "$STAGE_DIR/Start-macOS.command"
+          chmod +x "$STAGE_DIR/Start-macOS.command" "$STAGE_DIR/scripts/start-desktop.sh" "$STAGE_DIR/scripts/start-lan.sh"
+          printf '%s\n' \
+            "DeepSeek Chat BYOK - Portable Desktop Quick Start" \
+            "=================================================" \
+            "" \
+            "Requirement: Node.js 22+ LTS (https://nodejs.org/)" \
+            "" \
+            "- Windows: Double-click Start-Windows.bat" \
+            "- macOS: Double-click Start-macOS.command (if Gatekeeper prompts, Right-click -> Open)" \
+            "- Linux / Terminal: Run ./scripts/start-desktop.sh" \
+            "" \
+            "All local API keys and chat history stay on this machine." \
+            "Zero hosted fees, zero shared keys." \
+            > "$STAGE_DIR/README-START.txt"
           (cd "$STAGE_DIR" && zip -qr "${ASSETS_DIR}/deepseek-chat-byok-${RELEASE_TAG}-portable.zip" .)
 
           (cd "$ASSETS_DIR" && sha256sum * > SHA256SUMS.txt)
@@ -224,10 +241,16 @@ jobs:
                 "- **Android APK (\`android-debug.apk\`)**: Signed with an ephemeral CI debug keystore. **Do not assume in-place upgrades work across CI debug builds**: before switching versions without a fixed release keystore, export your chats via **Settings -> Data -> Export all chats** first, uninstall the older APK cleanly, install the new APK, re-import your ZIP backup, and re-enter your API key(s)."
             fi
             printf '%s\n' \
-              "- **Portable Bundle (\`portable.zip\`)**: Prebuilt \`dist/\` + zero-dependency Node 22 \`server.mjs\` + desktop/LAN launchers (\`./scripts/start-desktop.sh\` or \`./scripts/start-desktop.ps1\`)."
+              "- **Portable Bundle (\`portable.zip\`)**: Prebuilt \`dist/\` + zero-dependency Node 22 \`server.mjs\` + double-click desktop launchers (\`Start-Windows.bat\`, \`Start-macOS.command\`, \`./scripts/start-desktop.sh\`). Requires Node.js 22+."
           } > "$NOTES_FILE"
 
           gh release create "${RELEASE_TAG}" "${ASSETS_DIR}"/* \
             --verify-tag \
             --title "DeepSeek Chat BYOK ${RELEASE_TAG}" \
             --notes-file "$NOTES_FILE"
+
+      - name: Trigger GitHub Pages installer mirror refresh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        continue-on-error: true
+        run: gh workflow run pages.yml --ref main
