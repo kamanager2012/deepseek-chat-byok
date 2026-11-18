@@ -138,8 +138,12 @@ describe('server.mjs static & hardened SSRF/CSRF-safe /_proxy', () => {
       expect(await manifest.text()).toContain('DeepSeek Chat BYOK')
 
       const traversal = await fetch(`${srv.url}/../package.json`)
-      expect(traversal.status).toBe(200)
-      expect(await traversal.text()).toContain('<!doctype html>')
+      expect(traversal.status).toBe(404)
+      expect(await traversal.text()).not.toContain('"name": "chat-demo"')
+
+      const spaRoute = await fetch(`${srv.url}/chat/session-1`)
+      expect(spaRoute.status).toBe(200)
+      expect(await spaRoute.text()).toContain('<!doctype html>')
 
       for (const blocked of [
         'https://169.254.169.254/latest/meta-data',

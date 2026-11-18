@@ -12,9 +12,13 @@ import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
+import android.os.Process;
 import android.provider.OpenableColumns;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
+import android.system.Os;
+import android.system.StructStat;
 import android.util.Base64;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
@@ -34,6 +38,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -48,10 +53,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
+import org.json.JSONObject;
 
 public final class MainActivity extends Activity {
   private static final int REQ_FILE_CHOOSER = 1001;
@@ -61,6 +69,7 @@ public final class MainActivity extends Activity {
   private static final String KEYSTORE_ALIAS = "deepseek_byok_keystore_v1";
   private static final String VAULT_PREFS = "ds_keystore_vault";
   private static final String VAULT_KEY_SECRETS = "secrets_v1";
+  private static final String VAULT_READ_ERROR_SENTINEL = "__DS_VAULT_ERR__";
   private static final String SHARED_IMPORT_FILENAME = "shared-import.zip";
   private static final String CANONICAL_ORIGIN =
       "http://127.0.0.1:" + LocalBridgeServer.CANONICAL_WEB_PORT;
@@ -72,7 +81,16 @@ public final class MainActivity extends Activity {
   private ValueCallback<Uri[]> filePathCallback;
   private File pendingExportFile;
   private volatile String pendingSharedZipName;
+  private volatile String pendingShareNonce;
+  private final Object vaultLock = new Object();
   private final Object sharedZipLock = new Object();
+  private final ExecutorService sharedImportExecutor =
+      Executors.newSingleThreadExecutor(
+          r -> {
+            Thread t = new Thread(r, "ds-shared-zip-reader");
+            t.setDaemon(true);
+            return t;
+          });
   private final Map<String, ExportSession> exportSessions = new ConcurrentHashMap<>();
 
   private static final class ExportSession {
@@ -109,9 +127,30 @@ public final class MainActivity extends Activity {
     return clean.isEmpty() ? "export.dat" : clean;
   }
 
+  private void cleanupStaleCacheFiles() {
+    File cacheDir = getCacheDir();
+    if (cacheDir == null) {
+      return;
+    }
+    File[] files = cacheDir.listFiles();
+    if (files == null) {
+      return;
+    }
+    for (File f : files) {
+      String name = f.getName();
+      if (SHARED_IMPORT_FILENAME.equals(name)
+          || (name.startsWith("ds-shared-") && name.endsWith(".zip"))
+          || (name.startsWith("ds-export-") && name.endsWith(".tmp"))) {
+        //noinspection ResultOfMethodCallIgnored
+        f.delete();
+      }
+    }
+  }
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    cleanupStaleCacheFiles();
 
     AssetManager assets = getAssets();
     bridgeToken = generateBridgeToken();
@@ -145,14 +184,23 @@ public final class MainActivity extends Activity {
         candidate.getBytes(StandardCharsets.UTF_8));
   }
 
-  private static SecretKey getOrCreateSecretKey() throws Exception {
+  private static SecretKey getExistingSecretKey() throws Exception {
     KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
     ks.load(null);
-    if (ks.containsAlias(KEYSTORE_ALIAS)) {
-      KeyStore.Entry entry = ks.getEntry(KEYSTORE_ALIAS, null);
-      if (entry instanceof KeyStore.SecretKeyEntry) {
-        return ((KeyStore.SecretKeyEntry) entry).getSecretKey();
-      }
+    if (!ks.containsAlias(KEYSTORE_ALIAS)) {
+      return null;
+    }
+    KeyStore.Entry entry = ks.getEntry(KEYSTORE_ALIAS, null);
+    if (entry instanceof KeyStore.SecretKeyEntry) {
+      return ((KeyStore.SecretKeyEntry) entry).getSecretKey();
+    }
+    return null;
+  }
+
+  private static SecretKey getOrCreateSecretKey() throws Exception {
+    SecretKey existing = getExistingSecretKey();
+    if (existing != null) {
+      return existing;
     }
     KeyGenerator generator =
         KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore");
@@ -171,43 +219,50 @@ public final class MainActivity extends Activity {
     if (plaintext == null || plaintext.length() > 256 * 1024) {
       return false;
     }
-    try {
-      SecretKey key = getOrCreateSecretKey();
-      Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-      cipher.init(Cipher.ENCRYPT_MODE, key);
-      byte[] iv = cipher.getIV();
-      byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
-      String encoded =
-          Base64.encodeToString(iv, Base64.NO_WRAP)
-              + ":"
-              + Base64.encodeToString(ciphertext, Base64.NO_WRAP);
-      SharedPreferences prefs = getSharedPreferences(VAULT_PREFS, MODE_PRIVATE);
-      return prefs.edit().putString(VAULT_KEY_SECRETS, encoded).commit();
-    } catch (Exception err) {
-      return false;
+    synchronized (vaultLock) {
+      try {
+        SecretKey key = getOrCreateSecretKey();
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.ENCRYPT_MODE, key);
+        byte[] iv = cipher.getIV();
+        byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+        String encoded =
+            Base64.encodeToString(iv, Base64.NO_WRAP)
+                + ":"
+                + Base64.encodeToString(ciphertext, Base64.NO_WRAP);
+        SharedPreferences prefs = getSharedPreferences(VAULT_PREFS, MODE_PRIVATE);
+        return prefs.edit().putString(VAULT_KEY_SECRETS, encoded).commit();
+      } catch (Exception err) {
+        return false;
+      }
     }
   }
 
   private String decryptFromPrefs() {
-    SharedPreferences prefs = getSharedPreferences(VAULT_PREFS, MODE_PRIVATE);
-    String encoded = prefs.getString(VAULT_KEY_SECRETS, null);
-    if (encoded == null || encoded.isEmpty()) {
-      return "{}";
-    }
-    int sep = encoded.indexOf(':');
-    if (sep <= 0 || sep >= encoded.length() - 1) {
-      return "{}";
-    }
-    try {
-      byte[] iv = Base64.decode(encoded.substring(0, sep), Base64.NO_WRAP);
-      byte[] ciphertext = Base64.decode(encoded.substring(sep + 1), Base64.NO_WRAP);
-      SecretKey key = getOrCreateSecretKey();
-      Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-      cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(128, iv));
-      byte[] plain = cipher.doFinal(ciphertext);
-      return new String(plain, StandardCharsets.UTF_8);
-    } catch (Exception err) {
-      return "{}";
+    synchronized (vaultLock) {
+      SharedPreferences prefs = getSharedPreferences(VAULT_PREFS, MODE_PRIVATE);
+      String encoded = prefs.getString(VAULT_KEY_SECRETS, null);
+      if (encoded == null || encoded.isEmpty()) {
+        return "{}";
+      }
+      int sep = encoded.indexOf(':');
+      if (sep <= 0 || sep >= encoded.length() - 1) {
+        return VAULT_READ_ERROR_SENTINEL;
+      }
+      try {
+        SecretKey key = getExistingSecretKey();
+        if (key == null) {
+          return VAULT_READ_ERROR_SENTINEL;
+        }
+        byte[] iv = Base64.decode(encoded.substring(0, sep), Base64.NO_WRAP);
+        byte[] ciphertext = Base64.decode(encoded.substring(sep + 1), Base64.NO_WRAP);
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(128, iv));
+        byte[] plain = cipher.doFinal(ciphertext);
+        return new String(plain, StandardCharsets.UTF_8);
+      } catch (Exception err) {
+        return VAULT_READ_ERROR_SENTINEL;
+      }
     }
   }
 
@@ -258,81 +313,86 @@ public final class MainActivity extends Activity {
       return;
     }
     String scheme = uri.getScheme() != null ? uri.getScheme().toLowerCase(Locale.ROOT) : "";
-    if (!"content".equals(scheme) && !"file".equals(scheme)) {
+    if (!"content".equals(scheme)) {
       return;
     }
-    final String displayName = resolveSharedDisplayName(uri);
-    Thread worker =
-        new Thread(
-            () -> {
-              File tempFile = null;
-              try (InputStream is = getContentResolver().openInputStream(uri)) {
-                if (is == null) {
-                  return;
-                }
-                tempFile = File.createTempFile("ds-shared-", ".zip", getCacheDir());
-                byte[] buf = new byte[16384];
-                byte[] header = new byte[4];
-                int headerLen = 0;
-                long total = 0;
-                try (FileOutputStream fos = new FileOutputStream(tempFile)) {
-                  int n;
-                  while ((n = is.read(buf)) != -1) {
-                    if (headerLen < 4) {
-                      int copy = Math.min(4 - headerLen, n);
-                      System.arraycopy(buf, 0, header, headerLen, copy);
-                      headerLen += copy;
-                    }
-                    total += n;
-                    if (total > MAX_EXPORT_BYTES) {
-                      throw new IOException("Shared ZIP exceeds 256 MiB limit");
-                    }
-                    fos.write(buf, 0, n);
-                  }
-                }
-                if (headerLen < 4
-                    || header[0] != 0x50
-                    || header[1] != 0x4b
-                    || header[2] != 0x03
-                    || header[3] != 0x04) {
-                  throw new IOException("Not a valid ZIP archive");
-                }
-                File target = new File(getCacheDir(), SHARED_IMPORT_FILENAME);
-                synchronized (sharedZipLock) {
-                  if (target.exists()) {
-                    //noinspection ResultOfMethodCallIgnored
-                    target.delete();
-                  }
-                  if (!tempFile.renameTo(target)) {
-                    throw new IOException("Failed to stage shared ZIP");
-                  }
-                  tempFile = null;
-                  pendingSharedZipName = displayName;
-                }
-                runOnUiThread(
-                    () -> {
-                      if (webView != null) {
-                        webView.evaluateJavascript(
-                            "window.dispatchEvent(new CustomEvent('ds-android-shared-zip'))", null);
-                      }
-                    });
-              } catch (Exception err) {
-                if (tempFile != null) {
-                  //noinspection ResultOfMethodCallIgnored
-                  tempFile.delete();
-                }
-                runOnUiThread(
-                    () ->
-                        Toast.makeText(
-                                MainActivity.this,
-                                "Cannot open shared file: " + err.getMessage(),
-                                Toast.LENGTH_LONG)
-                            .show());
+    try {
+      sharedImportExecutor.execute(
+          () -> {
+            File tempFile = null;
+            try (ParcelFileDescriptor pfd = getContentResolver().openFileDescriptor(uri, "r")) {
+              if (pfd == null) {
+                return;
               }
-            },
-            "ds-shared-zip-reader");
-    worker.setDaemon(true);
-    worker.start();
+              StructStat stat = Os.fstat(pfd.getFileDescriptor());
+              if (stat.st_uid == Process.myUid()) {
+                throw new SecurityException("Rejected self-owned URI descriptor");
+              }
+              String displayName = resolveSharedDisplayName(uri);
+              tempFile = File.createTempFile("ds-shared-", ".zip", getCacheDir());
+              byte[] buf = new byte[16384];
+              byte[] header = new byte[4];
+              int headerLen = 0;
+              long total = 0;
+              try (InputStream is = new ParcelFileDescriptor.AutoCloseInputStream(pfd);
+                  FileOutputStream fos = new FileOutputStream(tempFile)) {
+                int n;
+                while ((n = is.read(buf)) != -1) {
+                  if (headerLen < 4) {
+                    int copy = Math.min(4 - headerLen, n);
+                    System.arraycopy(buf, 0, header, headerLen, copy);
+                    headerLen += copy;
+                  }
+                  total += n;
+                  if (total > MAX_EXPORT_BYTES) {
+                    throw new IOException("Shared ZIP exceeds 256 MiB limit");
+                  }
+                  fos.write(buf, 0, n);
+                }
+              }
+              if (headerLen < 4
+                  || header[0] != 0x50
+                  || header[1] != 0x4b
+                  || header[2] != 0x03
+                  || header[3] != 0x04) {
+                throw new IOException("Not a valid ZIP archive");
+              }
+              File target = new File(getCacheDir(), SHARED_IMPORT_FILENAME);
+              synchronized (sharedZipLock) {
+                if (target.exists()) {
+                  //noinspection ResultOfMethodCallIgnored
+                  target.delete();
+                }
+                if (!tempFile.renameTo(target)) {
+                  throw new IOException("Failed to stage shared ZIP");
+                }
+                tempFile = null;
+                pendingSharedZipName = displayName;
+                pendingShareNonce = generateBridgeToken();
+              }
+              runOnUiThread(
+                  () -> {
+                    if (webView != null) {
+                      webView.evaluateJavascript(
+                          "window.dispatchEvent(new CustomEvent('ds-android-shared-zip'))", null);
+                    }
+                  });
+            } catch (Exception err) {
+              if (tempFile != null) {
+                //noinspection ResultOfMethodCallIgnored
+                tempFile.delete();
+              }
+              runOnUiThread(
+                  () ->
+                      Toast.makeText(
+                              MainActivity.this,
+                              "Cannot open shared file: " + err.getMessage(),
+                              Toast.LENGTH_LONG)
+                          .show());
+            }
+          });
+    } catch (Exception ignored) {
+    }
   }
 
   @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
@@ -381,40 +441,57 @@ public final class MainActivity extends Activity {
                 request.getMethod() != null ? request.getMethod().toUpperCase(Locale.ROOT) : "GET";
             String path = uri.getPath() != null ? uri.getPath() : "/";
             if ("/_proxy".equals(path)) {
-              return null;
-            }
-            if ("/_shared_import.zip".equals(path)) {
-              if (!"GET".equals(reqMethod)
-                  || !isValidBridgeToken(uri.getQueryParameter("token"))) {
+              if (bridgeServer != null && bridgePort == LocalBridgeServer.CANONICAL_WEB_PORT) {
                 return null;
               }
+              return inProcessErrorResponse(
+                  403, "Forbidden", "Canonical port occupied; use active fallback bridge port");
+            }
+            if ("/_shared_import.zip".equals(path)) {
+              if (!"GET".equals(reqMethod)) {
+                return inProcessErrorResponse(405, "Method Not Allowed", "Method Not Allowed");
+              }
+              String nonce = uri.getQueryParameter("nonce");
               synchronized (sharedZipLock) {
+                if (!consumeValidShareNonceLocked(nonce)) {
+                  return inProcessErrorResponse(403, "Forbidden", "Invalid share nonce");
+                }
                 File sharedFile = new File(getCacheDir(), SHARED_IMPORT_FILENAME);
                 if (!sharedFile.isFile()) {
-                  return null;
+                  return inProcessErrorResponse(404, "Not Found", "Shared archive not found");
                 }
                 try {
                   Map<String, String> headers = new HashMap<>();
                   headers.put("Cache-Control", "no-store");
                   headers.put("X-Content-Type-Options", "nosniff");
+                  headers.put("X-Frame-Options", "DENY");
+                  InputStream autoDeleteStream =
+                      new FilterInputStream(new FileInputStream(sharedFile)) {
+                        @Override
+                        public void close() throws IOException {
+                          try {
+                            super.close();
+                          } finally {
+                            //noinspection ResultOfMethodCallIgnored
+                            sharedFile.delete();
+                          }
+                        }
+                      };
                   return new WebResourceResponse(
-                      "application/zip",
-                      null,
-                      200,
-                      "OK",
-                      headers,
-                      new FileInputStream(sharedFile));
+                      "application/zip", null, 200, "OK", headers, autoDeleteStream);
                 } catch (IOException err) {
-                  return null;
+                  //noinspection ResultOfMethodCallIgnored
+                  sharedFile.delete();
+                  return inProcessErrorResponse(500, "Internal Server Error", "Read error");
                 }
               }
             }
             if (!"GET".equals(reqMethod) && !"HEAD".equals(reqMethod)) {
-              return null;
+              return inProcessErrorResponse(405, "Method Not Allowed", "Method Not Allowed");
             }
             LocalBridgeServer server = bridgeServer;
             if (server == null) {
-              return null;
+              return inProcessErrorResponse(503, "Service Unavailable", "Bridge unavailable");
             }
             return toWebResourceResponse(server.resolveStaticAsset(path), "HEAD".equals(reqMethod));
           }
@@ -530,8 +607,11 @@ public final class MainActivity extends Activity {
     }
     Map<String, String> headers = new HashMap<>();
     headers.put("X-Content-Type-Options", "nosniff");
-    headers.put("X-Frame-Options", "SAMEORIGIN");
+    headers.put("X-Frame-Options", "DENY");
     headers.put("Referrer-Policy", "no-referrer");
+    if ("text/html".equals(baseMime)) {
+      headers.put("Content-Security-Policy", LocalBridgeServer.CSP_HEADER_VALUE);
+    }
     if (asset.noCache) {
       headers.put("Cache-Control", "no-cache");
     }
@@ -539,6 +619,33 @@ public final class MainActivity extends Activity {
     byte[] payload = headOnly ? new byte[0] : asset.body;
     return new WebResourceResponse(
         baseMime, encoding, asset.status, reason, headers, new ByteArrayInputStream(payload));
+  }
+
+  private boolean consumeValidShareNonceLocked(String candidate) {
+    String expected = pendingShareNonce;
+    if (expected == null || expected.isEmpty() || candidate == null || candidate.isEmpty()) {
+      return false;
+    }
+    boolean ok =
+        MessageDigest.isEqual(
+            expected.getBytes(StandardCharsets.UTF_8),
+            candidate.getBytes(StandardCharsets.UTF_8));
+    if (ok) {
+      pendingShareNonce = null;
+    }
+    return ok;
+  }
+
+  private static WebResourceResponse inProcessErrorResponse(
+      int status, String reason, String body) {
+    Map<String, String> headers = new HashMap<>();
+    headers.put("Cache-Control", "no-store");
+    headers.put("X-Content-Type-Options", "nosniff");
+    headers.put("X-Frame-Options", "DENY");
+    headers.put("Referrer-Policy", "no-referrer");
+    byte[] bytes = body != null ? body.getBytes(StandardCharsets.UTF_8) : new byte[0];
+    return new WebResourceResponse(
+        "text/plain", "utf-8", status, reason, headers, new ByteArrayInputStream(bytes));
   }
 
   private void syncThemeChrome(Configuration config) {
@@ -693,14 +800,12 @@ public final class MainActivity extends Activity {
       pendingExportFile.delete();
       pendingExportFile = null;
     }
+    sharedImportExecutor.shutdownNow();
     synchronized (sharedZipLock) {
-      File sharedFile = new File(getCacheDir(), SHARED_IMPORT_FILENAME);
-      if (sharedFile.exists()) {
-        //noinspection ResultOfMethodCallIgnored
-        sharedFile.delete();
-      }
       pendingSharedZipName = null;
+      pendingShareNonce = null;
     }
+    cleanupStaleCacheFiles();
     if (webView != null) {
       webView.destroy();
       webView = null;
@@ -746,8 +851,19 @@ public final class MainActivity extends Activity {
       }
       synchronized (sharedZipLock) {
         String name = pendingSharedZipName;
+        String nonce = pendingShareNonce;
         pendingSharedZipName = null;
-        return name != null ? name : "";
+        if (name == null || name.isEmpty() || nonce == null || nonce.isEmpty()) {
+          return "";
+        }
+        try {
+          JSONObject obj = new JSONObject();
+          obj.put("fileName", name);
+          obj.put("nonce", nonce);
+          return obj.toString();
+        } catch (Exception err) {
+          return "";
+        }
       }
     }
 

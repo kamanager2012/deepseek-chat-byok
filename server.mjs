@@ -38,6 +38,13 @@ const FORWARDED_REQ_HEADERS = [
   'accept',
 ]
 
+const CSP_HEADER_VALUE =
+  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; " +
+  "img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; " +
+  "connect-src 'self' https: http://127.0.0.1:* http://localhost:* http://[::1]:*; " +
+  "worker-src 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; " +
+  "base-uri 'self'; form-action 'self'"
+
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
@@ -66,6 +73,41 @@ const extractMappedIpv4FromHexV6 = (ip) => {
   return `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`
 }
 
+const parseIpv6Words = (rawIp) => {
+  const ip = rawIp.split('%')[0]
+  if (!net.isIPv6(ip)) {
+    return null
+  }
+  let v6 = ip
+  const lastColon = v6.lastIndexOf(':')
+  if (lastColon >= 0 && v6.slice(lastColon + 1).includes('.')) {
+    const v4Part = v6.slice(lastColon + 1)
+    if (!net.isIPv4(v4Part)) {
+      return null
+    }
+    const [o0, o1, o2, o3] = v4Part.split('.').map(Number)
+    const hi = ((o0 << 8) | o1).toString(16)
+    const lo = ((o2 << 8) | o3).toString(16)
+    const prefix = v6.slice(0, lastColon)
+    v6 = `${prefix.endsWith(':') ? prefix : `${prefix}:`}${hi}:${lo}`
+  }
+  const halves = v6.split('::')
+  if (halves.length > 2) {
+    return null
+  }
+  const left = halves[0] ? halves[0].split(':') : []
+  const right = halves.length === 2 && halves[1] ? halves[1].split(':') : []
+  const missing = halves.length === 2 ? 8 - left.length - right.length : 0
+  if ((halves.length === 1 && left.length !== 8) || missing < 0) {
+    return null
+  }
+  const full = [...left, ...Array.from({ length: missing }, () => '0'), ...right]
+  if (full.length !== 8) {
+    return null
+  }
+  return full.map((seg) => Number.parseInt(seg || '0', 16))
+}
+
 export const isPrivateOrMetadataIp = (rawIp) => {
   const lowered = rawIp.trim().toLowerCase()
   const mappedHexIpv4 = extractMappedIpv4FromHexV6(lowered)
@@ -92,26 +134,47 @@ export const isPrivateOrMetadataIp = (rawIp) => {
     }
     return false
   }
-  if (net.isIPv6(ip)) {
-    return (
-      ip === '::1' ||
-      ip === '::' ||
-      ip.startsWith('fc') ||
-      ip.startsWith('fd') ||
-      ip.startsWith('fe8') ||
-      ip.startsWith('fe9') ||
-      ip.startsWith('fea') ||
-      ip.startsWith('feb') ||
-      ip.startsWith('fec') ||
-      ip.startsWith('fed') ||
-      ip.startsWith('fee') ||
-      ip.startsWith('fef') ||
-      ip.startsWith('ff') ||
-      ip.startsWith('64:ff9b:') ||
-      ip.startsWith('100::') ||
-      ip.startsWith('2001:db8:') ||
-      ip.startsWith('::ffff:')
-    )
+  const w = parseIpv6Words(ip)
+  if (w) {
+    const first80Zero = w[0] === 0 && w[1] === 0 && w[2] === 0 && w[3] === 0 && w[4] === 0
+    if (first80Zero && (w[5] === 0 || w[5] === 0xffff)) {
+      return true // ::/96 (incl. ::, ::1, deprecated IPv4-compatible) & ::ffff:0:0/96
+    }
+    if ((w[0] & 0xfe00) === 0xfc00) {
+      return true // fc00::/7 ULA
+    }
+    if ((w[0] & 0xffc0) === 0xfe80 || (w[0] & 0xffc0) === 0xfec0) {
+      return true // fe80::/10 link-local & fec0::/10 site-local
+    }
+    if ((w[0] & 0xff00) === 0xff00) {
+      return true // ff00::/8 multicast
+    }
+    if (
+      w[0] === 0x0064 &&
+      w[1] === 0xff9b &&
+      w[2] === 0 &&
+      w[3] === 0 &&
+      w[4] === 0 &&
+      w[5] === 0
+    ) {
+      return true // 64:ff9b::/96 NAT64
+    }
+    if (w[0] === 0x0100 && w[1] === 0 && w[2] === 0 && w[3] === 0) {
+      return true // 100::/64 discard
+    }
+    if (w[0] === 0x2001 && w[1] === 0x0000) {
+      return true // 2001::/32 Teredo
+    }
+    if (w[0] === 0x2001 && w[1] === 0x0002 && w[2] === 0x0000) {
+      return true // 2001:2::/48 benchmarking
+    }
+    if (w[0] === 0x2001 && w[1] === 0x0db8) {
+      return true // 2001:db8::/32 documentation
+    }
+    if (w[0] === 0x2002) {
+      return true // 2002::/16 6to4 tunnel
+    }
+    return false
   }
   return true
 }
@@ -219,7 +282,7 @@ const resolveAndValidateAddresses = (hostname, expectLoopbackOnly, options, call
   })
 }
 
-export const checkProxyTargetAllowed = async (targetUrl, clientIsLoopback) => {
+export const checkProxyTargetAllowed = async (targetUrl, clientIsLoopback, selfPort = null) => {
   if (targetUrl.protocol !== 'https:' && targetUrl.protocol !== 'http:') {
     return 'Unsupported target protocol'
   }
@@ -230,6 +293,18 @@ export const checkProxyTargetAllowed = async (targetUrl, clientIsLoopback) => {
   if (isLocalhostName(hostname)) {
     if (!clientIsLoopback) {
       return 'Loopback target is restricted to loopback clients'
+    }
+    const targetPort = targetUrl.port
+      ? Number(targetUrl.port)
+      : targetUrl.protocol === 'https:'
+        ? 443
+        : 80
+    if (
+      (selfPort !== null && targetPort === selfPort) ||
+      targetUrl.pathname === '/_proxy' ||
+      targetUrl.pathname.startsWith('/_proxy/')
+    ) {
+      return 'Self-proxy recursion blocked'
     }
     return null
   }
@@ -407,7 +482,8 @@ const handleProxy = async (req, res, urlObj, options) => {
   }
 
   const clientIp = req.socket.remoteAddress ?? ''
-  const blockReason = await checkProxyTargetAllowed(targetUrl, isLoopbackIp(clientIp))
+  const selfPort = req.socket.localPort ?? null
+  const blockReason = await checkProxyTargetAllowed(targetUrl, isLoopbackIp(clientIp), selfPort)
   if (blockReason) {
     res.writeHead(403, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' })
     res.end(blockReason)
@@ -519,7 +595,14 @@ const handleProxy = async (req, res, urlObj, options) => {
   }
 }
 
-const serveStatic = (res, reqPath, distDir) => {
+const serveStatic = (req, res, reqPath, rawDistDir) => {
+  const method = (req.method || 'GET').toUpperCase()
+  if (method !== 'GET' && method !== 'HEAD') {
+    res.writeHead(405, { ...SECURITY_HEADERS, Allow: 'GET, HEAD' })
+    res.end('Method Not Allowed')
+    return
+  }
+  const distDir = path.resolve(rawDistDir)
   let cleanPath
   try {
     cleanPath = decodeURIComponent(reqPath).replace(/^\/+/u, '')
@@ -534,28 +617,84 @@ const serveStatic = (res, reqPath, distDir) => {
     res.end('Forbidden')
     return
   }
-  const target =
-    existsSync(candidate) && statSync(candidate).isFile()
-      ? candidate
-      : path.resolve(distDir, 'index.html')
-  if (!existsSync(target)) {
+  if (!existsSync(distDir)) {
     res.writeHead(404, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' })
     res.end('dist/ not found. Run pnpm build first.')
     return
   }
+  let rootReal
+  try {
+    rootReal = realpathSync(distDir)
+  } catch {
+    res.writeHead(404, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' })
+    res.end('dist/ not found. Run pnpm build first.')
+    return
+  }
+
+  let target = null
+  if (existsSync(candidate)) {
+    try {
+      const candidateReal = realpathSync(candidate)
+      if (candidateReal !== rootReal && !candidateReal.startsWith(`${rootReal}${path.sep}`)) {
+        res.writeHead(403, SECURITY_HEADERS)
+        res.end('Forbidden')
+        return
+      }
+      if (statSync(candidateReal).isFile()) {
+        target = candidateReal
+      }
+    } catch {
+      target = null
+    }
+  }
+
+  if (!target) {
+    const lastSeg = cleanPath.split('/').pop() ?? ''
+    if (lastSeg.includes('.')) {
+      res.writeHead(404, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' })
+      res.end('Not Found')
+      return
+    }
+    const fallback = path.resolve(rootReal, 'index.html')
+    if (!existsSync(fallback)) {
+      res.writeHead(404, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' })
+      res.end('dist/ not found. Run pnpm build first.')
+      return
+    }
+    target = fallback
+  }
+
   const ext = path.extname(target).toLowerCase()
   const baseName = path.basename(target)
+  const contentType = MIME_TYPES[ext] ?? 'application/octet-stream'
   const headers = {
     ...SECURITY_HEADERS,
-    'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream',
+    'Content-Type': contentType,
+  }
+  if (contentType.startsWith('text/html')) {
+    headers['Content-Security-Policy'] = CSP_HEADER_VALUE
   }
   if (baseName === 'sw.js' || baseName === 'index.html') {
     headers['Cache-Control'] = 'no-cache'
   } else if (reqPath.includes('/static/')) {
     headers['Cache-Control'] = 'public, max-age=31536000, immutable'
   }
+  if (method === 'HEAD') {
+    res.writeHead(200, headers)
+    res.end()
+    return
+  }
+  const stream = createReadStream(target)
+  stream.on('error', () => {
+    if (!res.headersSent) {
+      res.writeHead(404, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' })
+      res.end('Not Found')
+    } else {
+      res.destroy()
+    }
+  })
   res.writeHead(200, headers)
-  createReadStream(target).pipe(res)
+  stream.pipe(res)
 }
 
 export const createAppServer = (options = {}) => {
@@ -583,7 +722,7 @@ export const createAppServer = (options = {}) => {
       })
       return
     }
-    serveStatic(res, urlObj.pathname, distDir)
+    serveStatic(req, res, urlObj.pathname, distDir)
   })
 }
 

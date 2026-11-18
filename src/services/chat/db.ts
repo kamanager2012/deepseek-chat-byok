@@ -238,6 +238,7 @@ export const commitStagingWithResult = async (
   let copiedConflictCount = 0
   let overwrittenCount = 0
   const neededFileIds = new Set<string>()
+  const overwriteFileIds = new Set<string>()
 
   try {
     const sessionsTarget = tx.objectStore('sessions')
@@ -309,6 +310,7 @@ export const commitStagingWithResult = async (
       importedCount += 1
       for (const id of collectSessionFileIds(nextSession)) {
         neededFileIds.add(id)
+        overwriteFileIds.add(id)
       }
     }
 
@@ -318,7 +320,9 @@ export const commitStagingWithResult = async (
       cursor = await cursor.continue()
     ) {
       const file = cursor.value as StoredFile
-      if (mode === 'replace' || neededFileIds.has(file.id)) {
+      if (mode === 'replace' || overwriteFileIds.has(file.id)) {
+        await filesTarget.put(file)
+      } else if (neededFileIds.has(file.id) && !(await filesTarget.get(file.id))) {
         await filesTarget.put(file)
       }
     }

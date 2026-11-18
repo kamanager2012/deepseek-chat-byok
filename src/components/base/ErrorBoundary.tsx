@@ -54,7 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
         a.click()
         a.remove()
       } finally {
-        setTimeout(() => URL.revokeObjectURL(url), 1000)
+        setTimeout(() => URL.revokeObjectURL(url), 60_000)
       }
       if (result.skippedIds.length > 0) {
         const idsPreview =

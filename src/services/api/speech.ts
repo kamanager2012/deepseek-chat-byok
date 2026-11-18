@@ -1,4 +1,4 @@
-import { ApiError, API_ORIGIN, request } from './client.js'
+import { ApiError, API_ORIGIN, redactApiSecrets, request } from './client.js'
 import {
   createDefaultProvider,
   resolveFetchTarget,
@@ -46,7 +46,7 @@ export const transcribe = async (
   try {
     body = JSON.parse(raw)
   } catch {
-    throw new ApiError('protocol', raw)
+    throw new ApiError('protocol', redactApiSecrets(raw, key))
   }
   if (
     typeof body !== 'object' ||
@@ -54,7 +54,7 @@ export const transcribe = async (
     !('text' in body) ||
     typeof body.text !== 'string'
   ) {
-    throw new ApiError('protocol', raw)
+    throw new ApiError('protocol', redactApiSecrets(raw, key))
   }
   return body.text
 }
@@ -78,7 +78,7 @@ export const synthesize = async (
     signal,
   })
   if (!response.body) {
-    throw new ApiError('protocol', await response.text())
+    throw new ApiError('protocol', redactApiSecrets(await response.text(), key))
   }
   return response.body
 }

@@ -206,23 +206,41 @@ const contextTokens = ({ usage }: AssistantMessage) =>
       usage.output_tokens
     : 0
 
-/** 消息按父节点优先重新编号为 1…n，保证 parent_id 小于 id。 */
+/** 消息按父节点优先重新编号为 1…n，保证 parent_id 小于 id（迭代遍历避免万轮长对话爆栈）。 */
 const numberMessages = (messages: Message[]) => {
   const byId = new Map(messages.map((message) => [message.id, message]))
   const ids = new Map<string, number>()
   const ordered: Message[] = []
-  const visit = (message: Message, depth: number) => {
-    if (ids.has(message.id)) {
-      return
+  const visiting = new Set<string>()
+  for (const root of messages) {
+    if (ids.has(root.id)) {
+      continue
     }
-    if (message.parentId) {
-      const parent = byId.get(message.parentId)
-      // 父节点缺失或成环时数据已损坏。
-      visit(parent && depth < messages.length ? parent : fail('backupInvalidBranches'), depth + 1)
+    const chain: Message[] = []
+    let cursor: Message | undefined = root
+    while (cursor && !ids.has(cursor.id)) {
+      if (visiting.has(cursor.id) || chain.length > messages.length) {
+        fail('backupInvalidBranches')
+      }
+      visiting.add(cursor.id)
+      chain.push(cursor)
+      if (!cursor.parentId) {
+        break
+      }
+      const parent = byId.get(cursor.parentId)
+      if (!parent) {
+        fail('backupInvalidBranches')
+      }
+      cursor = parent
     }
-    ids.set(message.id, ordered.push(message))
+    for (let i = chain.length - 1; i >= 0; i -= 1) {
+      const node = chain[i]
+      visiting.delete(node.id)
+      if (!ids.has(node.id)) {
+        ids.set(node.id, ordered.push(node))
+      }
+    }
   }
-  messages.forEach((message) => visit(message, 0))
   return { ordered, ids }
 }
 
@@ -264,6 +282,7 @@ export const toSessionFile = (original: Session, exportImage: ExportImage): Sess
     current_message_id: current ? id(current) : 0,
     inserted_at: iso(session.createdAt),
     updated_at: iso(session.updatedAt),
+    ...(session.memoryPrompt?.trim() ? { memory_prompt: session.memoryPrompt } : {}),
     messages,
   }
 }

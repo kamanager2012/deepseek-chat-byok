@@ -35,12 +35,23 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+READY=0
 for _ in {1..40}; do
-  if node -e "fetch('${URL}/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))" 2>/dev/null; then
+  if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+    echo "[deepseek-chat-byok] ERROR: Local server exited before becoming ready (port ${PORT} may already be in use)." >&2
+    exit 1
+  fi
+  if node -e 'fetch(process.argv[1]).then((r) => process.exit(r.status === 204 ? 0 : 1)).catch(() => process.exit(1))' "${URL}/_proxy?probe=1" 2>/dev/null; then
+    READY=1
     break
   fi
   sleep 0.25
 done
+
+if [[ "$READY" -ne 1 ]]; then
+  echo "[deepseek-chat-byok] ERROR: Timed out waiting for local server at ${URL}." >&2
+  exit 1
+fi
 
 echo "[deepseek-chat-byok] Ready at ${URL} (Ctrl+C to stop)"
 

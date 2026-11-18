@@ -1,5 +1,6 @@
 import type { MouseEvent } from 'react'
 import type { Source } from '../../services/chat/view.js'
+import { isSafeHttpUrl } from '../../utils/url.js'
 import { HoverCard, type HoverCardTrigger } from './HoverCard.js'
 import { SourceCard } from './SourceCard.js'
 
@@ -11,7 +12,9 @@ export const CitationLink = ({ source }: { source: Source }) => {
   const open = (event: MouseEvent<HTMLElement>) => {
     event.preventDefault()
     event.stopPropagation()
-    window.open(source.url, '_blank', 'noopener,noreferrer')
+    if (isSafeHttpUrl(source.url)) {
+      window.open(source.url, '_blank', 'noopener,noreferrer')
+    }
   }
   const renderTrigger: HoverCardTrigger = ({ domRef, domProps }) => (
     <span ref={domRef} className="ds-markdown-cite" {...domProps} role="link" onClick={open}>

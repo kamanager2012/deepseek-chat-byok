@@ -268,8 +268,11 @@ export const resolveFetchTarget = (
     return targetUrl
   }
   const bridgeDefault = getDefaultCorsProxyUrl()
+  const isAndroidBridgeLoopback = /^http:\/\/127\.0\.0\.1:187\d+\/_proxy$/u.test(rawProxy)
   const proxy =
-    (!rawProxy || rawProxy === '/_proxy') && bridgeDefault !== '/_proxy' ? bridgeDefault : rawProxy
+    (!rawProxy || rawProxy === '/_proxy' || isAndroidBridgeLoopback) && bridgeDefault !== '/_proxy'
+      ? bridgeDefault
+      : rawProxy
   if (!proxy) {
     return targetUrl
   }

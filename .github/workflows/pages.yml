@@ -73,6 +73,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          for _ in $(seq 1 24); do
+            ACTIVE_REL="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/release.yml/runs?per_page=5" --jq '[.workflow_runs[] | select(.status != "completed")] | length' 2>/dev/null || echo 0)"
+            if [ "${ACTIVE_REL}" = "0" ]; then
+              break
+            fi
+            echo "Waiting for active Release workflow (${ACTIVE_REL}) to finish before mirroring latest assets..."
+            sleep 10
+          done
           TAG="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.tag_name')"
           test -n "$TAG"
           ARTIFACT_DIR="${RUNNER_TEMP}/byok-release-artifacts"

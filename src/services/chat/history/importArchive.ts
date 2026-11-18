@@ -9,6 +9,7 @@ import { toLocalSession } from './toLocal.js'
 import {
   ArchiveError,
   isZipFile,
+  listArchivePaths,
   readArchive,
   readEntry,
   readNamedEntry,
@@ -76,8 +77,45 @@ export const stripHistoricalSearchBlocks = (session: Session): Session => ({
 
 const EXTERNAL_CONVERSATIONS_PATH = 'conversations.json'
 
-const inspectExternalConversations = async (file: File) => {
-  const blob = await readNamedEntry(file, EXTERNAL_CONVERSATIONS_PATH)
+const isOsMetadataPath = (entryPath: string): boolean =>
+  entryPath.startsWith('__MACOSX/') ||
+  entryPath === '.DS_Store' ||
+  entryPath.endsWith('/.DS_Store') ||
+  entryPath === 'Thumbs.db' ||
+  entryPath.endsWith('/Thumbs.db')
+
+const detectArchiveLayout = async (
+  file: File
+): Promise<{ prefix: string; kind: 'deepseek' | 'external' } | null> => {
+  const paths = (await listArchivePaths(file)).filter((p) => !isOsMetadataPath(p))
+  const pathSet = new Set(paths)
+  if (pathSet.has(MANIFEST_PATH)) {
+    return { prefix: '', kind: 'deepseek' }
+  }
+  if (pathSet.has(EXTERNAL_CONVERSATIONS_PATH)) {
+    return { prefix: '', kind: 'external' }
+  }
+  for (const p of paths) {
+    if (p.endsWith(`/${MANIFEST_PATH}`)) {
+      const prefix = p.slice(0, -MANIFEST_PATH.length)
+      if (/^[^/]+\/$/u.test(prefix)) {
+        return { prefix, kind: 'deepseek' }
+      }
+    }
+  }
+  for (const p of paths) {
+    if (p.endsWith(`/${EXTERNAL_CONVERSATIONS_PATH}`)) {
+      const prefix = p.slice(0, -EXTERNAL_CONVERSATIONS_PATH.length)
+      if (/^[^/]+\/$/u.test(prefix)) {
+        return { prefix, kind: 'external' }
+      }
+    }
+  }
+  return null
+}
+
+const inspectExternalConversations = async (file: File, prefix = '') => {
+  const blob = await readNamedEntry(file, `${prefix}${EXTERNAL_CONVERSATIONS_PATH}`)
   if (!blob) {
     return null
   }
@@ -89,24 +127,31 @@ const inspectExternalConversations = async (file: File) => {
 }
 
 /**
- * 仅从中央目录定位并读取 manifest.json 与 chat_session_index.json（或 ChatGPT/Claude conversations.json），
- * 不解压会话正文和海量附件即可毫秒级预览 200MB 备份里的全部会话列表。
+ * 仅从中央目录定位并读取 manifest.json 与 chat_session_index.json，
+ * 不解压会话正文和海量附件即可毫秒级预览备份里的全部会话列表（兼容系统自动解压后重打包的单层目录 ZIP）。
  */
 export const inspectArchiveIndex = async (file: File): Promise<SessionIndexEntry[]> => {
   if (!(await isZipFile(file))) {
     return fail('backupUnrecognized')
   }
   try {
-    const manifestBlob = await readNamedEntry(file, MANIFEST_PATH)
-    if (!manifestBlob) {
-      const external = await inspectExternalConversations(file)
+    const layout = await detectArchiveLayout(file)
+    if (!layout) {
+      return fail('backupUnrecognized')
+    }
+    if (layout.kind === 'external') {
+      const external = await inspectExternalConversations(file, layout.prefix)
       if (!external) {
         return fail('backupUnrecognized')
       }
       return external.index
     }
+    const manifestBlob = await readNamedEntry(file, `${layout.prefix}${MANIFEST_PATH}`)
+    if (!manifestBlob) {
+      return fail('backupUnrecognized')
+    }
     checkManifest(await readJsonText(manifestBlob))
-    const indexBlob = await readNamedEntry(file, INDEX_PATH)
+    const indexBlob = await readNamedEntry(file, `${layout.prefix}${INDEX_PATH}`)
     if (!indexBlob) {
       return fail('backupIncomplete')
     }
@@ -118,7 +163,7 @@ export const inspectArchiveIndex = async (file: File): Promise<SessionIndexEntry
 }
 
 /**
- * 检查 ZIP 格式、首个 manifest 条目及格式版本（兼容 ChatGPT/Claude 官方导出 conversations.json）。
+ * 检查 ZIP 格式、manifest 及格式版本。
  * 校验失败时保留正在生成的回答和现有暂存数据。
  */
 export const checkArchiveFormat = async (file: File): Promise<void> => {
@@ -126,21 +171,31 @@ export const checkArchiveFormat = async (file: File): Promise<void> => {
     fail('backupUnrecognized')
   }
   try {
-    for await (const entry of readArchive(file)) {
-      if (entry.path === MANIFEST_PATH) {
-        checkManifest(await readJson(entry))
+    const layout = await detectArchiveLayout(file)
+    if (!layout) {
+      return fail('backupUnrecognized')
+    }
+    if (layout.kind === 'external') {
+      const external = await inspectExternalConversations(file, layout.prefix)
+      if (external) {
         return
       }
-      break
+      return fail('backupUnrecognized')
     }
-    const external = await inspectExternalConversations(file)
-    if (external) {
-      return
+    const manifestBlob = await readNamedEntry(file, `${layout.prefix}${MANIFEST_PATH}`)
+    if (!manifestBlob) {
+      return fail('backupUnrecognized')
     }
+    checkManifest(await readJsonText(manifestBlob))
+    const indexBlob = await readNamedEntry(file, `${layout.prefix}${INDEX_PATH}`)
+    if (!indexBlob) {
+      return fail('backupIncomplete')
+    }
+    readSessionIndex(await readJsonText(indexBlob))
+    return
   } catch (error) {
     throw error instanceof ArchiveError ? new BackupError('backupIncomplete') : error
   }
-  fail('backupUnrecognized')
 }
 
 export type ImportArchiveOptions = {
@@ -162,9 +217,18 @@ export const importArchive = async (
     fail('backupUnrecognized')
   }
   const { selectedIds, stripSearchBlocks = false } = options
-  if (!(await readNamedEntry(file, MANIFEST_PATH))) {
+  let layout: Awaited<ReturnType<typeof detectArchiveLayout>>
+  try {
+    layout = await detectArchiveLayout(file)
+  } catch (error) {
+    throw error instanceof ArchiveError ? new BackupError('backupIncomplete') : error
+  }
+  if (!layout) {
+    return fail('backupUnrecognized')
+  }
+  if (layout.kind === 'external') {
     try {
-      const external = await inspectExternalConversations(file)
+      const external = await inspectExternalConversations(file, layout.prefix)
       if (!external) {
         return fail('backupUnrecognized')
       }
@@ -183,30 +247,87 @@ export const importArchive = async (
       throw error instanceof ArchiveError ? new BackupError('backupIncomplete') : error
     }
   }
+
+  const { prefix } = layout
+  const stripPrefix = (rawPath: string): string | null => {
+    if (!prefix) {
+      return rawPath
+    }
+    return rawPath.startsWith(prefix) ? rawPath.slice(prefix.length) : null
+  }
+
+  let index: SessionIndexEntry[]
+  try {
+    const manifestBlob = await readNamedEntry(file, `${prefix}${MANIFEST_PATH}`)
+    if (!manifestBlob) {
+      return fail('backupUnrecognized')
+    }
+    checkManifest(await readJsonText(manifestBlob))
+    const indexBlob = await readNamedEntry(file, `${prefix}${INDEX_PATH}`)
+    if (!indexBlob) {
+      return fail('backupIncomplete')
+    }
+    index = readSessionIndex(await readJsonText(indexBlob))
+  } catch (error) {
+    throw error instanceof ArchiveError ? new BackupError('backupIncomplete') : error
+  }
+
+  const listed = new Set(index.map((entry) => entry.id))
+  if (listed.size !== index.length) {
+    fail('backupIncomplete')
+  }
+
   const imported = new Set<string>()
   const images = new Map<string, string>()
   /** 已保存的原件：文件 ID → MIME。同一图片出现在多个会话目录时只保存一次。 */
   const stored = new Map<string, string>()
-  let manifest = false
-  let index: SessionIndexEntry[] | undefined
-  let currentSessionId: string | undefined
 
-  const shouldInclude = selectedIds
-    ? (path: string) => {
-        if (path === MANIFEST_PATH || path === INDEX_PATH) {
-          return true
-        }
-        const sid = parseSessionPath(path)
-        if (sid !== null) {
-          return selectedIds.has(sid)
-        }
-        const fileSessionId = /^chat_sessions\/([^/]+)_files\//.exec(path)?.[1]
-        if (fileSessionId) {
-          return selectedIds.has(fileSessionId)
-        }
-        return false
-      }
-    : undefined
+  const shouldInclude = (rawPath: string) => {
+    if (isOsMetadataPath(rawPath)) {
+      return false
+    }
+    const rel = stripPrefix(rawPath)
+    if (rel === null) {
+      return true
+    }
+    if (rel === MANIFEST_PATH || rel === INDEX_PATH || rel === USER_PATH) {
+      return false
+    }
+    if (!selectedIds) {
+      return true
+    }
+    const sid = parseSessionPath(rel)
+    if (sid !== null) {
+      return selectedIds.has(sid)
+    }
+    const fileSessionId = /^chat_sessions\/([^/]+)_files\//.exec(rel)?.[1]
+    if (fileSessionId) {
+      return selectedIds.has(fileSessionId)
+    }
+    return true
+  }
+
+  const loadSessionById = async (sid: string) => {
+    if (imported.has(sid)) {
+      return
+    }
+    const blob = await readNamedEntry(file, `${prefix}chat_sessions/${sid}.json`)
+    if (!blob) {
+      return fail('backupIncomplete')
+    }
+    const local = toLocalSession(readSessionFile(await readJsonText(blob)))
+    if (local.session.id !== sid) {
+      fail('backupIncomplete')
+    }
+    imported.add(sid)
+    for (const [imagePath, id] of local.images) {
+      images.set(imagePath, id)
+    }
+    const sessionToStore = stripSearchBlocks
+      ? stripHistoricalSearchBlocks(local.session)
+      : local.session
+    await db.addStagingSession(sessionToStore)
+  }
 
   const saveImage = async (entry: ArchiveEntry, id: string) => {
     if (stored.has(id)) {
@@ -221,24 +342,28 @@ export const importArchive = async (
 
   try {
     for await (const entry of readArchive(file, shouldInclude)) {
-      const { path } = entry
-      const sessionId = parseSessionPath(path)
-      if (!manifest) {
-        if (path !== MANIFEST_PATH) {
-          fail('backupUnrecognized')
-        }
-        checkManifest(await readJson(entry))
-        manifest = true
-      } else if (path === USER_PATH && !index && imported.size === 0) {
-        // 账号信息（已脱敏）不导入；文件可能缺失。
+      if (isOsMetadataPath(entry.path)) {
         await skipEntry(entry)
-      } else if (sessionId !== null && !index) {
+        continue
+      }
+      const rel = stripPrefix(entry.path)
+      if (rel === null) {
+        fail('backupIncomplete')
+        return 0
+      }
+      const sessionId = parseSessionPath(rel)
+      if (rel === MANIFEST_PATH || rel === INDEX_PATH || rel === USER_PATH) {
+        await skipEntry(entry)
+      } else if (sessionId !== null) {
+        if (imported.has(sessionId)) {
+          await skipEntry(entry)
+          continue
+        }
         const local = toLocalSession(readSessionFile(await readJson(entry)))
-        if (local.session.id !== sessionId || imported.has(sessionId)) {
+        if (local.session.id !== sessionId) {
           fail('backupIncomplete')
         }
         imported.add(sessionId)
-        currentSessionId = sessionId
         for (const [imagePath, id] of local.images) {
           images.set(imagePath, id)
         }
@@ -246,29 +371,25 @@ export const importArchive = async (
           ? stripHistoricalSearchBlocks(local.session)
           : local.session
         await db.addStagingSession(sessionToStore)
-      } else if (path === INDEX_PATH && !index) {
-        index = readSessionIndex(await readJson(entry))
-      } else if (
-        index
-          ? imported.has(/^chat_sessions\/([^/]+)_files\//.exec(path)?.[1] ?? '')
-          : currentSessionId && path.startsWith(sessionFilesDir(currentSessionId))
-      ) {
-        // 没有被引用的条目不保存，引用了但缺失的图片只展示文件名。
-        const id = images.get(path)
-        await (id === undefined ? skipEntry(entry) : saveImage(entry, id))
       } else {
-        fail('backupIncomplete')
+        const fileSessionId = /^chat_sessions\/([^/]+)_files\//.exec(rel)?.[1]
+        if (!fileSessionId || !listed.has(fileSessionId)) {
+          fail('backupIncomplete')
+          return 0
+        }
+        if (!imported.has(fileSessionId)) {
+          await loadSessionById(fileSessionId)
+        }
+        if (!rel.startsWith(sessionFilesDir(fileSessionId))) {
+          fail('backupIncomplete')
+        }
+        // 没有被引用的条目不保存，引用了但缺失的图片只展示文件名。
+        const id = images.get(rel)
+        await (id === undefined ? skipEntry(entry) : saveImage(entry, id))
       }
     }
   } catch (error) {
     throw error instanceof ArchiveError ? new BackupError('backupIncomplete') : error
-  }
-  if (!manifest) {
-    fail('backupUnrecognized')
-  }
-  const listed = new Set(index?.map((entry) => entry.id))
-  if (!index || listed.size !== index.length) {
-    fail('backupIncomplete')
   }
   if (selectedIds) {
     for (const id of selectedIds) {

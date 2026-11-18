@@ -251,6 +251,10 @@ export const readSessionIndex: Read<SessionIndexEntry[]> = list((value) => {
 
 export const readSessionFile: Read<SessionFile> = (value) => {
   const item = record(value)
+  const memoryPrompt =
+    item.memory_prompt === undefined || item.memory_prompt === null
+      ? undefined
+      : string(item.memory_prompt)
   return {
     id: sessionId(item.id),
     title: nullable(string)(item.title),
@@ -258,6 +262,7 @@ export const readSessionFile: Read<SessionFile> = (value) => {
     current_message_id: count(item.current_message_id),
     inserted_at: time(item.inserted_at),
     updated_at: time(item.updated_at),
+    ...(memoryPrompt?.trim() ? { memory_prompt: memoryPrompt } : {}),
     messages: list(message)(item.messages),
   }
 }

@@ -70,6 +70,12 @@ export const ContextBar = ({ session }: { session: Session | null }) => {
     if (!session || distilling) {
       return
     }
+    if (!isProviderConfigured(provider)) {
+      closeMemory()
+      openSettings('api')
+      showToast({ key: 'providerNeedKeyTag' })
+      return
+    }
     distillAbortRef.current?.abort()
     const controller = new AbortController()
     distillAbortRef.current = controller

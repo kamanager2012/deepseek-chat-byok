@@ -90,11 +90,13 @@ export const CodeBlock = memo(function CodeBlock({
       return
     }
     let unmounted = false
-    loadHighlight(lang).then(() => {
-      if (!unmounted) {
-        rerender()
-      }
-    })
+    loadHighlight(lang)
+      .then(() => {
+        if (!unmounted) {
+          rerender()
+        }
+      })
+      .catch(() => {})
     return () => {
       unmounted = true
     }

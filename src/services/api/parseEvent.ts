@@ -1,3 +1,4 @@
+import { isSafeHttpUrl } from '../../utils/url.js'
 import type {
   ContentBlockDelta,
   MessageStreamEvent,
@@ -67,12 +68,12 @@ const readBlock = (value: unknown): OutputBlockStart | null => {
           break
         case 'open_page':
         case 'read_link':
-          if (!isString(input.url)) {
+          if (!isSafeHttpUrl(input.url)) {
             return null
           }
           break
         case 'find_in_page':
-          if (!isString(input.url) || !isString(input.pattern)) {
+          if (!isSafeHttpUrl(input.url) || !isString(input.pattern)) {
             return null
           }
           break
@@ -102,7 +103,7 @@ const readBlock = (value: unknown): OutputBlockStart | null => {
           }
           return (
             item.type === 'web_search_result' &&
-            isString(item.url) &&
+            isSafeHttpUrl(item.url) &&
             isString(item.title) &&
             isNullableString(item.snippet) &&
             isNullableString(item.site_name) &&
@@ -126,7 +127,7 @@ const readBlock = (value: unknown): OutputBlockStart | null => {
         }
       } else if (
         content.type !== 'web_fetch_result' ||
-        !isString(content.url) ||
+        !isSafeHttpUrl(content.url) ||
         !isRecord(content.content) ||
         !isNullableString(content.content.title) ||
         !isNullableString(content.published_at)

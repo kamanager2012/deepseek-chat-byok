@@ -62,15 +62,42 @@ const isErrorBody = (value: unknown): value is ApiErrorBody =>
   typeof (value as ApiErrorBody).error?.message === 'string'
 
 /** 对错误文本做防御性脱敏，避免故障网关回显将 API Key 或 Bearer 凭据写入界面与历史库 */
-export const redactApiSecrets = (raw: string): string =>
-  raw
-    .replace(/(Bearer\s+)[A-Za-z0-9._\-+=/:]{8,}/giu, '$1[REDACTED]')
-    .replace(/\b(sk-[A-Za-z0-9_-]{8,})\b/gu, '[REDACTED]')
+export const redactApiSecrets = (raw: string, knownSecret?: string): string => {
+  let out = raw
+    .replace(/(Bearer\s+)[A-Za-z0-9._\-+=/:]{6,}/giu, '$1[REDACTED]')
+    .replace(/((?:x-api-key|api[_-]?key)\s*[:=]\s*["']?)[A-Za-z0-9._\-+=/:]{6,}/giu, '$1[REDACTED]')
+    .replace(/\b((?:sk-|gsk_|hf_|AIza|pplx-)[A-Za-z0-9_-]{8,})\b/gu, '[REDACTED]')
+  const trimmed = knownSecret?.trim()
+  if (trimmed && trimmed.length >= 6) {
+    out = out.split(trimmed).join('[REDACTED]')
+  }
+  return out
+}
+
+const extractHeaderSecret = (headers?: HeadersInit): string | undefined => {
+  if (!headers) {
+    return undefined
+  }
+  const h = new Headers(headers)
+  const xKey = h.get('x-api-key')
+  if (xKey && xKey.trim().length >= 6) {
+    return xKey.trim()
+  }
+  const auth = h.get('authorization')
+  if (auth) {
+    const m = /^Bearer\s+(.+)$/iu.exec(auth.trim())
+    if (m?.[1] && m[1].trim().length >= 6) {
+      return m[1].trim()
+    }
+  }
+  return undefined
+}
 
 const readErrorResponse = async (
   response: Response,
   kind: 'http' | 'protocol' = 'http',
-  fallback = response.statusText
+  fallback = response.statusText,
+  knownSecret?: string
 ): Promise<ApiError> => {
   const text = await response.text().catch(() => '')
   let message = text || fallback
@@ -82,10 +109,11 @@ const readErrorResponse = async (
   } catch {
     // 非 JSON 响应体直接展示原文
   }
-  return new ApiError(kind, redactApiSecrets(message), response.status)
+  return new ApiError(kind, redactApiSecrets(message, knownSecret), response.status)
 }
 
 export const request = async (url: string, init: RequestInit): Promise<Response> => {
+  const knownSecret = extractHeaderSecret(init.headers)
   const token = isLocalProxyRequestUrl(url) ? getAndroidBridgeToken() : null
   let finalInit = init
   if (token) {
@@ -103,11 +131,11 @@ export const request = async (url: string, init: RequestInit): Promise<Response>
     }
     throw new ApiError(
       'network',
-      redactApiSecrets(error instanceof Error ? error.message : String(error))
+      redactApiSecrets(error instanceof Error ? error.message : String(error), knownSecret)
     )
   }
   if (!response.ok) {
-    throw await readErrorResponse(response)
+    throw await readErrorResponse(response, 'http', response.statusText, knownSecret)
   }
   return response
 }

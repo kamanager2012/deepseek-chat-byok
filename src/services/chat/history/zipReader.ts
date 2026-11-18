@@ -239,12 +239,16 @@ export type ArchiveEntry = {
 }
 
 const decodeEntry = async function* (file: File, entry: Entry, start: number) {
+  const MAX_ENTRY_UNCOMPRESSED_BYTES = 128 * 1024 * 1024
+  if (entry.size > MAX_ENTRY_UNCOMPRESSED_BYTES) {
+    invalid()
+  }
   let written = 0
   let crc = 0xffffffff
   const pending: Uint8Array[] = []
   const append = (chunk: Uint8Array) => {
     written += chunk.length
-    if (written > entry.size) {
+    if (written > entry.size || written > MAX_ENTRY_UNCOMPRESSED_BYTES) {
       invalid()
     }
     for (let i = 0; i < chunk.length; i += 1) {
@@ -282,6 +286,12 @@ const decodeEntry = async function* (file: File, entry: Entry, start: number) {
   }
 }
 
+/** 仅读取中央目录返回全部非目录条目路径，不解压任何正文数据。 */
+export const listArchivePaths = async (file: File): Promise<string[]> => {
+  const directory = await readDirectory(file)
+  return directory.entries.filter((entry) => !entry.path.endsWith('/')).map((entry) => entry.path)
+}
+
 /** 按路径从 ZIP 中精确抽取单个条目，避免全包解压即可预览大归档里的目录索引。 */
 export const readNamedEntry = async (file: File, targetPath: string): Promise<Blob | null> => {
   const directory = await readDirectory(file)
@@ -310,6 +320,8 @@ export async function* readArchive(
   file: File,
   shouldInclude?: (path: string) => boolean
 ): AsyncGenerator<ArchiveEntry> {
+  const MAX_TOTAL_DECOMPRESSED_BYTES = 512 * 1024 * 1024
+  let totalDecompressed = 0
   const directory = await readDirectory(file)
   for (const [index, entry] of directory.entries.entries()) {
     if (entry.path.endsWith('/')) {
@@ -318,6 +330,10 @@ export async function* readArchive(
     if (shouldInclude && !shouldInclude(entry.path)) {
       continue
     }
+    if (entry.size > MAX_TOTAL_DECOMPRESSED_BYTES - totalDecompressed) {
+      invalid()
+    }
+    totalDecompressed += entry.size
     const boundary = directory.entries[index + 1]?.offset ?? directory.offset
     const start = await readEntryOffset(file, entry, boundary)
     let completed = false

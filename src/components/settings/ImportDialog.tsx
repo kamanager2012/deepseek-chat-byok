@@ -18,6 +18,18 @@ type ImportDialogProps = {
   onConfirm: (options: ImportBackupOptions) => Promise<void>
 }
 
+const isChunkLoadError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false
+  }
+  return (
+    error.name === 'ChunkLoadError' ||
+    /Loading chunk [\w-]+ failed|Failed to fetch dynamically imported module|Importing a module script failed/iu.test(
+      error.message
+    )
+  )
+}
+
 export const ImportDialog = ({ file, onCancel, onConfirm }: ImportDialogProps) => {
   const t = useTranslate()
   const existingSessions = useChatStore((state) => state.sessions)
@@ -48,6 +60,14 @@ export const ImportDialog = ({ file, onCancel, onConfirm }: ImportDialogProps) =
       .catch((error: unknown) => {
         if (cancelled) {
           return
+        }
+        if (isChunkLoadError(error)) {
+          const reloadKey = 'ds-chunk-reload-once'
+          if (typeof sessionStorage !== 'undefined' && !sessionStorage.getItem(reloadKey)) {
+            sessionStorage.setItem(reloadKey, '1')
+            window.location.reload()
+            return
+          }
         }
         setLoadError(error instanceof BackupError ? t(error.key) : t('historyImportFailed'))
       })
@@ -151,7 +171,19 @@ export const ImportDialog = ({ file, onCancel, onConfirm }: ImportDialogProps) =
               <Button
                 variant="outlined"
                 size="s"
-                onClick={() => setSelectedIds(new Set(entries.map((item) => item.id)))}
+                onClick={() => {
+                  if (query.trim()) {
+                    setSelectedIds((prev) => {
+                      const next = new Set(prev)
+                      for (const item of filtered) {
+                        next.add(item.id)
+                      }
+                      return next
+                    })
+                  } else {
+                    setSelectedIds(new Set(entries.map((item) => item.id)))
+                  }
+                }}
               >
                 {t('historyImportSelectAll')}
               </Button>

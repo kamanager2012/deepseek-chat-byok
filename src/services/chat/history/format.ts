@@ -33,6 +33,8 @@ export type SessionFile = {
   current_message_id: number
   inserted_at: Iso8601Utc
   updated_at: Iso8601Utc
+  /** 可选的会话记忆卡（兼容官方原始导出包无此字段） */
+  memory_prompt?: string | null
   /** 消息树，分支靠 parent_id */
   messages: ChatMessage[]
 }

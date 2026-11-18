@@ -1,6 +1,6 @@
 {
   "name": "chat-demo",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "基于 DeepSeek API 的静态聊天示例。",
   "license": "MIT",
   "private": true,
@@ -17,8 +17,8 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "android:sync": "node scripts/android-sync.mjs",
-    "android:apk": "pnpm build && pnpm android:sync && gradle -p android :app:assembleDebug",
-    "android:release": "pnpm build && pnpm android:sync && gradle -p android :app:assembleRelease"
+    "android:apk": "pnpm build && pnpm android:sync && gradle -p android :app:lintRelease :app:assembleDebug --no-daemon",
+    "android:release": "pnpm build && pnpm android:sync && gradle -p android :app:lintRelease :app:assembleRelease --no-daemon"
   },
   "dependencies": {
     "@types/katex": "^0.16.5",

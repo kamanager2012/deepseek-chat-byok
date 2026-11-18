@@ -39,13 +39,23 @@ if (-not (Test-Path "dist/index.html")) {
 $Server = Start-Process -FilePath "node" -ArgumentList @("server.mjs", "--host", $HostAddr, "--port", $Port) -PassThru -NoNewWindow
 
 try {
+  $Ready = $false
   for ($i = 0; $i -lt 40; $i++) {
+    if ($Server.HasExited) {
+      Pause-OnFailure "Local server exited immediately (port $Port may already be in use)."
+    }
     try {
-      $resp = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 1
-      if ($resp.StatusCode -eq 200) { break }
+      $resp = Invoke-WebRequest -Uri "$Url/_proxy?probe=1" -UseBasicParsing -TimeoutSec 1
+      if ($resp.StatusCode -eq 204) {
+        $Ready = $true
+        break
+      }
     } catch {
       Start-Sleep -Milliseconds 250
     }
+  }
+  if (-not $Ready) {
+    Pause-OnFailure "Timed out waiting for local server at $Url."
   }
 
   $EdgeCandidates = @(
