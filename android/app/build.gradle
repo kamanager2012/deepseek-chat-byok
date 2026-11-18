@@ -10,8 +10,8 @@ android {
         applicationId 'com.deepseekbyok.app'
         minSdk 26
         targetSdk 35
-        versionCode 11
-        versionName '0.4.2'
+        versionCode 12
+        versionName '0.4.3'
         if (project.hasProperty('dsVersionCode')) {
             versionCode = project.property('dsVersionCode').toString().toInteger()
         }
@@ -46,5 +46,11 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+        fatal 'NewApi', 'InlinedApi'
     }
 }

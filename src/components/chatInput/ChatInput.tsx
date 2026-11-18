@@ -7,6 +7,7 @@ import {
   IconStopFill16,
   IconThinkOutline14,
 } from '../base/icons.js'
+import { hasAndroidBridge } from '../../services/api/androidBridge.js'
 import { supportsNativeDeepseekTools } from '../../services/api/providers.js'
 import { getActiveProvider, setSearch, setThinking, useSettings } from '../../services/settings.js'
 import { useIsMobile } from '../../app/viewport.js'
@@ -251,23 +252,25 @@ const Input = ({ sessionId }: { sessionId: string | null }) => {
           </Tooltip>
         </div>
         <div className={styles.right}>
-          <VoiceButton
-            status={voice.status}
-            disabled={!voice.available || !supportsDeepseekTools}
-            seconds={voice.seconds}
-            onClick={() => {
-              if (!supportsDeepseekTools) {
-                showToast({ key: 'providerDeepseekToolsNote' })
-                return
-              }
-              if (
-                voice.status !== 'idle' ||
-                (!useChatStore.getState().importingHistory && ensureApiKey())
-              ) {
-                void voice.toggle()
-              }
-            }}
-          />
+          {!hasAndroidBridge() ? (
+            <VoiceButton
+              status={voice.status}
+              disabled={!voice.available || !supportsDeepseekTools}
+              seconds={voice.seconds}
+              onClick={() => {
+                if (!supportsDeepseekTools) {
+                  showToast({ key: 'providerDeepseekToolsNote' })
+                  return
+                }
+                if (
+                  voice.status !== 'idle' ||
+                  (!useChatStore.getState().importingHistory && ensureApiKey())
+                ) {
+                  void voice.toggle()
+                }
+              }}
+            />
+          ) : null}
           <IconButton
             size="m"
             tone="primary"

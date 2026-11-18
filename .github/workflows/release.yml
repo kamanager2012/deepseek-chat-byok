@@ -127,12 +127,12 @@ jobs:
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@48b5f213c81028ace310571dc5ec0fbbca0b2947 # v4
         with:
           gradle-version: '8.11.1'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: platform-tools platforms;android-35 build-tools;35.0.0 build-tools;34.0.0
 
@@ -151,21 +151,25 @@ jobs:
       - name: Build Android Debug APK
         run: pnpm android:apk
 
-      - name: Build Optional Signed Android Release APK
+      - name: Build Signed Android Release APK & Verify Certificate Digest
         env:
           DS_KEYSTORE_BASE64: ${{ secrets.DS_KEYSTORE_BASE64 }}
           DS_KEYSTORE_PASSWORD: ${{ secrets.DS_KEYSTORE_PASSWORD }}
           DS_KEY_ALIAS: ${{ secrets.DS_KEY_ALIAS }}
           DS_KEY_PASSWORD: ${{ secrets.DS_KEY_PASSWORD }}
         run: |
-          if [ -z "${DS_KEYSTORE_BASE64}" ]; then
-            echo "DS_KEYSTORE_BASE64 secret not set; skipping release-key APK signing."
-            exit 0
+          if [ -z "${DS_KEYSTORE_BASE64}" ] || [ -z "${DS_KEYSTORE_PASSWORD}" ] || [ -z "${DS_KEY_ALIAS}" ] || [ -z "${DS_KEY_PASSWORD}" ]; then
+            echo "ERROR: Official Android release signing secrets are required to publish a production release." >&2
+            exit 1
           fi
           KEYSTORE_FILE="${RUNNER_TEMP}/release-keystore.jks"
           trap 'rm -f "$KEYSTORE_FILE"' EXIT
           printf '%s' "${DS_KEYSTORE_BASE64}" | base64 -d > "$KEYSTORE_FILE"
           DS_KEYSTORE_PATH="$KEYSTORE_FILE" pnpm android:release
+          APKSIGNER="${ANDROID_HOME}/build-tools/35.0.0/apksigner"
+          EXPECTED_SHA="86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7"
+          "$APKSIGNER" verify --verbose --print-certs android/app/build/outputs/apk/release/app-release.apk | grep -iq "$EXPECTED_SHA"
+          echo "Release APK verified against official SHA-256 certificate digest ($EXPECTED_SHA)."
 
       - name: Package release assets and checksums
         run: |
@@ -234,9 +238,9 @@ jobs:
               "- **Security Policy & Signing Guide**: [SECURITY.md](https://github.com/${GITHUB_REPOSITORY}/blob/${RELEASE_TAG}/SECURITY.md)" \
               "" \
               "### What's New & Hardening" \
-              "- **Keyless Migration + OS Share / Drag-and-Drop**: Supports DeepSeek official ZIP archives (\`deepseek_data-*.zip\`) via built-in App/Web export tutorials, desktop drag-and-drop, or Android system Share/Open-With; enforces non-destructive same-ID archive merge (keeps existing local turns by default with explicit conflict options) and verified per-session emergency backups." \
-              "- **AndroidKeyStore AES-256-GCM Key Vault + Security Baseline**: Encrypts saved API keys inside \`AndroidKeyStore\` (auto-migrating & scrubbing legacy plaintext keys on upgrade), plus loopback DNS-rebinding \`Host\` header checks on \`/_proxy\`, DNS-pinned TLS upstream connections, Android \`X-DS-Bridge-Token\` + \`127.0.0.1:18787\` origin isolation, secret redaction (\`redactApiSecrets()\`), and SAF export bounds." \
-              "- **Cache-Aware USD Cost Estimator & Memory Cards**: Shows per-reply & cumulative estimated USD cost alongside cache-hit savings (\`in (hit X) · out\`) plus pinned Memory Cards and round/token budget trimming." \
+              "- **Keyless Migration + OS Share / Drag-and-Drop**: Supports DeepSeek official ZIP archives (\`deepseek_data-*.zip\`) via built-in App/Web export tutorials, desktop drag-and-drop, or Android system Share/Open-With; preserves session Memory Cards across archive export/import, enforces non-destructive same-ID archive merge (keeps existing local turns by default with explicit conflict options), and provides fault-tolerant per-session emergency backups." \
+              "- **Android 8.0+ Compatibility & AndroidKeyStore AES-256-GCM Vault**: Verified API 26+ (\`lintRelease\` \`NewApi\` fatal gate) compatibility, fault-tolerant \`AndroidKeyStore\` encryption (never downgrading secrets to plaintext \`localStorage\`), canonical-origin fallback isolation, CSP headers, safe attachment download handling, and pinned GitHub Actions SHAs." \
+              "- **Cache-Aware RMB (¥) / USD Cost Estimator & Memory Cards**: Shows per-reply & cumulative estimated RMB/USD cost alongside cache-hit savings plus pinned Memory Cards and round/token budget trimming." \
               "- **Release Integrity**: CI-gated Pages/Release provenance checks before publishing."
             if [ "${HAS_RELEASE_APK}" = "true" ]; then
               printf '%s\n' \
@@ -258,5 +262,4 @@ jobs:
       - name: Trigger GitHub Pages installer mirror refresh
         env:
           GH_TOKEN: ${{ github.token }}
-        continue-on-error: true
         run: gh workflow run pages.yml --ref main

@@ -44,8 +44,17 @@ export const getDefaultCorsProxyUrl = (): string => {
 const matchesUrlPrefix = (url: string, base: string): boolean =>
   url === base || url.startsWith(`${base}?`)
 
-/** 严格限定仅向本机 /_proxy 请求附带 X-DS-Bridge-Token，杜绝泄漏给任意外部上游 */
+const CANONICAL_ANDROID_PROXY = 'http://127.0.0.1:18787/_proxy'
+export const ANDROID_VAULT_ERR_SENTINEL = '__DS_VAULT_ERR__'
+
+/** 严格限定仅向本机受信任 /_proxy 请求附带 X-DS-Bridge-Token，杜绝端口被占回退或外部上游场景泄漏 */
 export const isLocalProxyRequestUrl = (url: string): boolean => {
+  if (hasAndroidBridge()) {
+    const bridgeProxy = getDefaultCorsProxyUrl()
+    if (bridgeProxy !== '/_proxy' && bridgeProxy !== CANONICAL_ANDROID_PROXY) {
+      return matchesUrlPrefix(url, bridgeProxy)
+    }
+  }
   if (matchesUrlPrefix(url, '/_proxy')) {
     return true
   }
@@ -72,20 +81,26 @@ export const hasAndroidSecureStorage = (): boolean => {
   )
 }
 
-export const readAndroidSecureSecrets = (): Record<string, string> => {
+export const readAndroidSecureSecretsResult = (): {
+  ok: boolean
+  secrets: Record<string, string>
+} => {
   try {
     const bridge = getAndroidBridge()
     const token = getAndroidBridgeToken()
     if (!bridge?.readSecureSecrets || !token) {
-      return {}
+      return { ok: true, secrets: {} }
     }
     const raw = bridge.readSecureSecrets(token)
     if (!raw) {
-      return {}
+      return { ok: true, secrets: {} }
+    }
+    if (raw === ANDROID_VAULT_ERR_SENTINEL) {
+      return { ok: false, secrets: {} }
     }
     const parsed = JSON.parse(raw) as unknown
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return {}
+      return { ok: false, secrets: {} }
     }
     const out: Record<string, string> = {}
     for (const [k, v] of Object.entries(parsed)) {
@@ -93,11 +108,14 @@ export const readAndroidSecureSecrets = (): Record<string, string> => {
         out[k] = v
       }
     }
-    return out
+    return { ok: true, secrets: out }
   } catch {
-    return {}
+    return { ok: false, secrets: {} }
   }
 }
+
+export const readAndroidSecureSecrets = (): Record<string, string> =>
+  readAndroidSecureSecretsResult().secrets
 
 export const writeAndroidSecureSecrets = (secrets: Record<string, string>): boolean => {
   try {
@@ -120,11 +138,23 @@ export const consumeAndroidSharedZip = async (): Promise<File | null> => {
     if (!bridge?.consumePendingSharedZip || !token) {
       return null
     }
-    const fileName = bridge.consumePendingSharedZip(token)
-    if (!fileName) {
+    const raw = bridge.consumePendingSharedZip(token)
+    if (!raw) {
       return null
     }
-    const res = await fetch(`/_shared_import.zip?token=${encodeURIComponent(token)}`, {
+    let fileName = raw
+    let query = `token=${encodeURIComponent(token)}`
+    if (raw.startsWith('{')) {
+      const parsed = JSON.parse(raw) as { fileName?: unknown; nonce?: unknown }
+      if (typeof parsed.fileName !== 'string' || !parsed.fileName) {
+        return null
+      }
+      fileName = parsed.fileName
+      if (typeof parsed.nonce === 'string' && parsed.nonce) {
+        query = `nonce=${encodeURIComponent(parsed.nonce)}`
+      }
+    }
+    const res = await fetch(`/_shared_import.zip?${query}`, {
       cache: 'no-store',
     })
     if (!res.ok) {

@@ -1,8 +1,10 @@
-const CACHE_NAME = 'deepseek-chat-byok-__APP_VERSION__'
+const CACHE_PREFIX = 'deepseek-chat-byok-'
+const CACHE_NAME = `${CACHE_PREFIX}__APP_VERSION__`
 const APP_SHELL_URLS = [
   './',
   './index.html',
   './get-started.html',
+  './get-started.js',
   './manifest.webmanifest',
   './icon.svg',
   './icon-192.png',
@@ -23,7 +25,11 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
+        Promise.all(
+          keys
+            .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+            .map((key) => caches.delete(key))
+        )
       )
       .then(() => self.clients.claim())
   )

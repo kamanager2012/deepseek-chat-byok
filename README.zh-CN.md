@@ -84,7 +84,7 @@ pnpm start
 
 使用过程中遇到问题或有体验建议，欢迎通过 [脱敏反馈表单](https://github.com/kamanager2012/deepseek-chat-byok/issues/new?template=pilot-feedback.yml)（或 [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues)）提交，建议附带：
 
-1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android Release APK `v0.4.2`）
+1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android Release APK `v0.4.3`）
 2. 所选接口预设与协议（DeepSeek 官方 / OpenCode Go / SiliconFlow / Ollama / 自定义等）
 3. `deepseek_data-*.zip` 导入体积、会话数量与选择性合并情况
 4. 复现步骤或脱敏后的报错信息（**严禁上传 API Key 或个人原始聊天导出包**）

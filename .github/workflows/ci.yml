@@ -82,12 +82,12 @@ jobs:
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@48b5f213c81028ace310571dc5ec0fbbca0b2947 # v4
         with:
           gradle-version: '8.11.1'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: platform-tools platforms;android-35 build-tools;35.0.0 build-tools;34.0.0
 
@@ -95,7 +95,7 @@ jobs:
         run: pnpm install --frozen-lockfile && pnpm android:apk
 
       - name: Upload Android Debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: deepseek-chat-byok-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
@@ -127,12 +127,12 @@ jobs:
           java-version: '17'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@48b5f213c81028ace310571dc5ec0fbbca0b2947 # v4
         with:
           gradle-version: '8.11.1'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
         with:
           packages: platform-tools platforms;android-35 build-tools;35.0.0 build-tools;34.0.0
 
@@ -248,7 +248,7 @@ jobs:
 
       - name: Upload Android upgrade acceptance evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: android-release-upgrade-evidence
           retention-days: 7

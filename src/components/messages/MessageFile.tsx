@@ -9,16 +9,50 @@ import { Tooltip } from '../base/Tooltip.js'
 import { FileCard } from '../files/FileCard.js'
 import styles from './MessageFile.module.css'
 
-/** 原件从 IndexedDB 读出并生成本地地址；undefined 表示加载中，null 表示原件缺失。 */
+const SAFE_INLINE_IMAGE_MIMES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/bmp',
+  'image/avif',
+])
+
+const sanitizeDownloadName = (name: string): string =>
+  name.replace(/[/\\:*?"<>|\p{Cc}]+/gu, '_').trim() || 'attachment.bin'
+
+const triggerSafeDownload = (url: string, fileName: string) => {
+  const link = document.createElement('a')
+  link.href = url
+  link.download = sanitizeDownloadName(fileName)
+  link.rel = 'noreferrer'
+  document.body.append(link)
+  link.click()
+  link.remove()
+}
+
+/** 原件从 IndexedDB 读出并生成本地地址；非位图（如 SVG/HTML）强制转为安全下载避免同源 blob: 脚本执行。 */
 const useFileUrl = (id: string) => {
-  const [fileUrl, setFileUrl] = useState<{ id: string; url: string | null } | null>(null)
+  const [fileUrl, setFileUrl] = useState<{
+    id: string
+    url: string | null
+    safeInline: boolean
+  } | null>(null)
   useEffect(() => {
     let objectUrl: string | null = null
     let cancelled = false
     loadFile(id).then((blob) => {
       if (!cancelled) {
-        objectUrl = blob ? URL.createObjectURL(blob) : null
-        setFileUrl({ id, url: objectUrl })
+        const mime = (blob?.type || '').toLowerCase()
+        const safeInline = SAFE_INLINE_IMAGE_MIMES.has(mime)
+        const safeBlob =
+          blob &&
+          !safeInline &&
+          (mime.includes('html') || mime.includes('svg') || mime.includes('xml'))
+            ? new Blob([blob], { type: 'application/octet-stream' })
+            : blob
+        objectUrl = safeBlob ? URL.createObjectURL(safeBlob) : null
+        setFileUrl({ id, url: objectUrl, safeInline })
       }
     })
     return () => {
@@ -28,7 +62,7 @@ const useFileUrl = (id: string) => {
       }
     }
   }, [id])
-  return fileUrl?.id === id ? fileUrl.url : undefined
+  return fileUrl?.id === id ? fileUrl : undefined
 }
 
 /** 历史或失效附件的补传状态：只在还没有 serverId 时显示 */
@@ -56,7 +90,9 @@ export const MessageFile = ({
   onRetry: (() => void) | null
 }) => {
   const t = useTranslate()
-  const url = useFileUrl(file.id)
+  const resolved = useFileUrl(file.id)
+  const url = resolved === undefined ? undefined : resolved.url
+  const safeInline = resolved?.safeInline ?? false
   const [failedUrl, setFailedUrl] = useState<string | null>(null)
   const upload = useUploadState(file)
   const uploading = upload?.status === 'uploading'
@@ -134,13 +170,14 @@ export const MessageFile = ({
       )
     }
 
-    // 正常态：链接到原件
+    // 正常态：位图允许新标签查看，SVG 等非位图强制走 download 属性下载
     return url ? (
       <a
         className={clsx(styles.image, styles.imageThumb)}
         href={url}
-        target="_blank"
-        rel="noreferrer"
+        {...(safeInline
+          ? { target: '_blank', rel: 'noreferrer' }
+          : { download: sanitizeDownloadName(file.name) })}
         title={file.name}
       >
         {preview}
@@ -158,7 +195,7 @@ export const MessageFile = ({
       status={uploading ? 'uploading' : failed ? 'error' : 'done'}
       error={errorText}
       onRetry={retry ?? undefined}
-      onOpen={url && !upload ? () => window.open(url, '_blank', 'noreferrer') : undefined}
+      onOpen={url && !upload ? () => triggerSafeDownload(url, file.name) : undefined}
     />
   )
 }

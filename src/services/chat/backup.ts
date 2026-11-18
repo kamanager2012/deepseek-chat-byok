@@ -64,7 +64,8 @@ export type EmergencyBackupResult = {
 export const exportEmergencyBackup = async (): Promise<EmergencyBackupResult> => {
   const summaries = await db.loadSessionSummaries()
   const skippedIds: string[] = []
-  let exportedCount = 0
+  let yieldedCount = 0
+  let serializeSkippedCount = 0
 
   async function* readSessions(): AsyncGenerator<Session> {
     for (const summary of summaries) {
@@ -74,7 +75,7 @@ export const exportEmergencyBackup = async (): Promise<EmergencyBackupResult> =>
           skippedIds.push(summary.id)
           continue
         }
-        exportedCount += 1
+        yieldedCount += 1
         yield { ...loaded, ...summary }
       } catch {
         skippedIds.push(summary.id)
@@ -84,7 +85,13 @@ export const exportEmergencyBackup = async (): Promise<EmergencyBackupResult> =>
 
   const { exportArchive } = await import('./history/exportArchive.js')
   const now = new Date()
-  const blob = await exportArchive(readSessions())
+  const blob = await exportArchive(readSessions(), {
+    onSessionError: (sessionId) => {
+      serializeSkippedCount += 1
+      skippedIds.push(sessionId)
+    },
+  })
+  const exportedCount = Math.max(0, yieldedCount - serializeSkippedCount)
   if (summaries.length > 0 && exportedCount === 0) {
     const preview = skippedIds.slice(0, 5).join(', ')
     throw new Error(

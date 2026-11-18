@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,6 +11,19 @@ const root = path.dirname(fileURLToPath(import.meta.url))
 const { version } = JSON.parse(
   readFileSync(new URL('./package.json', import.meta.url), 'utf8')
 ) as { version: string }
+const resolveSwBuildStamp = (): string => {
+  try {
+    const sha = execFileSync('git', ['rev-parse', '--short=8', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim()
+    return sha ? `${version}-${sha}` : version
+  } catch {
+    return version
+  }
+}
+const swBuildStamp = resolveSwBuildStamp()
 
 const cssLoader = {
   loader: 'builtin:lightningcss-loader',
@@ -90,6 +104,16 @@ export const createConfig = ({
           toType: 'file',
         },
         {
+          from: path.resolve(root, 'public/get-started.js'),
+          to: 'get-started.js',
+          toType: 'file',
+        },
+        {
+          from: path.resolve(root, 'docs/images'),
+          to: 'docs/images',
+          toType: 'dir',
+        },
+        {
           from: path.resolve(root, 'public/manifest.webmanifest'),
           to: 'manifest.webmanifest',
           toType: 'file',
@@ -101,8 +125,8 @@ export const createConfig = ({
           transform: (content) =>
             Buffer.from(
               Buffer.isBuffer(content)
-                ? content.toString('utf8').replace('__APP_VERSION__', version)
-                : String(content).replace('__APP_VERSION__', version),
+                ? content.toString('utf8').replace('__APP_VERSION__', swBuildStamp)
+                : String(content).replace('__APP_VERSION__', swBuildStamp),
               'utf8'
             ),
         },

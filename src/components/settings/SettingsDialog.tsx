@@ -32,6 +32,7 @@ import { Button } from '../base/Button.js'
 import { Modal } from '../base/Modal.js'
 import { Select } from '../base/Select.js'
 import { showToast } from '../base/toastState.js'
+import { ExportGuideModal } from '../session/ExportGuideModal.js'
 import { ImportDialog } from './ImportDialog.js'
 import { ProviderSettings } from './ProviderSettings.js'
 import {
@@ -496,40 +497,47 @@ const ImportHistory = ({
 }) => {
   const t = useTranslate()
   const inputRef = useRef<HTMLInputElement>(null)
+  const [guideOpen, setGuideOpen] = useState(false)
 
   return (
-    <SettingCell
-      label={t('historyImport')}
-      description={t('historyImportDescription')}
-      status={historyImport.status}
-      action={
-        <>
-          <Button
-            variant="outlined"
-            size="m"
-            className={clsx(styles.cellButton, styles.uploadButton)}
-            disabled={disabled}
-            onClick={() => inputRef.current?.click()}
-          >
-            <IconUploadOutline14 />
-            {t('upload')}
-          </Button>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".zip,application/zip,application/x-zip-compressed"
-            hidden
-            onChange={(event) => {
-              const file = event.target.files?.[0]
-              event.target.value = ''
-              if (file) {
-                historyImport.select(file)
-              }
-            }}
-          />
-        </>
-      }
-    />
+    <>
+      <SettingCell
+        label={t('historyImport')}
+        description={t('historyImportDescription')}
+        status={historyImport.status}
+        action={
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Button variant="outlined" size="m" onClick={() => setGuideOpen(true)}>
+              {t('onboardingHowToExport')}
+            </Button>
+            <Button
+              variant="outlined"
+              size="m"
+              className={clsx(styles.cellButton, styles.uploadButton)}
+              disabled={disabled}
+              onClick={() => inputRef.current?.click()}
+            >
+              <IconUploadOutline14 />
+              {t('upload')}
+            </Button>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".zip,application/zip,application/x-zip-compressed"
+              hidden
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                event.target.value = ''
+                if (file) {
+                  historyImport.select(file)
+                }
+              }}
+            />
+          </div>
+        }
+      />
+      {guideOpen ? <ExportGuideModal onClose={() => setGuideOpen(false)} /> : null}
+    </>
   )
 }
 
@@ -550,7 +558,7 @@ const ExportHistory = ({ disabled }: { disabled: boolean }) => {
       link.href = url
       link.download = name
       link.click()
-      setTimeout(() => URL.revokeObjectURL(url), 10_000)
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (error) {
       setStatus(errorStatus('historyExportFailed', error))
     } finally {

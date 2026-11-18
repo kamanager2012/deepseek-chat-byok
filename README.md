@@ -83,7 +83,7 @@ pnpm start
 
 Found a bug or UX bottleneck? Use the [De-identified Feedback Form](https://github.com/kamanager2012/deepseek-chat-byok/issues/new?template=pilot-feedback.yml) (or open a [GitHub Issue](https://github.com/kamanager2012/deepseek-chat-byok/issues)) with:
 
-1. Platform & release version (`GitHub Pages`, `Portable Desktop`, or `Android Release APK v0.4.2`)
+1. Platform & release version (`GitHub Pages`, `Portable Desktop`, or `Android Release APK v0.4.3`)
 2. Provider preset / protocol (`deepseek-anthropic`, `openai`, `anthropic`, or `ollama`)
 3. Whether archive merge (`deepseek_data-*.zip`) succeeded and approximate session count / ZIP size
 4. Reproduction steps or sanitized console/UI error messages (**never attach API keys or personal chat ZIPs**)

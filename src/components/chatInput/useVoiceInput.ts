@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { TranslationMessage } from '../../i18n/index.js'
+import { hasAndroidBridge } from '../../services/api/androidBridge.js'
 import { transcribe } from '../../services/api/speech.js'
 import { startRecording, type Recording } from '../../services/speech/recorder.js'
 import { getActiveProvider, useSettings } from '../../services/settings.js'
@@ -8,10 +9,9 @@ import { showToast } from '../base/toastState.js'
 export type VoiceInputStatus = 'idle' | 'recording' | 'transcribing'
 
 /**
- * 录音依赖 getUserMedia，只在安全上下文可用（HTTPS、localhost、file://）。
- * 普通 HTTP 页面上直接禁用入口，避免点击后必然失败。
+ * 录音依赖 getUserMedia 与系统麦克风权限；Android APK 保持仅 INTERNET 零敏感权限设计，不开放录音入口。
  */
-const AVAILABLE = typeof window === 'undefined' || window.isSecureContext
+const AVAILABLE = (typeof window === 'undefined' || window.isSecureContext) && !hasAndroidBridge()
 
 const describeRecordingError = (error: unknown): TranslationMessage => {
   if (error instanceof DOMException) {

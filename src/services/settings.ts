@@ -8,7 +8,7 @@ import {
 import {
   getDefaultCorsProxyUrl,
   hasAndroidSecureStorage,
-  readAndroidSecureSecrets,
+  readAndroidSecureSecretsResult,
   writeAndroidSecureSecrets,
 } from './api/androidBridge.js'
 import { normalizeLocation, type UserLocation } from './location.js'
@@ -137,6 +137,8 @@ const buildSecretVaultMap = (providers: ProviderConfig[]): Record<string, string
 const stripProviderSecrets = (providers: ProviderConfig[]): ProviderConfig[] =>
   providers.map((item) => (item.apiKey ? { ...item, apiKey: '' } : item))
 
+let androidVaultDegraded = false
+
 /** Android 下把 localStorage 遗留明文密钥迁入 AndroidKeyStore 保险箱并清除明文 */
 export const loadInitialProvidersWithVault = (): {
   providers: ProviderConfig[]
@@ -165,10 +167,13 @@ export const loadInitialProvidersWithVault = (): {
     resolved = { providers: [fallback], activeProviderId: fallback.id }
   }
   if (!hasAndroidSecureStorage()) {
+    androidVaultDegraded = false
     return resolved
   }
 
-  const vault = readAndroidSecureSecrets()
+  const vaultRead = readAndroidSecureSecretsResult()
+  androidVaultDegraded = !vaultRead.ok
+  const vault = vaultRead.secrets
   let needsVaultWrite = false
   let hasLocalPlaintext = Boolean(legacyKey.trim())
   const hydrated = resolved.providers.map((item) => {
@@ -188,10 +193,12 @@ export const loadInitialProvidersWithVault = (): {
     vault[hydrated[0].id] = legacyKey.trim()
     needsVaultWrite = true
   }
-  const vaultOk = !needsVaultWrite || writeAndroidSecureSecrets(vault)
-  if (hasLocalPlaintext && vaultOk) {
-    write(KEYS.providers, JSON.stringify(stripProviderSecrets(hydrated)))
-    write(KEYS.apiKey, null)
+  if (!androidVaultDegraded) {
+    const vaultOk = !needsVaultWrite || writeAndroidSecureSecrets(vault)
+    if (hasLocalPlaintext && vaultOk) {
+      write(KEYS.providers, JSON.stringify(stripProviderSecrets(hydrated)))
+      write(KEYS.apiKey, null)
+    }
   }
   return { providers: hydrated, activeProviderId: resolved.activeProviderId }
 }
@@ -269,12 +276,24 @@ export const getActiveProvider = (state: Pick<Settings, 'providers' | 'activePro
 export const isActiveProviderReady = (state = useSettings.getState()): boolean =>
   isProviderConfigured(getActiveProvider(state))
 
-const persistProviders = (providers: ProviderConfig[], activeId: string) => {
+const persistProviders = (
+  providers: ProviderConfig[],
+  activeId: string,
+  options: { updateVault?: boolean } = {}
+) => {
+  const { updateVault = true } = options
   const active = resolveActive(providers, activeId)
   const cleanKey = active.apiKey.trim() || null
-  if (hasAndroidSecureStorage() && writeAndroidSecureSecrets(buildSecretVaultMap(providers))) {
+  if (hasAndroidSecureStorage()) {
+    // Android 容器内绝不向 localStorage 回退写入任何明文 API Key
     write(KEYS.providers, JSON.stringify(stripProviderSecrets(providers)))
     write(KEYS.apiKey, null)
+    const vaultMap = buildSecretVaultMap(providers)
+    if (updateVault && (!androidVaultDegraded || Object.keys(vaultMap).length > 0)) {
+      if (writeAndroidSecureSecrets(vaultMap)) {
+        androidVaultDegraded = false
+      }
+    }
   } else {
     write(KEYS.providers, JSON.stringify(providers))
     write(KEYS.apiKey, cleanKey)
@@ -293,13 +312,13 @@ export const upsertProvider = (next: ProviderConfig, activate = true) => {
   const updated = exists
     ? providers.map((item) => (item.id === next.id ? next : item))
     : [...providers, next]
-  persistProviders(updated, activate ? next.id : activeProviderId)
+  persistProviders(updated, activate ? next.id : activeProviderId, { updateVault: true })
 }
 
 export const selectActiveProvider = (providerId: string) => {
   const { providers } = useSettings.getState()
   if (providers.some((item) => item.id === providerId)) {
-    persistProviders(providers, providerId)
+    persistProviders(providers, providerId, { updateVault: false })
   }
 }
 
@@ -308,11 +327,11 @@ export const removeProvider = (providerId: string) => {
   const remaining = providers.filter((item) => item.id !== providerId)
   if (remaining.length === 0) {
     const fallback = createDefaultProvider()
-    persistProviders([fallback], fallback.id)
+    persistProviders([fallback], fallback.id, { updateVault: !androidVaultDegraded })
     return
   }
   const nextActive = activeProviderId === providerId ? remaining[0].id : activeProviderId
-  persistProviders(remaining, nextActive)
+  persistProviders(remaining, nextActive, { updateVault: !androidVaultDegraded })
 }
 
 export const setCorsProxyUrl = (corsProxyUrl: string) => {

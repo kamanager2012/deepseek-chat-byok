@@ -13,7 +13,6 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -70,6 +69,12 @@ public final class LocalBridgeServer implements Closeable {
   }
 
   public static final int CANONICAL_WEB_PORT = 18787;
+  public static final String CSP_HEADER_VALUE =
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+          + "img-src 'self' data: blob: https:; media-src 'self' blob:; font-src 'self' data:; "
+          + "connect-src 'self' https: http://127.0.0.1:* http://localhost:* http://[::1]:*; "
+          + "worker-src 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; "
+          + "base-uri 'self'; form-action 'self'";
   private static final int MAX_HEADER_BYTES = 64 * 1024;
   private static final int MAX_BODY_BYTES = 25 * 1024 * 1024;
   private static final int CONNECT_TIMEOUT_MS = 30_000;
@@ -247,6 +252,12 @@ public final class LocalBridgeServer implements Closeable {
     byte[] content = tryOpenAsset(clean);
     String servedPath = clean;
     if (content == null) {
+      int lastSlash = clean.lastIndexOf('/');
+      String lastSeg = lastSlash >= 0 ? clean.substring(lastSlash + 1) : clean;
+      if (lastSeg.contains(".")) {
+        return new StaticAssetResult(
+            404, "text/plain; charset=utf-8", "Not Found".getBytes(StandardCharsets.UTF_8), true);
+      }
       content = tryOpenAsset("index.html");
       servedPath = "index.html";
     }
@@ -311,14 +322,14 @@ public final class LocalBridgeServer implements Closeable {
 
       if ("/_proxy".equals(pathOnly)) {
         s.setSoTimeout(READ_TIMEOUT_MS);
-        handleProxy(method, rawQuery, headers, in, out);
+        try {
+          handleProxy(method, rawQuery, headers, in, out);
+        } catch (PayloadTooLargeException err) {
+          String corsOrigin = resolveCorsOriginForProxy(headers, boundPort, expectedOriginPort);
+          sendText(out, 413, err.getMessage(), corsOrigin);
+        }
       } else {
         serveStatic(method, pathOnly, out);
-      }
-    } catch (PayloadTooLargeException err) {
-      try {
-        sendText(client.getOutputStream(), 413, err.getMessage(), null);
-      } catch (IOException ignored) {
       }
     } catch (Exception ignored) {
     }
@@ -404,6 +415,7 @@ public final class LocalBridgeServer implements Closeable {
       OutputStream clientOut)
       throws IOException {
     Socket upstreamSock = null;
+    boolean headersSent = false;
     try {
       Socket rawSock = new Socket();
       rawSock.connect(
@@ -416,7 +428,9 @@ public final class LocalBridgeServer implements Closeable {
             (SSLSocket) factory.createSocket(rawSock, target.host, target.port, true);
         SSLParameters sslParams = sslSock.getSSLParameters();
         sslParams.setEndpointIdentificationAlgorithm("HTTPS");
-        sslParams.setServerNames(Collections.singletonList(new SNIHostName(target.host)));
+        if (isDnsHostname(target.host)) {
+          sslParams.setServerNames(Collections.singletonList(new SNIHostName(target.host)));
+        }
         sslSock.setSSLParameters(sslParams);
         sslSock.startHandshake();
         upstreamSock = sslSock;
@@ -523,12 +537,14 @@ public final class LocalBridgeServer implements Closeable {
       }
       if ("HEAD".equals(method)) {
         respHead.append("Content-Length: 0\r\nConnection: close\r\n\r\n");
+        headersSent = true;
         clientOut.write(respHead.toString().getBytes(StandardCharsets.US_ASCII));
         clientOut.flush();
         return;
       }
 
       respHead.append("Transfer-Encoding: chunked\r\nConnection: close\r\n\r\n");
+      headersSent = true;
       clientOut.write(respHead.toString().getBytes(StandardCharsets.US_ASCII));
       clientOut.flush();
 
@@ -542,8 +558,10 @@ public final class LocalBridgeServer implements Closeable {
       clientOut.write("0\r\n\r\n".getBytes(StandardCharsets.US_ASCII));
       clientOut.flush();
     } catch (Exception err) {
-      String msg = err.getMessage() != null ? err.getMessage() : err.getClass().getSimpleName();
-      sendText(clientOut, 502, msg, corsOrigin);
+      if (!headersSent) {
+        String msg = err.getMessage() != null ? err.getMessage() : err.getClass().getSimpleName();
+        sendText(clientOut, 502, msg, corsOrigin);
+      }
     } finally {
       if (upstreamSock != null) {
         try {
@@ -578,7 +596,15 @@ public final class LocalBridgeServer implements Closeable {
       if (hex.isEmpty()) {
         continue;
       }
-      int chunkSize = Integer.parseInt(hex, 16);
+      int chunkSize;
+      try {
+        chunkSize = Integer.parseInt(hex, 16);
+      } catch (NumberFormatException err) {
+        throw new IOException("Invalid upstream chunk length");
+      }
+      if (chunkSize < 0) {
+        throw new IOException("Negative upstream chunk length");
+      }
       if (chunkSize == 0) {
         readAsciiLine(upIn);
         break;
@@ -648,8 +674,13 @@ public final class LocalBridgeServer implements Closeable {
     head.append("Content-Type: ").append(asset.mimeType).append("\r\n");
     head.append("Content-Length: ").append(asset.body.length).append("\r\n");
     head.append("X-Content-Type-Options: nosniff\r\n");
-    head.append("X-Frame-Options: SAMEORIGIN\r\n");
+    head.append("X-Frame-Options: DENY\r\n");
     head.append("Referrer-Policy: no-referrer\r\n");
+    if (asset.mimeType.startsWith("text/html")) {
+      head.append("Content-Security-Policy: ")
+          .append(CSP_HEADER_VALUE)
+          .append("\r\n");
+    }
     if (asset.noCache) {
       head.append("Cache-Control: no-cache\r\n");
     }
@@ -915,14 +946,55 @@ public final class LocalBridgeServer implements Closeable {
       if (first == 0xfe && (b[1] & 0xc0) == 0xc0) {
         return true; // fec0::/10 deprecated site-local
       }
+      // ::/96 deprecated IPv4-compatible IPv6 & ::ffff:0:0/96 IPv4-mapped
+      boolean first80Zero = true;
+      for (int i = 0; i < 10; i++) {
+        if (b[i] != 0) {
+          first80Zero = false;
+          break;
+        }
+      }
+      if (first80Zero
+          && ((b[10] == 0 && b[11] == 0) || (b[10] == (byte) 0xff && b[11] == (byte) 0xff))) {
+        return true;
+      }
       if (b[0] == 0x00 && b[1] == 0x64 && b[2] == (byte) 0xff && b[3] == (byte) 0x9b) {
         return true; // 64:ff9b::/96 NAT64
+      }
+      if (b[0] == 0x01 && b[1] == 0x00 && b[2] == 0x00 && b[3] == 0x00
+          && b[4] == 0x00 && b[5] == 0x00 && b[6] == 0x00 && b[7] == 0x00) {
+        return true; // 100::/64 discard-only
+      }
+      if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x00 && b[3] == 0x00) {
+        return true; // 2001::/32 Teredo
+      }
+      if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x00 && b[3] == 0x02
+          && b[4] == 0x00 && b[5] == 0x00) {
+        return true; // 2001:2::/48 benchmarking
       }
       if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x0d && b[3] == (byte) 0xb8) {
         return true; // 2001:db8::/32 documentation
       }
+      if (b[0] == 0x20 && b[1] == 0x02) {
+        return true; // 2002::/16 6to4 tunnel
+      }
     }
     return false;
+  }
+
+  private static boolean isDnsHostname(String host) {
+    if (host == null || host.isEmpty() || host.contains(":") || host.startsWith("[")) {
+      return false;
+    }
+    boolean allDigitsAndDots = true;
+    for (int i = 0; i < host.length(); i++) {
+      char c = host.charAt(i);
+      if ((c < '0' || c > '9') && c != '.') {
+        allDigitsAndDots = false;
+        break;
+      }
+    }
+    return !allDigitsAndDots;
   }
 
   private static String readHeaderBlock(InputStream in) throws IOException {
@@ -974,11 +1046,14 @@ public final class LocalBridgeServer implements Closeable {
         int semi = line.indexOf(';');
         String hex = (semi >= 0 ? line.substring(0, semi) : line).trim();
         int size = hex.isEmpty() ? 0 : Integer.parseInt(hex, 16);
+        if (size < 0) {
+          throw new IOException("Negative chunk size");
+        }
         if (size == 0) {
           readAsciiLine(in);
           break;
         }
-        if (out.size() + size > MAX_BODY_BYTES) {
+        if (size > MAX_BODY_BYTES - out.size()) {
           throw new PayloadTooLargeException();
         }
         byte[] chunk = readExact(in, size);
@@ -992,11 +1067,11 @@ public final class LocalBridgeServer implements Closeable {
     if (clHeader == null) {
       return new byte[0];
     }
-    int len = Integer.parseInt(clHeader.trim());
-    if (len < 0 || len > MAX_BODY_BYTES) {
+    long parsedLen = Long.parseLong(clHeader.trim());
+    if (parsedLen < 0 || parsedLen > MAX_BODY_BYTES) {
       throw new PayloadTooLargeException();
     }
-    return readExact(in, len);
+    return readExact(in, (int) parsedLen);
   }
 
   private static String readAsciiLine(InputStream in) throws IOException {
@@ -1009,6 +1084,9 @@ public final class LocalBridgeServer implements Closeable {
         return new String(arr, 0, end, StandardCharsets.US_ASCII);
       }
       line.write(b);
+      if (line.size() > 8192) {
+        throw new IOException("HTTP line exceeds maximum length");
+      }
     }
     return line.size() == 0 ? null : line.toString(StandardCharsets.US_ASCII.name());
   }
@@ -1026,6 +1104,34 @@ public final class LocalBridgeServer implements Closeable {
     return out;
   }
 
+  private static String percentDecodeUtf8(String input) {
+    if (input == null) {
+      return null;
+    }
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream(input.length());
+    for (int i = 0; i < input.length(); i++) {
+      char c = input.charAt(i);
+      if (c == '%') {
+        if (i + 2 >= input.length()) {
+          throw new IllegalArgumentException("Incomplete percent escape");
+        }
+        int hi = Character.digit(input.charAt(i + 1), 16);
+        int lo = Character.digit(input.charAt(i + 2), 16);
+        if (hi < 0 || lo < 0) {
+          throw new IllegalArgumentException("Invalid percent escape");
+        }
+        bytes.write((hi << 4) | lo);
+        i += 2;
+      } else if (c <= 0x7f) {
+        bytes.write(c);
+      } else {
+        byte[] utf8 = String.valueOf(c).getBytes(StandardCharsets.UTF_8);
+        bytes.write(utf8, 0, utf8.length);
+      }
+    }
+    return new String(bytes.toByteArray(), StandardCharsets.UTF_8);
+  }
+
   private static String getQueryParam(String query, String name) {
     if (query == null || query.isEmpty()) {
       return null;
@@ -1033,7 +1139,11 @@ public final class LocalBridgeServer implements Closeable {
     for (String pair : query.split("&")) {
       int eq = pair.indexOf('=');
       if (eq > 0 && name.equals(pair.substring(0, eq))) {
-        return URLDecoder.decode(pair.substring(eq + 1), StandardCharsets.UTF_8);
+        try {
+          return percentDecodeUtf8(pair.substring(eq + 1));
+        } catch (IllegalArgumentException err) {
+          return null;
+        }
       }
     }
     return null;
@@ -1041,7 +1151,7 @@ public final class LocalBridgeServer implements Closeable {
 
   private static String decodePath(String path) {
     try {
-      return URLDecoder.decode(path, StandardCharsets.UTF_8);
+      return percentDecodeUtf8(path);
     } catch (IllegalArgumentException err) {
       return null;
     }
