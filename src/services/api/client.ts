@@ -1,5 +1,10 @@
 import { translate, type TranslationMessage } from '../../i18n/index.js'
-import { getAndroidBridgeToken, isLocalProxyRequestUrl } from './androidBridge.js'
+import {
+  getAndroidBridgeToken,
+  getDefaultCorsProxyUrl,
+  hasAndroidBridge,
+  isLocalProxyRequestUrl,
+} from './androidBridge.js'
 import {
   OpenAIStreamError,
   buildOpenAIMessages,
@@ -9,6 +14,7 @@ import {
 import { readMessageEvent } from './parseEvent.js'
 import {
   createDefaultProvider,
+  probeLocalProxy,
   resolveFetchTarget,
   resolveProviderEndpoints,
   type ProviderConfig,
@@ -140,6 +146,42 @@ export const request = async (url: string, init: RequestInit): Promise<Response>
   return response
 }
 
+const canFallbackToLocalProxy = async (provider: ProviderConfig): Promise<boolean> => {
+  if (provider.useCorsProxy) {
+    return false
+  }
+  return hasAndroidBridge() || (await probeLocalProxy())
+}
+
+/**
+ * 若直连因浏览器 CORS/网络失败且本地内置 /_proxy 桥接可用，则自动降级到本地代理重试一次，
+ * 避免用户在 Android APK 或桌面便携版未勾选代理时被浏览器同源策略拦断。
+ */
+const requestWithLocalProxyFallback = async (
+  url: string,
+  init: RequestInit,
+  provider: ProviderConfig,
+  corsProxyUrl: string
+): Promise<Response> => {
+  const primaryTarget = resolveFetchTarget(url, provider.useCorsProxy, corsProxyUrl)
+  try {
+    return await request(primaryTarget, init)
+  } catch (error) {
+    if (
+      error instanceof ApiError &&
+      error.kind === 'network' &&
+      !init.signal?.aborted &&
+      (await canFallbackToLocalProxy(provider))
+    ) {
+      const proxyTarget = resolveFetchTarget(url, true, corsProxyUrl || getDefaultCorsProxyUrl())
+      if (proxyTarget !== primaryTarget) {
+        return request(proxyTarget, init)
+      }
+    }
+    throw error
+  }
+}
+
 const anthropicHeaders = (
   apiKey: string,
   beta: boolean,
@@ -186,7 +228,6 @@ export const verifyProvider = async (
   signal?: AbortSignal
 ): Promise<string[]> => {
   const endpoints = resolveProviderEndpoints(provider)
-  const target = resolveFetchTarget(endpoints.modelsUrl, provider.useCorsProxy, corsProxyUrl)
   const key = provider.apiKey.trim()
   const headers: Record<string, string> =
     provider.protocol === 'anthropic'
@@ -197,11 +238,16 @@ export const verifyProvider = async (
       : key
         ? { Authorization: `Bearer ${key}` }
         : {}
-  const response = await request(target, {
-    method: 'GET',
-    headers,
-    signal,
-  })
+  const response = await requestWithLocalProxyFallback(
+    endpoints.modelsUrl,
+    {
+      method: 'GET',
+      headers,
+      signal,
+    },
+    provider,
+    corsProxyUrl
+  )
   const text = await response.text().catch(() => '')
   try {
     return parseModelList(JSON.parse(text))
@@ -237,13 +283,17 @@ export const uploadFile = async (
     form.append('purpose', purpose)
   }
   form.append('file', file)
-  const target = resolveFetchTarget(endpoints.filesUrl, resolved.useCorsProxy, corsProxyUrl)
-  const response = await request(target, {
-    method: 'POST',
-    headers: anthropicHeaders(resolved.apiKey || apiKey, true, false),
-    body: form,
-    signal,
-  })
+  const response = await requestWithLocalProxyFallback(
+    endpoints.filesUrl,
+    {
+      method: 'POST',
+      headers: anthropicHeaders(resolved.apiKey || apiKey, true, false),
+      body: form,
+      signal,
+    },
+    resolved,
+    corsProxyUrl
+  )
   return (await response.json()) as FileObject
 }
 
@@ -259,15 +309,15 @@ export const deleteFile = async (
   if (!endpoints.filesUrl) {
     return
   }
-  const target = resolveFetchTarget(
+  await requestWithLocalProxyFallback(
     `${endpoints.filesUrl}/${encodeURIComponent(fileId)}`,
-    resolved.useCorsProxy,
+    {
+      method: 'DELETE',
+      headers: anthropicHeaders(resolved.apiKey || apiKey, true, false),
+    },
+    resolved,
     corsProxyUrl
   )
-  await request(target, {
-    method: 'DELETE',
-    headers: anthropicHeaders(resolved.apiKey || apiKey, true, false),
-  })
 }
 
 const stripDataUrl = (dataUrl: string): { mediaType: string; data: string } | null => {
@@ -384,28 +434,32 @@ export async function* streamProviderMessage({
   inlineFiles = new Map(),
 }: StreamProviderOptions): AsyncGenerator<MessageStreamEvent> {
   const endpoints = resolveProviderEndpoints(provider)
-  const target = resolveFetchTarget(endpoints.messagesUrl, provider.useCorsProxy, corsProxyUrl)
   const apiKey = provider.apiKey.trim()
 
   if (provider.protocol === 'openai') {
     const openAiMessages = buildOpenAIMessages(body.system, body.messages, inlineFiles)
     const requestOpenAi = (includeUsage: boolean) =>
-      request(target, {
-        method: 'POST',
-        headers: {
-          ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
+      requestWithLocalProxyFallback(
+        endpoints.messagesUrl,
+        {
+          method: 'POST',
+          headers: {
+            ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+          },
+          body: JSON.stringify({
+            model: provider.model.trim() || body.model,
+            messages: openAiMessages,
+            stream: true,
+            ...(includeUsage ? { stream_options: { include_usage: true } } : {}),
+            ...(body.max_tokens ? { max_tokens: body.max_tokens } : {}),
+          }),
+          signal,
         },
-        body: JSON.stringify({
-          model: provider.model.trim() || body.model,
-          messages: openAiMessages,
-          stream: true,
-          ...(includeUsage ? { stream_options: { include_usage: true } } : {}),
-          ...(body.max_tokens ? { max_tokens: body.max_tokens } : {}),
-        }),
-        signal,
-      })
+        provider,
+        corsProxyUrl
+      )
 
     let response: Response
     try {
@@ -447,16 +501,21 @@ export async function* streamProviderMessage({
     ? { ...body, stream: true }
     : sanitizeGenericAnthropicBody(body, inlineFiles)
 
-  const response = await request(target, {
-    method: 'POST',
-    headers: {
-      ...anthropicHeaders(apiKey, isDeepSeek && hasFile(body), !isDeepSeek),
-      'Content-Type': 'application/json',
-      Accept: 'text/event-stream',
+  const response = await requestWithLocalProxyFallback(
+    endpoints.messagesUrl,
+    {
+      method: 'POST',
+      headers: {
+        ...anthropicHeaders(apiKey, isDeepSeek && hasFile(body), !isDeepSeek),
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      },
+      body: JSON.stringify(payload),
+      signal,
     },
-    body: JSON.stringify(payload),
-    signal,
-  })
+    provider,
+    corsProxyUrl
+  )
   const contentType = response.headers.get('Content-Type') ?? ''
   if (!response.body || !contentType.includes('text/event-stream')) {
     throw await readErrorResponse(response, 'protocol', '')

@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { verifyLiveDownloads } from '../scripts/verify-live-downloads.mjs'
+import {
+  assertLandingDownloadFlow,
+  REQUIRED_LANDING_MARKERS,
+  verifyLiveDownloads,
+} from '../scripts/verify-live-downloads.mjs'
 
 const tag = 'v0.3.1'
 const android = `deepseek-chat-byok-${tag}-android-release.apk`
@@ -88,6 +92,15 @@ describe('Public Pages download post-deploy acceptance', () => {
         fakeFetch({ missingGuide: true })
       )
     ).rejects.toThrow('Live landing page lacks the expected download flow')
+  })
+
+  it('enforces shared landing page contract including guide title and download controls', () => {
+    expect(() => assertLandingDownloadFlow(liveGuideHtml)).not.toThrow()
+    for (const marker of REQUIRED_LANDING_MARKERS) {
+      expect(() => assertLandingDownloadFlow(liveGuideHtml.replaceAll(marker, 'removed'))).toThrow(
+        'Live landing page lacks the expected download flow'
+      )
+    }
   })
 
   it('does not trust site-provided checksums without checking published Release metadata', async () => {
