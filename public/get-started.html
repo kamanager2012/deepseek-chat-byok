@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#4d6bfe" />
     <meta
       name="description"
-      content="DeepSeek Chat BYOK（DeepSeek 开源社区版客户端）是基于官方开源 chat-demo 增强的独立免费开源客户端：支持填入自己的 API Key 稳定对话、固定长文记忆卡与人民币参考估算，并可无缝导入 DeepSeek 官方聊天记录。非官方出品，也不是 Harness 插件集合。"
+      content="DeepSeek Chat BYOK（DeepSeek 开源社区版客户端）是基于官方开源 chat-demo 增强的独立免费开源客户端：支持使用自己的 API Key 连接模型服务、保存长文记忆卡与导入 DeepSeek 官方聊天记录。网页版在线聊天取决于服务商是否允许浏览器直接连接。非官方出品，也不是 Harness 插件集合。"
     />
     <meta
       name="keywords"
@@ -18,7 +18,7 @@
     />
     <meta
       property="og:description"
-      content="熟悉的原版 DeepSeek 对话体验，用自己的 API Key 稳定畅聊：支持深度思考、联网搜索、文件问答、长文记忆卡，并可免解压导入官方旧聊天记录接着写（免安装网页版与安卓独立安装包）。"
+      content="独立开源 DeepSeek 社区客户端：可以自备 API Key 连接兼容模型、保存记忆卡和导入旧聊天。安卓正式版不受浏览器跨域限制；网页版适合免安装查看历史。"
     />
     <meta property="og:type" content="website" />
     <link
@@ -42,7 +42,7 @@
         "url": "https://kamanager2012.github.io/deepseek-chat-byok/get-started.html",
         "downloadUrl": "https://kamanager2012.github.io/deepseek-chat-byok/get-started.html",
         "codeRepository": "https://github.com/kamanager2012/deepseek-chat-byok",
-        "description": "DeepSeek Chat BYOK（DeepSeek 开源社区版客户端）是一个独立、免费、开源的 DeepSeek BYOK 聊天客户端，基于官方开源 chat-demo 增强，支持填入自己的 API Key 稳定对话、本地记忆卡与官方聊天记录导入。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。"
+        "description": "DeepSeek Chat BYOK（DeepSeek 开源社区版客户端）是一个独立、免费、开源的 DeepSeek BYOK 聊天客户端，基于官方开源 chat-demo 增强，支持自备 API Key 连接兼容模型、本地记忆卡与官方聊天记录导入。网页版在线调用受浏览器跨域限制。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。"
       }
     </script>
     <script type="application/ld+json">
@@ -80,6 +80,14 @@
             "acceptedAnswer": {
               "@type": "Answer",
               "text": "不需要。如果你只想在电脑上导入、查看旧对话或连接支持浏览器直连的服务，直接点击打开本页面的免安装网页版即可，不需要装任何环境；只有进阶区的「电脑便携包（portable.zip）」需要本机预先安装 Node.js 22+ LTS。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "iPhone 或 iPad 可以安装这个客户端吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "目前没有 iOS 安装包，iPhone 和 iPad 无法安装 Android APK。可以用 Safari 网页版导入、查看旧聊天；模型 API 在线调用仍可能受到浏览器跨域限制。"
             }
           }
         ]
@@ -334,10 +342,10 @@
       <div class="eyebrow">
         DeepSeek Chat BYOK（DeepSeek 开源社区版）· 独立开源客户端 · 非官方出品
       </div>
-      <h1>用自己的 API Key，享受原汁原味的 DeepSeek 对话体验</h1>
+      <h1>用自己的 API Key，在独立的 DeepSeek 社区客户端聊天</h1>
       <p class="lead">
-        基于官方开源 <code>chat-demo</code> 增强：填入自己的 DeepSeek 或兼容平台 API Key
-        稳定畅聊、钉住长文「记忆卡」，也能把官方导出的旧聊天免解压导进来接着写。
+        基于官方开源 <code>chat-demo</code> 独立扩展：连接你选择的兼容模型服务、
+        保存长文「记忆卡」，也能免解压导入官方导出的旧聊天。不同服务商的功能和可用性可能不同。
       </p>
 
       <div class="notice">
@@ -349,24 +357,30 @@
 
       <section class="steps" aria-label="快速打开社区版">
         <div class="card">
-          <h2>方式一：免安装网页版（打开即用，电脑手机通用）</h2>
+          <h2>方式一：免安装网页版（推荐先体验旧聊天导入）</h2>
           <p>
-            不用安装任何程序。点下面「立即打开网页版」，进「设置 → 模型与 API」填好自己的 DeepSeek
-            API Key 就能开始聊天；也可以先拖入官方导出的 <code>.zip</code> 记录包直接查看。
+            无需安装，点「打开网页版」即可导入、查看旧聊天。如果要在线对话，
+            模型服务商必须支持浏览器直接连接；部分 API 会被浏览器跨域限制，填入正确的 Key
+            也可能无法请求。 遇到跨域报错，安卓用户请使用下方正式 APK；电脑用户可使用进阶便携版。
           </p>
           <div class="buttons">
             <a class="button" href="./">立即打开网页版</a>
             <a class="button secondary" href="#export-guide">旧聊天导出导入教程</a>
           </div>
-          <p class="muted">聊天记录与密钥只存在你当前设备本地，不上传第三方中转服务器。</p>
+          <p class="muted">
+            网页版在当前浏览器保存密钥和聊天记录，清除站点数据可能导致丢失；
+            在线调用时密钥会发送给你选定的模型服务商鉴权。请勿公开密钥。 iPhone / iPad
+            暂无独立安装包，可以先用网页版导入和查看旧聊天。
+          </p>
         </div>
 
         <div class="card">
-          <h2>方式二：下载安卓手机正式版 APK（约 2.8 MB）</h2>
+          <h2>方式二：安卓正式版（推荐需要用 Key 聊天的安卓用户）</h2>
           <p>
-            习惯在手机上日常写小说、做笔记、需要稳定直连或切硅基流动等第三方接口的朋友，推荐安装安卓正式版。内置本地转发桥（无浏览器跨域限制）、使用
-            <code>AndroidKeyStore</code> 加密保存密钥，并支持对官方 <code>.zip</code> 点
-            <strong>「分享 / 用其他应用打开」</strong> 直达导入。
+            安卓手机可以下载安装签名 APK。它内置本地接口转发，不受浏览器跨域限制； 密钥由 Android
+            系统安全存储管理。你也可以在文件管理器对官方 <code>.zip</code> 选择<strong
+              >「分享 / 用其他应用打开」</strong
+            >导入旧聊天。 安装版不能保证所选模型服务商永远可用。
           </p>
           <div class="buttons">
             <a
@@ -381,7 +395,8 @@
             正在查找最新正式版安装包…
           </p>
           <small>
-            支持 Android 8.0+。请认准正式版安装包，后续新版可直接覆盖升级并保留原有聊天与密钥。
+            支持 Android 8.0+。请选择正式签名版；同签名版本可覆盖升级。 如曾安装早期 debug
+            测试包，请先备份聊天再按发布说明迁移。
           </small>
         </div>
       </section>
@@ -390,13 +405,19 @@
         <h2>两步配置 API Key 开始对话</h2>
         <ol>
           <li>
-            前往 DeepSeek
-            开放平台（<code>platform.deepseek.com</code>）或你常用的兼容模型平台申请一个 API Key。
+            到
+            <a
+              href="https://platform.deepseek.com/api_keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              >DeepSeek 开放平台的 API Key 页面</a
+            >
+            或你信任的兼容模型服务商申请密钥。首次使用可能需要注册和开通计费。
           </li>
           <li>
-            打开客户端 <strong>设置 → 模型与 API</strong>（默认已选中
-            <code>DeepSeek 官方</code> 推荐模型，其余选项不用改），粘贴密钥点
-            <strong>「测试并保存」</strong> 即可开聊；每次回答下方都会用通俗人民币估算费用。
+            打开客户端 <strong>设置 → 模型与 API</strong>，选对服务商，粘贴密钥并点击
+            <strong>「测试并保存」</strong>。确认连接成功后再发消息； 网页版如显示跨域或 CORS
+            错误，可改用安卓正式版。人民币花费是参考估算，以服务商账单为准。
           </li>
         </ol>
       </section>
@@ -485,7 +506,20 @@
           API」跟着指引贴入一次自己的密钥；每次回答旁边还会直接用通俗人民币估算大概花了多少元。
         </p>
 
-        <h3>3. 这个免费开源项目是个人独立维护的吗？</h3>
+        <h3>3. 为什么网页版填对 API Key 仍可能无法聊天？</h3>
+        <p>
+          部分模型接口不允许浏览器直接访问，这是浏览器的跨域限制，不一定是密钥填错。
+          安卓用户建议下载上方正式 APK；电脑用户可以使用进阶便携版（需要 Node.js 22+）。
+          在线调用费用由你选择的服务商收取。
+        </p>
+
+        <h3>4. iPhone 或 iPad 可以使用吗？</h3>
+        <p>
+          目前没有 iOS 安装包，iPhone / iPad 不能安装安卓 APK。 可以先通过 Safari
+          打开网页版导入和查看旧聊天；在线模型接口仍可能受到浏览器跨域限制。
+        </p>
+
+        <h3>5. 这个免费开源项目是个人独立维护的吗？</h3>
         <p>
           是的。它由开源仓库
           <a href="https://github.com/kamanager2012/deepseek-chat-byok" rel="noopener noreferrer"
@@ -584,8 +618,8 @@
                   <td><strong>DeepSeek Chat BYOK</strong>（本项目）</td>
                   <td>独立、免费、开源的 BYOK 社区版客户端</td>
                   <td>
-                    基于官方开源 <code>chat-demo</code> 增强，无需安装 Harness，打开即可用自己的 API
-                    Key 畅聊、钉住记忆卡并导回官方旧记录。
+                    基于官方开源 <code>chat-demo</code> 增强，无需安装 Harness，可用自己的 API Key
+                    连接可用模型、保存记忆卡并导回旧记录；网页版需服务商支持浏览器直连。
                   </td>
                 </tr>
                 <tr>
