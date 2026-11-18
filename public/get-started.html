@@ -14,13 +14,16 @@
     />
     <meta
       property="og:title"
-      content="DeepSeek Chat BYOK｜DeepSeek 开源社区版客户端下载与使用指南"
+      content="DeepSeek Chat BYOK｜DeepSeek 聊天记录导入、社区版客户端下载与指南"
     />
     <meta
       property="og:description"
       content="独立开源 DeepSeek 社区客户端：可以自备 API Key 连接兼容模型、保存记忆卡和导入旧聊天。安卓正式版不受浏览器跨域限制；网页版适合免安装查看历史。"
     />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kamanager2012.github.io/deepseek-chat-byok/get-started.html" />
+    <meta property="og:image" content="https://kamanager2012.github.io/deepseek-chat-byok/docs/images/desktop-byok-workspace.png" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link
       rel="canonical"
       href="https://kamanager2012.github.io/deepseek-chat-byok/get-started.html"
@@ -29,7 +32,7 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.github.com; frame-src 'none'; object-src 'none'; base-uri 'self'"
     />
-    <title>DeepSeek Chat BYOK｜DeepSeek 开源社区版客户端下载与使用指南</title>
+    <title>DeepSeek Chat BYOK｜DeepSeek 聊天记录导入、社区版客户端下载与指南</title>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -342,7 +345,7 @@
       <div class="eyebrow">
         DeepSeek Chat BYOK（DeepSeek 开源社区版）· 独立开源客户端 · 非官方出品
       </div>
-      <h1>用自己的 API Key，在独立的 DeepSeek 社区客户端聊天</h1>
+      <h1>导入 DeepSeek 旧聊天，用自己的 API Key 继续聊</h1>
       <p class="lead">
         基于官方开源 <code>chat-demo</code> 独立扩展：连接你选择的兼容模型服务、
         保存长文「记忆卡」，也能免解压导入官方导出的旧聊天。不同服务商的功能和可用性可能不同。
@@ -371,6 +374,11 @@
             网页版在当前浏览器保存密钥和聊天记录，清除站点数据可能导致丢失；
             在线调用时密钥会发送给你选定的模型服务商鉴权。请勿公开密钥。 iPhone / iPad
             暂无独立安装包，可以先用网页版导入和查看旧聊天。
+          </p>
+          <p class="muted">
+            <strong>网页版存储边界：</strong>当前 GitHub Pages 页面与该 GitHub 账号下的其他
+            Pages 项目共享 <code>kamanager2012.github.io</code> 浏览器同源存储边界；
+            不应视为独立隔离的密钥保险库。建议只在可信设备保存 Key，重视密钥隔离的安卓用户优先使用正式签名 APK。
           </p>
         </div>
 
@@ -525,7 +533,8 @@
           <a href="https://github.com/kamanager2012/deepseek-chat-byok" rel="noopener noreferrer"
             >kamanager2012/deepseek-chat-byok</a
           >
-          独立构建和公开发布；不收集你的对话，也不存在后台会员收费。
+          独立构建和公开发布；没有自建聊天记录云端账户或会员收费。
+          本地导入的历史记录保存在当前设备；通过 API 继续对话时，所发送的上下文会由你选择的模型服务商处理。
         </p>
       </section>
 

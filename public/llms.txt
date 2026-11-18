@@ -9,7 +9,7 @@
 - Live Web / PWA: https://kamanager2012.github.io/deepseek-chat-byok/
 - GitHub Releases (Immutable Release Tags `v*`): https://github.com/kamanager2012/deepseek-chat-byok/releases
 - Mirrored Download Manifest (version, size, SHA-256): https://kamanager2012.github.io/deepseek-chat-byok/downloads/manifest.json
-- Release Target Version: v0.4.4 (`versionCode 13`)
+- Latest Release: https://github.com/kamanager2012/deepseek-chat-byok/releases/latest (resolve the live manifest above for current version, package sizes and SHA-256; old screenshots may show historical versions)
 - Persistent Android Release Signing Certificate SHA-256: `86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7`
 
 ## Key Features (Integrated Standalone App)
@@ -26,7 +26,7 @@
 - NOT an official DeepSeek product; extended independently from MIT-licensed `deepseek-ai/chat-demo`.
 - NOT a bundle of disconnected scripts or Harness plugins: distributed as a zero-install Web PWA and signed `~2.8 MB` Android Release APK for everyday users (plus an optional Portable Desktop ZIP in the advanced section that requires Node.js 22+ LTS).
 - NO shared accounts, NO hosted billing backend, and NO free API quota included; live AI replies use the user's own key billed by their provider, while reading/importing local history is free and requires no API key.
-- Browser Web/PWA makes direct API calls and only works with providers that allow browser CORS; a correct API key does not bypass CORS. Android Release APK has a local proxy for API use, while Portable Desktop with local proxy requires Node.js 22+.
+- Browser Web/PWA makes direct API calls and only works with providers that allow browser CORS; a correct API key does not bypass CORS. The current GitHub Pages site shares its browser origin with other sites under `kamanager2012.github.io` and is not a dedicated key-storage origin. Android Release APK has a local proxy for API use, while Portable Desktop with local proxy requires Node.js 22+.
 - There is currently no native iOS/iPadOS package; iPhone/iPad users can use the browser to import and view chat archives, while live model API use depends on provider CORS.
 
 ## Ecosystem Comparison
