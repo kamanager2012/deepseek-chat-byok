@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import { ErrorBoundary } from '../src/components/base/ErrorBoundary.js'
-import { redactApiSecrets, request, streamProviderMessage } from '../src/services/api/client.js'
+import {
+  redactApiSecrets,
+  request,
+  streamProviderMessage,
+  verifyProvider,
+} from '../src/services/api/client.js'
 import {
   buildOpenAIMessages,
   OpenAIStreamError,
@@ -11,11 +16,13 @@ import {
   createDefaultProvider,
   findProviderPreset,
   isProviderConfigured,
+  resetLocalProxyProbeCache,
   resolveFetchTarget,
   resolveProviderEndpoints,
   shouldProbeLocalProxy,
   type ProviderConfig,
 } from '../src/services/api/providers.js'
+import { describeReply } from '../src/services/chat/describe.js'
 import { loadInitialProvidersWithVault, upsertProvider } from '../src/services/settings.js'
 
 const streamFromChunks = (chunks: string[]): ReadableStream<Uint8Array> => {
@@ -430,5 +437,76 @@ describe('OpenAI protocol adapter', () => {
     } finally {
       vi.unstubAllGlobals()
     }
+  })
+
+  it('defaults useCorsProxy=true inside Android APK and falls back to local /_proxy on direct network error', async () => {
+    resetLocalProxyProbeCache()
+    const seenUrls: string[] = []
+    vi.stubGlobal('window', {
+      location: { origin: 'http://127.0.0.1:8090', protocol: 'http:', hostname: '127.0.0.1' },
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        seenUrls.push(`${init?.method ?? 'GET'} ${url}`)
+        if (init?.method === 'HEAD' && url.includes('/_proxy?probe=1')) {
+          return new Response(null, { status: 204 })
+        }
+        if (url === 'https://api.example.com/v1/models') {
+          throw new TypeError('Failed to fetch (CORS)')
+        }
+        if (url === '/_proxy?url=https%3A%2F%2Fapi.example.com%2Fv1%2Fmodels') {
+          return Response.json({ data: [{ id: 'deepseek-chat' }] })
+        }
+        return new Response('404', { status: 404 })
+      })
+    )
+
+    try {
+      const provider: ProviderConfig = {
+        ...createDefaultProvider('sk-proxy-fallback'),
+        preset: 'deepseek-openai',
+        protocol: 'openai',
+        baseUrl: 'https://api.example.com/v1',
+        useCorsProxy: false,
+      }
+      expect(provider.useCorsProxy).toBe(false)
+      const models = await verifyProvider(provider)
+      expect(models).toEqual(['deepseek-chat'])
+      expect(seenUrls).toEqual([
+        'GET https://api.example.com/v1/models',
+        'HEAD /_proxy?probe=1',
+        'GET /_proxy?url=https%3A%2F%2Fapi.example.com%2Fv1%2Fmodels',
+      ])
+
+      // Inside Android container, createDefaultProvider defaults useCorsProxy to true
+      vi.stubGlobal('window', {
+        location: { origin: 'http://127.0.0.1:18787', protocol: 'http:', hostname: '127.0.0.1' },
+        AndroidExportBridge: {
+          getBridgeToken: () => 'tok-123',
+          getProxyUrl: () => 'http://127.0.0.1:18787/_proxy',
+        },
+      })
+      expect(createDefaultProvider('sk-android').useCorsProxy).toBe(true)
+    } finally {
+      resetLocalProxyProbeCache()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('provides an API settings recovery action on network/CORS reply errors', () => {
+    const notice = describeReply({
+      id: 'a-net-err',
+      role: 'assistant',
+      createdAt: 1_760_000_000_000,
+      model: 'deepseek-chat',
+      prefix: false,
+      status: 'error',
+      error: { kind: 'network', message: 'Failed to fetch' },
+      blocks: [],
+    })
+    expect(notice?.action).toBe('apiKey')
+    expect(notice?.text).toBeTruthy()
   })
 })

@@ -29,7 +29,7 @@ export const describeReply = (reply: AssistantMessage): Notice | null => {
       return { text: message || translate('uploadFileStatusFailed') }
     }
     if (kind === 'network') {
-      return { text: translate('networkCorsHint') }
+      return { text: translate('networkCorsHint'), action: 'apiKey' }
     }
     switch (classifyStatus(status)) {
       case 'unauthorized':

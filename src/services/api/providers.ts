@@ -1,4 +1,4 @@
-import { getAndroidBridgeToken, getDefaultCorsProxyUrl } from './androidBridge.js'
+import { getAndroidBridgeToken, getDefaultCorsProxyUrl, hasAndroidBridge } from './androidBridge.js'
 
 export type ProviderProtocol = 'deepseek-anthropic' | 'anthropic' | 'openai'
 
@@ -173,7 +173,7 @@ export const createDefaultProvider = (
     baseUrl: preset.defaultBaseUrl,
     apiKey,
     model: preset.defaultModel,
-    useCorsProxy: false,
+    useCorsProxy: hasAndroidBridge(),
   }
 }
 
@@ -294,24 +294,53 @@ export const shouldProbeLocalProxy = (protocol: string, hostname: string): boole
   return !STATIC_PROXYLESS_HOST_SUFFIXES.some((suffix) => lower.endsWith(suffix))
 }
 
+let cachedLocalProxyProbeKey: string | null = null
 let cachedLocalProxyProbe: Promise<boolean> | null = null
+
+export const resetLocalProxyProbeCache = (): void => {
+  cachedLocalProxyProbeKey = null
+  cachedLocalProxyProbe = null
+}
+
+const getLocationParts = (): { protocol: string; hostname: string; origin: string } => {
+  const loc = window.location
+  if (loc.protocol && loc.hostname) {
+    return {
+      protocol: loc.protocol,
+      hostname: loc.hostname,
+      origin: loc.origin || `${loc.protocol}//${loc.hostname}`,
+    }
+  }
+  try {
+    const parsed = new URL(loc.origin)
+    return { protocol: parsed.protocol, hostname: parsed.hostname, origin: parsed.origin }
+  } catch {
+    return { protocol: '', hostname: '', origin: '' }
+  }
+}
 
 /** 探测当前宿主（server.mjs 或 Android LocalBridgeServer）是否内置 /_proxy 转发服务 */
 export const probeLocalProxy = (): Promise<boolean> => {
-  if (typeof window === 'undefined' || typeof fetch !== 'function') {
+  if (typeof window === 'undefined' || typeof fetch !== 'function' || !window.location) {
     return Promise.resolve(false)
   }
-  const { protocol, hostname } = window.location
+  const { protocol, hostname, origin } = getLocationParts()
   if (!shouldProbeLocalProxy(protocol, hostname)) {
     return Promise.resolve(false)
   }
   const proxyBase = getDefaultCorsProxyUrl()
+  const probeKey = `${origin}|${proxyBase}`
+  if (cachedLocalProxyProbe && cachedLocalProxyProbeKey === probeKey) {
+    return cachedLocalProxyProbe
+  }
   const probeUrl = proxyBase.includes('?') ? `${proxyBase}&probe=1` : `${proxyBase}?probe=1`
   const token = getAndroidBridgeToken()
-  return (cachedLocalProxyProbe ??= fetch(probeUrl, {
+  cachedLocalProxyProbeKey = probeKey
+  cachedLocalProxyProbe = fetch(probeUrl, {
     method: 'HEAD',
     ...(token ? { headers: { 'X-DS-Bridge-Token': token } } : {}),
   })
     .then((res) => res.status === 204 || res.status === 400)
-    .catch(() => false))
+    .catch(() => false)
+  return cachedLocalProxyProbe
 }

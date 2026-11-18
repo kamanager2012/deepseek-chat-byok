@@ -3,6 +3,23 @@ import { fileURLToPath } from 'node:url'
 
 const maxBytes = 64 * 1024 * 1024
 
+export const REQUIRED_LANDING_MARKERS = [
+  '客户端下载与使用指南',
+  'id="android-download"',
+  'id="desktop-download"',
+  'id="download-status"',
+  'id="release-tag"',
+  'href="./downloads/manifest.json"',
+  'src="./get-started.js"',
+]
+
+/** Verify that the guide page contains the canonical title anchor and live download controls. */
+export const assertLandingDownloadFlow = (html) => {
+  if (REQUIRED_LANDING_MARKERS.some((marker) => !html.includes(marker))) {
+    throw new Error('Live landing page lacks the expected download flow')
+  }
+}
+
 /** Validate the deployed bytes against original GitHub Release asset digests. */
 export const verifyLiveDownloads = async (siteUrl, repo, fetcher = fetch, authToken = '') => {
   const root = new URL(siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`)
@@ -75,18 +92,7 @@ export const verifyLiveDownloads = async (siteUrl, repo, fetcher = fetch, authTo
   const landing = await fetcher(new URL('get-started.html', root), { cache: 'no-store' })
   if (!landing.ok) throw new Error(`Live landing HTTP ${landing.status}`)
   const html = await landing.text()
-  // Check functional download anchors, not copywriting that may change independently.
-  const requiredLandingMarkers = [
-    'id="android-download"',
-    'id="desktop-download"',
-    'id="download-status"',
-    'id="release-tag"',
-    'href="./downloads/manifest.json"',
-    'src="./get-started.js"',
-  ]
-  if (requiredLandingMarkers.some((marker) => !html.includes(marker))) {
-    throw new Error('Live landing page lacks the expected download flow')
-  }
+  assertLandingDownloadFlow(html)
   return { tag: manifest.tag, ...validated }
 }
 
