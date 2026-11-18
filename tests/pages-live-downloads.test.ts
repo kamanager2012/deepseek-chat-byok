@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { verifyLiveDownloads } from '../scripts/verify-live-downloads.mjs'
 
@@ -24,9 +25,17 @@ const release = {
   ],
 }
 const root = 'https://example.org/deepseek-chat-byok/'
+const liveGuideHtml = readFileSync(new URL('../public/get-started.html', import.meta.url), 'utf8')
 
 const fakeFetch =
-  (options: { corruptZip?: boolean; corruptDigest?: boolean; missingApk?: boolean } = {}) =>
+  (
+    options: {
+      corruptZip?: boolean
+      corruptDigest?: boolean
+      missingApk?: boolean
+      missingGuide?: boolean
+    } = {}
+  ) =>
   async (input: URL | RequestInfo) => {
     const url = String(input)
     if (url.endsWith('/downloads/manifest.json')) {
@@ -49,9 +58,7 @@ const fakeFetch =
       return new Response(options.corruptZip ? 'modified zip' : desktopData)
     }
     if (url.endsWith('/get-started.html')) {
-      return new Response(
-        '<title>客户端下载与使用指南</title><script>fetch("./downloads/manifest.json")</script>'
-      )
+      return new Response(options.missingGuide ? '<html>guide unavailable</html>' : liveGuideHtml)
     }
     return new Response('404', { status: 404 })
   }
@@ -71,6 +78,16 @@ describe('Public Pages download post-deploy acceptance', () => {
     await expect(
       verifyLiveDownloads(root, 'kamanager2012/deepseek-chat-byok', fakeFetch({ corruptZip: true }))
     ).rejects.toThrow()
+  })
+
+  it('rejects an HTML landing page with missing actual download controls', async () => {
+    await expect(
+      verifyLiveDownloads(
+        root,
+        'kamanager2012/deepseek-chat-byok',
+        fakeFetch({ missingGuide: true })
+      )
+    ).rejects.toThrow('Live landing page lacks the expected download flow')
   })
 
   it('does not trust site-provided checksums without checking published Release metadata', async () => {

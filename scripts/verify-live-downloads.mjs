@@ -75,7 +75,16 @@ export const verifyLiveDownloads = async (siteUrl, repo, fetcher = fetch, authTo
   const landing = await fetcher(new URL('get-started.html', root), { cache: 'no-store' })
   if (!landing.ok) throw new Error(`Live landing HTTP ${landing.status}`)
   const html = await landing.text()
-  if (!html.includes('客户端下载与使用指南') || !html.includes('./downloads/manifest.json')) {
+  // Check functional download anchors, not copywriting that may change independently.
+  const requiredLandingMarkers = [
+    'id="android-download"',
+    'id="desktop-download"',
+    'id="download-status"',
+    'id="release-tag"',
+    'href="./downloads/manifest.json"',
+    'src="./get-started.js"',
+  ]
+  if (requiredLandingMarkers.some((marker) => !html.includes(marker))) {
     throw new Error('Live landing page lacks the expected download flow')
   }
   return { tag: manifest.tag, ...validated }
