@@ -47,6 +47,7 @@ jobs:
             [ -n "$path" ] || continue
             echo "::error file=${path}::Source differs from oxfmt canonical formatting; run pnpm format."
           done
+          git diff --no-ext-diff -- .
 
       - name: Check types
         run: pnpm type
