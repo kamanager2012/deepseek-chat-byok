@@ -39,6 +39,15 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Report exact files with formatting drift
+        if: failure()
+        run: |
+          pnpm exec oxfmt --write .
+          git diff --name-only -- . | while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            echo "::error file=${path}::Source differs from oxfmt canonical formatting; run pnpm format."
+          done
+
       - name: Check types
         run: pnpm type
 
