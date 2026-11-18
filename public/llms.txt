@@ -13,9 +13,8 @@
 - Persistent Android Release Signing Certificate SHA-256: `86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7`
 
 ## Key Features (Integrated Standalone App)
-1. Three-Step Keyless Chat History Import (三步导入旧聊天):
-   - Imports DeepSeek official exports (`deepseek_data-*.zip`), ChatGPT official exports (`conversations.json` in ZIP with branched `mapping`), and Claude official exports (`conversations.json` in ZIP with `chat_messages` and thinking blocks).
-   - Built-in step-by-step export guide modal for DeepSeek, ChatGPT, and Claude, desktop drag-and-drop onto the window, and Android OS `Share / Open with` `.zip` intent (`ACTION_SEND` / `ACTION_VIEW`).
+1. Three-Step Keyless DeepSeek Chat History Import (三步导入旧聊天):
+   - Imports DeepSeek official exports (`deepseek_data-*.zip`) via built-in step-by-step guides for DeepSeek App and DeepSeek Web, desktop drag-and-drop onto the window, and Android OS `Share / Open with` `.zip` intent (`ACTION_SEND` / `ACTION_VIEW`).
    - Safe non-destructive merge by default (keeps existing local turns & memory cards) with search and selective checkboxes.
 2. Multi-Provider BYOK + AndroidKeyStore Key Management:
    - Built-in presets for DeepSeek Official (Anthropic + native search/files/TTS), DeepSeek OpenAI, OpenCode Go/Zen, Anthropic, SiliconFlow, OpenRouter, Local Ollama, and custom endpoints.

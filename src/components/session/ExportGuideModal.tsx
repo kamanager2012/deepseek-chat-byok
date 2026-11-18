@@ -6,20 +6,24 @@ import { Modal } from '../base/Modal.js'
 import { openImportWithFile, openSettings } from '../settings/settingsDialogState.js'
 import styles from './ExportGuideModal.module.css'
 
-type PlatformId = 'deepseek' | 'chatgpt' | 'claude'
+type GuideTabId = 'app' | 'web' | 'import'
 
-const PLATFORMS: readonly { id: PlatformId; label: string; stepsKey: TranslationKey }[] = [
-  { id: 'deepseek', label: 'DeepSeek', stepsKey: 'exportGuideDeepSeekSteps' },
-  { id: 'chatgpt', label: 'ChatGPT', stepsKey: 'exportGuideChatGptSteps' },
-  { id: 'claude', label: 'Claude', stepsKey: 'exportGuideClaudeSteps' },
+const GUIDE_TABS: readonly {
+  id: GuideTabId
+  labelKey: TranslationKey
+  stepsKey: TranslationKey
+}[] = [
+  { id: 'app', labelKey: 'exportGuideTabApp', stepsKey: 'exportGuideAppSteps' },
+  { id: 'web', labelKey: 'exportGuideTabWeb', stepsKey: 'exportGuideWebSteps' },
+  { id: 'import', labelKey: 'exportGuideTabImport', stepsKey: 'exportGuideImportSteps' },
 ]
 
-/** 分平台展示三步导出教程，并允许选好 ZIP 后直接跳进导入预览，无需先翻设置弹窗 */
+/** 面向 DeepSeek 用户的三步导出与导入教程，并允许选好 ZIP 后直接跳进导入预览 */
 export const ExportGuideModal = ({ onClose }: { onClose: () => void }) => {
   const t = useTranslate()
-  const [platform, setPlatform] = useState<PlatformId>('deepseek')
+  const [tab, setTab] = useState<GuideTabId>('app')
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const current = PLATFORMS.find((item) => item.id === platform) ?? PLATFORMS[0]
+  const current = GUIDE_TABS.find((item) => item.id === tab) ?? GUIDE_TABS[0]
 
   return (
     <Modal
@@ -48,16 +52,16 @@ export const ExportGuideModal = ({ onClose }: { onClose: () => void }) => {
       <div className={styles.body}>
         <div className={styles.intro}>{t('exportGuideIntro')}</div>
         <div role="tablist" className={styles.tabs}>
-          {PLATFORMS.map((item) => (
+          {GUIDE_TABS.map((item) => (
             <button
               key={item.id}
               type="button"
               role="tab"
-              aria-selected={platform === item.id}
-              className={clsx(styles.tab, platform === item.id && styles.tabActive)}
-              onClick={() => setPlatform(item.id)}
+              aria-selected={tab === item.id}
+              className={clsx(styles.tab, tab === item.id && styles.tabActive)}
+              onClick={() => setTab(item.id)}
             >
-              {item.label}
+              {t(item.labelKey)}
             </button>
           ))}
         </div>

@@ -35,7 +35,7 @@ body:
       label: 4 个关键节点完成情况（请勾选你顺利完成了哪几步）
       options:
         - label: ① 顺利找到并打开了产品主页 / 安装页（国内网络可达）
-        - label: ② 成功从 DeepSeek / ChatGPT / Claude 导出了 .zip 压缩包
+        - label: ② 成功从 DeepSeek 官网或 App 导出了 .zip 压缩包
         - label: ③ 不填 API Key 成功导入了旧聊天，并能找到以前的某一段对话
         - label: ④ 理解导入免费 vs 续聊按模型服务商计费，并完成了首次配置续聊
 
@@ -56,9 +56,9 @@ body:
     attributes:
       label: Archive Source / 导入包来源
       options:
-        - DeepSeek 官方导出 ZIP
-        - ChatGPT 官方导出 ZIP
-        - Claude 官方导出 ZIP
+        - DeepSeek 手机 App 导出 ZIP
+        - DeepSeek 电脑网页版导出 ZIP
+        - 客户端内置备份导出 ZIP
         - 尚未导出
     validations:
       required: true
