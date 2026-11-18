@@ -24,10 +24,7 @@ describe('Public BYOK onboarding and distribution disclosures', () => {
       guide.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g),
       (match) => JSON.parse(match[1]) as { '@type': string; mainEntity?: unknown[] }
     )
-    expect(structuredData.map((item) => item['@type'])).toEqual([
-      'SoftwareApplication',
-      'FAQPage',
-    ])
+    expect(structuredData.map((item) => item['@type'])).toEqual(['SoftwareApplication', 'FAQPage'])
     expect(structuredData[1]?.mainEntity).toHaveLength(5)
     expect(guide).toContain('非官方出品')
   })
