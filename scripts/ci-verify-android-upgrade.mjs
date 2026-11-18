@@ -186,14 +186,25 @@ await sleep(500)
 adb('shell', 'input', 'text', 'sk-upgrade-retention-proof')
 await sleep(500)
 
-// 3. Scroll Settings modal to Save Directly button in upper half (above any IME) and tap
-const saveBtn = await scrollUntilVisible(
-  (n) => /^(Save Directly|直接保存)$/u.test(n.text || n.desc),
-  'Save Directly button',
-  screen,
-  6,
-  0.66
+// Blur the EditText by tapping the active Settings tab so the soft keyboard dismisses cleanly
+// before scrolling to Save Directly (avoids IME clipping the modal footer at ~1607px).
+const blurTarget = findNodes(dumpUi()).find(
+  (n) =>
+    n.w > 0 &&
+    n.h > 0 &&
+    /^(Models (?:&|&amp;) API|模型与 API|Settings|设置)$/u.test((n.text || n.desc).trim())
 )
+if (blurTarget) {
+  console.log(`Dismissing IME via tap at (${blurTarget.cx}, ${blurTarget.cy})`)
+  adb('shell', 'input', 'tap', String(blurTarget.cx), String(blurTarget.cy))
+  await sleep(700)
+}
+
+// 3. Scroll Settings modal to Save Directly button and tap after scroll settles
+const isSaveDirectly = (n) => /^(Save Directly|直接保存)$/u.test((n.text || n.desc).trim())
+let saveBtn = await scrollUntilVisible(isSaveDirectly, 'Save Directly button', screen, 10, 0.78)
+await sleep(300)
+saveBtn = findNodes(dumpUi()).find((n) => n.w > 0 && n.h > 0 && isSaveDirectly(n)) ?? saveBtn
 
 console.log(`Tapping visible Save Directly at (${saveBtn.cx}, ${saveBtn.cy})`)
 adb('shell', 'input', 'tap', String(saveBtn.cx), String(saveBtn.cy))
