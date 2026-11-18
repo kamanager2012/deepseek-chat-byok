@@ -186,37 +186,46 @@ await sleep(500)
 adb('shell', 'input', 'text', 'sk-upgrade-retention-proof')
 await sleep(500)
 
-// Blur the EditText by tapping the active Settings tab so the soft keyboard dismisses cleanly
-// before scrolling to Save Directly (avoids IME clipping the modal footer at ~1607px).
-const blurTarget = findNodes(dumpUi()).find(
-  (n) =>
-    n.w > 0 &&
-    n.h > 0 &&
-    /^(Models (?:&|&amp;) API|模型与 API|Settings|设置)$/u.test((n.text || n.desc).trim())
-)
-if (blurTarget) {
-  console.log(`Dismissing IME via tap at (${blurTarget.cx}, ${blurTarget.cy})`)
-  adb('shell', 'input', 'tap', String(blurTarget.cx), String(blurTarget.cy))
-  await sleep(700)
-}
-
-// 3. Scroll Settings modal to Save Directly button and tap after scroll settles
+// 3. Scroll Settings modal so Save Directly sits well above IME (>400px clearance) and tap
 const isSaveDirectly = (n) => /^(Save Directly|直接保存)$/u.test((n.text || n.desc).trim())
-let saveBtn = await scrollUntilVisible(isSaveDirectly, 'Save Directly button', screen, 10, 0.78)
-await sleep(300)
-saveBtn = findNodes(dumpUi()).find((n) => n.w > 0 && n.h > 0 && isSaveDirectly(n)) ?? saveBtn
+const isSavedBanner = (n) =>
+  n.w > 0 &&
+  n.h > 0 &&
+  /Saved and activated provider profile|已保存并切换当前 API 配置/u.test(n.text || n.desc)
+
+let saveBtn = await scrollUntilVisible(isSaveDirectly, 'Save Directly button', screen, 12, 0.5)
+await sleep(350)
+saveBtn =
+  findNodes(dumpUi()).find(
+    (n) => n.w > 0 && n.h > 0 && n.cy > 60 && n.cy < screen.height * 0.55 && isSaveDirectly(n)
+  ) ?? saveBtn
 
 console.log(`Tapping visible Save Directly at (${saveBtn.cx}, ${saveBtn.cy})`)
 adb('shell', 'input', 'tap', String(saveBtn.cx), String(saveBtn.cy))
 
-await waitForNode(
-  (n) =>
-    n.w > 0 &&
-    n.h > 0 &&
-    /Saved and activated provider profile|已保存并切换当前 API 配置/u.test(n.text || n.desc),
-  'providerSaved confirmation banner',
-  15_000
-)
+// Fallback: if WebView consumed the first tap to blur EditText / close IME, tap Save Directly once more
+let savedConfirmed = false
+for (let attempt = 0; attempt < 4; attempt += 1) {
+  await sleep(900)
+  if (findNodes(dumpUi()).some(isSavedBanner)) {
+    savedConfirmed = true
+    break
+  }
+}
+if (!savedConfirmed) {
+  const retryBtn = await scrollUntilVisible(
+    isSaveDirectly,
+    'Save Directly button (post-IME retry)',
+    screen,
+    10,
+    0.75
+  )
+  await sleep(300)
+  console.log(`Retrying Save Directly tap at (${retryBtn.cx}, ${retryBtn.cy})`)
+  adb('shell', 'input', 'tap', String(retryBtn.cx), String(retryBtn.cy))
+}
+
+await waitForNode(isSavedBanner, 'providerSaved confirmation banner', 15_000)
 console.log('Confirmed BYOK API key persisted in V1 Release APK!')
 
 // 4. Close Settings modal and persist a real chat session + pinned Memory Card in V1 IndexedDB
