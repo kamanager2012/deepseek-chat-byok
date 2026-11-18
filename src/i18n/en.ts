@@ -2,15 +2,15 @@ import type { zh } from './zh.js'
 
 export const en = {
   welcomeMessageChat250808: 'How can I help you?',
-  onboardingBadge: 'DeepSeek Chat Migration Assistant · Open Source · Not Official',
-  onboardingTitle: "Your old DeepSeek chats don't have to start over",
+  onboardingBadge: 'DeepSeek Community Edition · BYOK Client · Not Official',
+  onboardingTitle: 'Familiar DeepSeek chat UI, powered by your own API key',
   onboardingSubtitle:
-    'Bring over your past DeepSeek chat history to read freely and keep important notes.',
+    'Enhanced from official open-source chat-demo: connect your own DeepSeek or compatible API key, pin Memory Cards, and import official chat ZIP archives to continue seamlessly.',
   onboardingImport: 'Import chats (no key needed)',
   onboardingHowToExport: 'How to export? See guide',
   onboardingConfigure: 'Set up a model to chat',
   onboardingCostNote:
-    'Importing and reading local chats is free and requires no API key. Online AI replies require connecting your own provider key billed by usage.',
+    'Free & open-source client. Connect your own DeepSeek or compatible provider API key to chat (billed directly by your provider); importing and reading local history requires no key.',
   onboardingInstallGuide: 'Android App & Help Guide',
   exportGuideTitle: 'How to export your DeepSeek chats (3 steps)',
   exportGuideIntro:

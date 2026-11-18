@@ -7,9 +7,9 @@
 
 English | [简体中文](README.zh-CN.md)
 
-> **DeepSeek Chat BYOK is an independent, free, open-source DeepSeek chat client with official chat history import, local memory cards, and Bring-Your-Own-Key (BYOK) chat. It is not an official DeepSeek product and not a Harness plugin bundle.** (MIT-licensed standalone client extended from [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo), built for DeepSeek users.)
+> **DeepSeek Chat BYOK is an independent, free, open-source DeepSeek community BYOK chat client extended from [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo) — connect your own API key for familiar DeepSeek conversations, pin long-term Memory Cards, track per-reply RMB/USD costs, and seamlessly import official chat history archives. Not an official DeepSeek product and not a Harness plugin bundle.**
 
-Keywords: DeepSeek chat export importer · local-first BYOK client · DeepSeek 聊天记录迁移 · DeepSeek 聊天记录导入 · free open-source chat workspace
+Keywords: DeepSeek community BYOK client · DeepSeek API key client · DeepSeek 开源社区版 · DeepSeek chat export importer · local-first chat workspace
 
 - **Verified Downloads & Setup Guide (no GitHub browsing needed)**: https://kamanager2012.github.io/deepseek-chat-byok/get-started.html
 - **Live Web / PWA (Zero Install)**: https://kamanager2012.github.io/deepseek-chat-byok/
@@ -19,19 +19,19 @@ Keywords: DeepSeek chat export importer · local-first BYOK client · DeepSeek �
 
 | How you want to use it                             | Recommended Entry                                                                                                                                                                                                                                                                   | Local CORS `/_proxy`              | Best For                                                               |
 | :------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------- | :--------------------------------------------------------------------- |
-| **Zero-Install Browser / PWA (Everyday Users)**    | [Open Live Web App](https://kamanager2012.github.io/deepseek-chat-byok/)                                                                                                                                                                                                            | None (direct browser fetch)       | Keyless archive preview/import without installing anything             |
-| **Android Native App (Recommended for Mobile)**    | Direct download from [Start Page](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html) (**`*-android-release.apk`**, Pages mirror checked against Release SHA-256; [GitHub Releases](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest) fallback) | Built-in `127.0.0.1:18787` bridge | Phone daily driver, OS Share/Open-With ZIP import, SAF export          |
+| **Zero-Install Browser / PWA (Everyday Users)**    | [Open Live Web App](https://kamanager2012.github.io/deepseek-chat-byok/)                                                                                                                                                                                                            | None (direct browser fetch)       | Official DeepSeek API key chat & keyless archive preview               |
+| **Android Native App (Recommended for Mobile)**    | Direct download from [Start Page](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html) (**`*-android-release.apk`**, Pages mirror checked against Release SHA-256; [GitHub Releases](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest) fallback) | Built-in `127.0.0.1:18787` bridge | Phone daily BYOK chat/writing, third-party endpoints, OS Share import  |
 | **Portable Desktop (Advanced, requires Node 22+)** | In [Advanced section](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html) (**`*-portable.zip`**, requires Node.js 22+ LTS; double-click `Start-Windows.bat` / `Start-macOS.command`)                                                                               | Built-in Node 22 `/_proxy`        | Local Ollama & non-CORS gateways (casual users should use Web/Android) |
 
-1. **Three-Step Keyless Chat History Import**: Includes step-by-step in-app export guides for **DeepSeek App** and **DeepSeek Web** (`deepseek_data-*.zip`), desktop drag-and-drop, and Android **Share / Open with**, preserving branches and merging safely by default without overwriting local turns.
-2. **Switch Providers Freely (BYOK + Android Keystore)**: Built-in presets across DeepSeek Official (Anthropic + native search/files/TTS), DeepSeek OpenAI, OpenCode Go / Zen, Anthropic Messages, SiliconFlow, OpenRouter, Local Ollama, or custom endpoints. Android `v0.4.0+` manages encrypted keys using `AndroidKeyStore`.
-3. **Save Important Context & Readable Cost Estimates**: Pin persistent **Memory Cards**, limit history rounds/tokens, and show per-reply + session cost estimates in CNY & USD alongside cache-hit savings.
+1. **Familiar DeepSeek Experience with Your Own API Key (BYOK + AndroidKeyStore)**: Built-in presets for DeepSeek Official (Anthropic + native search/files/TTS), DeepSeek OpenAI, OpenCode Go / Zen, Anthropic Messages, SiliconFlow, OpenRouter, Local Ollama, or custom endpoints. Android `v0.4.0+` manages encrypted keys using `AndroidKeyStore`.
+2. **Long-Context Memory Cards & Clear Cost Estimates**: Pin persistent **Memory Cards**, summarize earlier dropped turns, cap history rounds/tokens, and show per-reply + session cost estimates in CNY & USD alongside cache-hit savings.
+3. **Three-Step Seamless Official History Import (No Key Needed to Read)**: Includes step-by-step in-app export guides for **DeepSeek App** and **DeepSeek Web** (`deepseek_data-*.zip`), desktop drag-and-drop, and Android **Share / Open with**, preserving branches and merging safely by default without overwriting local turns.
 
 ## Product Identity & Ecosystem Comparison
 
 | Project / Tool                       | Category                                                         | Footprint / Packaging                                                    | How It Compares                                                                                                                                                                    |
 | :----------------------------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`DeepSeek Chat BYOK`** (this repo) | **Standalone, free, open-source chat & archive client**          | Web / PWA · `~2.25 MB` Android Release APK · Portable Desktop ZIP        | Integrated end-user app requiring no Harness setup, focused on three-step history import, memory cards, and local BYOK chat without Agent runtime bloat                            |
+| **`DeepSeek Chat BYOK`** (this repo) | **Standalone, free, open-source community BYOK chat client**     | Web / PWA · `~2.8 MB` Android Release APK · Portable Desktop ZIP         | Integrated official-style alternative extended from `chat-demo`: bring your own API key to avoid server-busy disruptions, pin Memory Cards, and import official history ZIPs       |
 | Official `deepseek-chat-import`      | Experimental plugin inside `deepseek-ai/deepseek-harness`        | Harness plugin (CLI & Harness UI)                                        | Experimental plugin that depends on the DeepSeek Harness environment; `DeepSeek Chat BYOK` runs independently for everyday Web/Android users                                       |
 | **`DSH Community`** (sister repo)    | **Heavy multi-agent Harness workbench & E2EE remote controller** | CLI / TUI / Linux AppImage / Web PWA / Android APK on `@deepseek-ai/dsh` | Independently maintained at [github.com/kamanager2012/dsh-community](https://github.com/kamanager2012/dsh-community); competes directly with heavy Agent workbenches like `DSH Go` |
 
@@ -83,7 +83,7 @@ pnpm start
 
 Found a bug or UX bottleneck? Use the [De-identified Feedback Form](https://github.com/kamanager2012/deepseek-chat-byok/issues/new?template=pilot-feedback.yml) (or open a [GitHub Issue](https://github.com/kamanager2012/deepseek-chat-byok/issues)) with:
 
-1. Platform & release version (`GitHub Pages`, `Portable Desktop`, or `Android Release APK v0.4.3`)
+1. Platform & release version (`GitHub Pages`, `Portable Desktop`, or `Android Release APK v0.4.4`)
 2. Provider preset / protocol (`deepseek-anthropic`, `openai`, `anthropic`, or `ollama`)
 3. Whether archive merge (`deepseek_data-*.zip`) succeeded and approximate session count / ZIP size
 4. Reproduction steps or sanitized console/UI error messages (**never attach API keys or personal chat ZIPs**)

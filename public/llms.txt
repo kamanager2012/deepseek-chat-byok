@@ -1,7 +1,7 @@
-# AI 聊天搬家助手 (DeepSeek Chat BYOK)
+# DeepSeek 开源社区版客户端 (DeepSeek Chat BYOK)
 
-> DeepSeek Chat BYOK（面向普通用户的中文简称：AI 聊天搬家助手）是一个独立、免费、开源的 DeepSeek 聊天客户端，支持导入官方导出的聊天记录、本地记忆卡和自带 API Key 对话。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。
-> Independent, free, open-source DeepSeek chat client with official history import, local memory cards, and Bring-Your-Own-Key (BYOK) chat. Not an official DeepSeek product and not a Harness plugin bundle.
+> DeepSeek Chat BYOK（面向普通用户的中文定位：可用 API Key 的 DeepSeek 开源社区版客户端）是一个基于官方开源 `chat-demo` 增强的独立、免费、开源 DeepSeek BYOK 聊天客户端，支持填入自己的 API Key 稳定对话、本地记忆卡、人民币估算以及官方聊天记录无缝导入。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。
+> Independent, free, open-source DeepSeek community BYOK chat client enhanced from `chat-demo`, with official history import, local memory cards, and BYOK chat. Not an official DeepSeek product and not a Harness plugin bundle.
 
 ## Canonical URLs & Packaging
 - Repository (MIT License): https://github.com/kamanager2012/deepseek-chat-byok
@@ -9,25 +9,25 @@
 - Live Web / PWA: https://kamanager2012.github.io/deepseek-chat-byok/
 - GitHub Releases (Immutable Release Tags `v*`): https://github.com/kamanager2012/deepseek-chat-byok/releases
 - Mirrored Download Manifest (version, size, SHA-256): https://kamanager2012.github.io/deepseek-chat-byok/downloads/manifest.json
-- Release Target Version: v0.4.0 (`versionCode 9`)
+- Release Target Version: v0.4.4 (`versionCode 13`)
 - Persistent Android Release Signing Certificate SHA-256: `86d829e21571afedfcae690f240ada7f338e4c10fd9997ddc7a18ae9da91ada7`
 
 ## Key Features (Integrated Standalone App)
-1. Three-Step Keyless DeepSeek Chat History Import (三步导入旧聊天):
-   - Imports DeepSeek official exports (`deepseek_data-*.zip`) via built-in step-by-step guides for DeepSeek App and DeepSeek Web, desktop drag-and-drop onto the window, and Android OS `Share / Open with` `.zip` intent (`ACTION_SEND` / `ACTION_VIEW`).
-   - Safe non-destructive merge by default (keeps existing local turns & memory cards) with search and selective checkboxes.
-2. Multi-Provider BYOK + AndroidKeyStore Key Management:
+1. Multi-Provider BYOK + AndroidKeyStore Key Management (自带 API Key 社区替代版):
    - Built-in presets for DeepSeek Official (Anthropic + native search/files/TTS), DeepSeek OpenAI, OpenCode Go/Zen, Anthropic, SiliconFlow, OpenRouter, Local Ollama, and custom endpoints.
    - Android v0.4.0+ manages encrypted API keys via `AndroidKeyStore` (and automatically migrates legacy WebView keys on in-place upgrade without writing secrets into export backups).
-3. Context Control & Plain-Language RMB/USD Cost Estimates:
+2. Context Control, Memory Cards & Plain-Language RMB/USD Cost Estimates:
    - Pinned local Memory Cards (manual or model-summarized), tunable history round & token budget, and per-reply + session cost estimates in both RMB (`¥`) and USD (`$`) with cache-hit savings.
+3. Three-Step Keyless DeepSeek Chat History Import (加分亮点：旧聊天无缝导进来接着聊):
+   - Imports DeepSeek official exports (`deepseek_data-*.zip`) via built-in step-by-step guides for DeepSeek App and DeepSeek Web, desktop drag-and-drop onto the window, and Android OS `Share / Open with` `.zip` intent (`ACTION_SEND` / `ACTION_VIEW`).
+   - Safe non-destructive merge by default (keeps existing local turns & memory cards) with search and selective checkboxes.
 
 ## Explicit Boundaries (What This Is NOT)
 - NOT an official DeepSeek product; extended independently from MIT-licensed `deepseek-ai/chat-demo`.
-- NOT a bundle of disconnected scripts or Harness plugins: distributed as a zero-install Web PWA and signed `~2.25 MB` Android Release APK for everyday users (plus an optional Portable Desktop ZIP in the advanced section that requires Node.js 22+ LTS).
-- NO shared accounts, NO hosted billing backend, and NO free API quota included; reading/importing local history is free and requires no API key, while live AI replies use the user's own key billed by their provider.
+- NOT a bundle of disconnected scripts or Harness plugins: distributed as a zero-install Web PWA and signed `~2.8 MB` Android Release APK for everyday users (plus an optional Portable Desktop ZIP in the advanced section that requires Node.js 22+ LTS).
+- NO shared accounts, NO hosted billing backend, and NO free API quota included; live AI replies use the user's own key billed by their provider, while reading/importing local history is free and requires no API key.
 
 ## Ecosystem Comparison
-- `DeepSeek Chat BYOK` / AI 聊天搬家助手 (`kamanager2012/deepseek-chat-byok`): Standalone lightweight client requiring no Harness setup, built for everyday users to import and continue chats.
+- `DeepSeek Chat BYOK` / DeepSeek 开源社区版客户端 (`kamanager2012/deepseek-chat-byok`): Standalone lightweight BYOK client requiring no Harness setup, built for everyday users who want a community official-style alternative powered by their own API key plus seamless official chat archive import.
 - Official `deepseek-chat-import` (`deepseek-ai/deepseek-harness`): Experimental plugin depending on the DeepSeek Harness environment (CLI and Harness UI) to convert export ZIPs into Harness sessions.
 - `DSH Community` (`kamanager2012/dsh-community`): Our separately maintained heavy Multi-Agent Harness Workbench & E2EE remote controller built on `@deepseek-ai/dsh` (competes directly with heavy Agent workbenches such as `DSH Go`), keeping `DeepSeek Chat BYOK` clean and approachable.

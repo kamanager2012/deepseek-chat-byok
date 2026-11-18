@@ -6,19 +6,19 @@
     <meta name="theme-color" content="#4d6bfe" />
     <meta
       name="description"
-      content="DeepSeek Chat BYOK（DeepSeek 聊天搬家助手）是一个独立、免费、开源的 DeepSeek 聊天客户端，支持免 API Key 导入 DeepSeek 官方导出的聊天记录、保存重要内容和自带 API Key 续聊；非 DeepSeek 官方产品，也不是 Harness 插件集合。"
+      content="DeepSeek Chat BYOK（DeepSeek 开源社区版客户端）是基于官方开源 chat-demo 增强的独立免费开源客户端：支持填入自己的 API Key 稳定对话、固定长文记忆卡与人民币参考估算，并可无缝导入 DeepSeek 官方聊天记录。非官方出品，也不是 Harness 插件集合。"
     />
     <meta
       name="keywords"
-      content="DeepSeek聊天搬家助手,DeepSeek聊天记录迁移,DeepSeek聊天记录导入,DeepSeek本地聊天客户端,免费开源,BYOK,DeepSeek chat export importer"
+      content="DeepSeek开源社区版,DeepSeek BYOK客户端,DeepSeek API Key客户端,DeepSeek聊天记录导入,DeepSeek记忆卡,免费开源,DeepSeek community client,BYOK"
     />
     <meta
       property="og:title"
-      content="DeepSeek Chat BYOK｜DeepSeek 旧聊天搬家与客户端下载与使用指南"
+      content="DeepSeek Chat BYOK｜DeepSeek 开源社区版客户端下载与使用指南"
     />
     <meta
       property="og:description"
-      content="你的 DeepSeek 旧聊天，不用从头开始：免 Key 导入 DeepSeek 聊天记录压缩包，保存重要设定与对话，支持免安装网页版与安卓独立安装包。"
+      content="熟悉的原版 DeepSeek 对话体验，用自己的 API Key 稳定畅聊：支持深度思考、联网搜索、文件问答、长文记忆卡，并可免解压导入官方旧聊天记录接着写（免安装网页版与安卓独立安装包）。"
     />
     <meta property="og:type" content="website" />
     <link
@@ -29,12 +29,12 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.github.com; frame-src 'none'; object-src 'none'; base-uri 'self'"
     />
-    <title>DeepSeek Chat BYOK｜DeepSeek 旧聊天搬家与客户端下载与使用指南</title>
+    <title>DeepSeek Chat BYOK｜DeepSeek 开源社区版客户端下载与使用指南</title>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "DeepSeek Chat BYOK (DeepSeek 聊天搬家助手)",
+        "name": "DeepSeek Chat BYOK (DeepSeek 开源社区版客户端)",
         "applicationCategory": "UtilitiesApplication",
         "operatingSystem": "Android 8.0+, Windows, macOS, Linux, Web",
         "isAccessibleForFree": true,
@@ -42,7 +42,7 @@
         "url": "https://kamanager2012.github.io/deepseek-chat-byok/get-started.html",
         "downloadUrl": "https://kamanager2012.github.io/deepseek-chat-byok/get-started.html",
         "codeRepository": "https://github.com/kamanager2012/deepseek-chat-byok",
-        "description": "DeepSeek Chat BYOK（DeepSeek 聊天搬家助手）是一个独立、免费、开源的 DeepSeek 聊天客户端，支持导入官方导出的聊天记录、本地记忆卡和自带 API Key 对话。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。"
+        "description": "DeepSeek Chat BYOK（DeepSeek 开源社区版客户端）是一个独立、免费、开源的 DeepSeek BYOK 聊天客户端，基于官方开源 chat-demo 增强，支持填入自己的 API Key 稳定对话、本地记忆卡与官方聊天记录导入。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。"
       }
     </script>
     <script type="application/ld+json">
@@ -332,38 +332,41 @@
   <body>
     <main>
       <div class="eyebrow">
-        DeepSeek Chat BYOK（DeepSeek 聊天搬家助手）· 独立开源客户端 · 非官方产品
+        DeepSeek Chat BYOK（DeepSeek 开源社区版）· 独立开源客户端 · 非官方出品
       </div>
-      <h1>你的 DeepSeek 旧聊天，不用从头开始</h1>
-      <p class="lead">把以前在 DeepSeek 的聊天记录搬过来，想看就看，重要内容继续保存。</p>
+      <h1>用自己的 API Key，享受原汁原味的 DeepSeek 对话体验</h1>
+      <p class="lead">
+        基于官方开源 <code>chat-demo</code> 增强：填入自己的 DeepSeek 或兼容平台 API Key
+        稳定畅聊、钉住长文「记忆卡」，也能把官方导出的旧聊天免解压导进来接着写。
+      </p>
 
       <div class="notice">
-        <strong>先把费用说明白：</strong>导入和查看旧聊天记录<strong
-          >完全免费，不需要 API Key</strong
-        >；只有你想让 AI
-        继续回复新内容时，才需要填你自己的模型接口并按用量付费（本工具不卖共享账号，也不赠送免费额度）。
+        <strong>先把费用说明白：</strong
+        >本客户端本身<strong>完全免费开源，不卖共享号也不加价</strong>。用自己的 API Key
+        对话时直接按所选服务商官方用量计费（页面会自动提示人民币估算）；仅导入和翻看官方导出的旧聊天记录完全不需要填
+        API Key。
       </div>
 
-      <section class="steps" aria-label="开始搬家入口">
+      <section class="steps" aria-label="快速打开社区版">
         <div class="card">
-          <h2>方式一：直接用网页版开始搬家（免安装，手机电脑都能用）</h2>
+          <h2>方式一：免安装网页版（打开即用，电脑手机通用）</h2>
           <p>
-            不用懂技术、不用下载任何软件。点下面「开始搬家」，把官方导出的 <code>.zip</code>
-            文件拖进去或选进来，就能直接搜索、重读以前的对话，重要设定也可以保存成记忆卡。
+            不用安装任何程序。点下面「立即打开网页版」，进「设置 → 模型与 API」填好自己的 DeepSeek
+            API Key 就能开始聊天；也可以先拖入官方导出的 <code>.zip</code> 记录包直接查看。
           </p>
           <div class="buttons">
-            <a class="button" href="./">开始搬家（打开网页版）</a>
-            <a class="button secondary" href="#export-guide">不知道怎么导出？看教程</a>
+            <a class="button" href="./">立即打开网页版</a>
+            <a class="button secondary" href="#export-guide">旧聊天导出导入教程</a>
           </div>
-          <p class="muted">聊天记录只存在你当前设备浏览器里，不上传第三方服务器。</p>
+          <p class="muted">聊天记录与密钥只存在你当前设备本地，不上传第三方中转服务器。</p>
         </div>
 
         <div class="card">
-          <h2>方式二：下载安卓手机 App（独立安装包，约 2.25 MB）</h2>
+          <h2>方式二：下载安卓手机正式版 APK（约 2.8 MB）</h2>
           <p>
-            习惯在手机上看旧聊天或长期写小说的朋友，推荐安装安卓正式版。支持在系统文件管理器对
-            <code>.zip</code> 点 <strong>「分享 / 用其他应用打开」</strong> 直达导入，并使用
-            <code>AndroidKeyStore</code> 管理加密密钥。
+            习惯在手机上日常写小说、做笔记、需要稳定直连或切硅基流动等第三方接口的朋友，推荐安装安卓正式版。内置本地转发桥（无浏览器跨域限制）、使用
+            <code>AndroidKeyStore</code> 加密保存密钥，并支持对官方 <code>.zip</code> 点
+            <strong>「分享 / 用其他应用打开」</strong> 直达导入。
           </p>
           <div class="buttons">
             <a
@@ -378,9 +381,24 @@
             正在查找最新正式版安装包…
           </p>
           <small>
-            支持 Android 8.0+。请认准正式版安装包，后续新版可直接覆盖升级并保留原有聊天与设置。
+            支持 Android 8.0+。请认准正式版安装包，后续新版可直接覆盖升级并保留原有聊天与密钥。
           </small>
         </div>
+      </section>
+
+      <section class="card" id="byok-setup" aria-label="两步配置 API Key 开始对话">
+        <h2>两步配置 API Key 开始对话</h2>
+        <ol>
+          <li>
+            前往 DeepSeek
+            开放平台（<code>platform.deepseek.com</code>）或你常用的兼容模型平台申请一个 API Key。
+          </li>
+          <li>
+            打开客户端 <strong>设置 → 模型与 API</strong>（默认已选中
+            <code>DeepSeek 官方</code> 推荐模型，其余选项不用改），粘贴密钥点
+            <strong>「测试并保存」</strong> 即可开聊；每次回答下方都会用通俗人民币估算费用。
+          </li>
+        </ol>
       </section>
 
       <section class="card" id="export-guide" aria-label="三步导出旧聊天教程">
@@ -564,10 +582,10 @@
               <tbody>
                 <tr>
                   <td><strong>DeepSeek Chat BYOK</strong>（本项目）</td>
-                  <td>独立、免费、开源的轻量聊天与历史迁移客户端</td>
+                  <td>独立、免费、开源的 BYOK 社区版客户端</td>
                   <td>
-                    无需安装 Harness 环境，打开即用；专注 DeepSeek
-                    旧记录搬家、保存重要设定与日常续聊。
+                    基于官方开源 <code>chat-demo</code> 增强，无需安装 Harness，打开即可用自己的 API
+                    Key 畅聊、钉住记忆卡并导回官方旧记录。
                   </td>
                 </tr>
                 <tr>
@@ -598,7 +616,7 @@
       </details>
 
       <footer>
-        AI 聊天搬家助手（DeepSeek Chat BYOK）· MIT 开源 · 基于官方开源 chat-demo 独立扩展，非
+        DeepSeek 开源社区版（DeepSeek Chat BYOK）· MIT 开源 · 基于官方开源 chat-demo 独立扩展，非
         DeepSeek 官方产品。
         <a href="https://github.com/kamanager2012/deepseek-chat-byok" rel="noopener noreferrer"
           >GitHub 源码仓库</a

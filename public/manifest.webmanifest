@@ -1,7 +1,7 @@
 {
   "name": "DeepSeek Chat BYOK",
   "short_name": "DS Chat BYOK",
-  "description": "独立开源 DeepSeek 聊天客户端与官方聊天记录迁移工具（支持记忆卡与 BYOK）· Independent open-source DeepSeek chat export importer and local-first BYOK client.",
+  "description": "DeepSeek 开源社区版客户端：支持自带 API Key 稳定对话、本地记忆卡与官方聊天记录导入（基于 chat-demo 开源增强，非官方出品） · Independent open-source DeepSeek BYOK community client.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
