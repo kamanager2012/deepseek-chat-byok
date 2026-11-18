@@ -22,6 +22,9 @@ assert.match(guide, /"@type": "FAQPage"/)
 assert.match(guide, /同源存储边界/)
 assert.match(llms, /Not an official DeepSeek product/)
 assert.match(llms, /releases\/latest/)
-assert.ok(!/Release Target Version:\s*v\d+\.\d+\.\d+/.test(llms), 'llms.txt must not pin a stale version')
+assert.ok(
+  !/Release Target Version:\s*v\d+\.\d+\.\d+/.test(llms),
+  'llms.txt must not pin a stale version'
+)
 assert.ok(!guideJs.includes('最新官方安卓正式版'), 'Non-official APK must not be named official')
 console.log('Public discovery acceptance passed: sitemap, identity, social metadata, honest limits')
