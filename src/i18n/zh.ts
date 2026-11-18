@@ -1,27 +1,29 @@
 export const zh = {
   welcomeMessageChat250808: '今天有什么可以帮到你？',
-  onboardingBadge: 'AI 聊天搬家助手 · 独立开源工具 · 非官方产品',
-  onboardingTitle: '你的旧聊天，不用从头开始',
-  onboardingSubtitle:
-    '把以前在 DeepSeek、ChatGPT 或 Claude 的聊天记录搬过来，想看就看，重要内容继续保存。',
+  onboardingBadge: 'DeepSeek 聊天搬家助手 · 独立开源客户端 · 非官方产品',
+  onboardingTitle: '你的 DeepSeek 旧聊天，不用从头开始',
+  onboardingSubtitle: '把以前在 DeepSeek 的聊天记录搬过来，想看就看，重要内容继续保存。',
   onboardingImport: '导入旧对话（无需密钥）',
   onboardingHowToExport: '不知道怎么导出？看教程',
   onboardingConfigure: '设置模型，开始聊天',
   onboardingCostNote:
     '导入和查看免费，不需要 API Key。需要 AI 生成新回复时，再连接模型服务（按实际用量计费，本工具不提供免费额度）。',
   onboardingInstallGuide: '下载安卓安装包或查看使用帮助',
-  exportGuideTitle: '怎么把以前的聊天导出来？（3 步教程）',
+  exportGuideTitle: '怎么从 DeepSeek 导出旧聊天？（3 步教程）',
   exportGuideIntro:
-    '按你以前用过的软件点下面对应标签照着点就行。下载出来的 .zip 压缩包不用解压，直接选它就能导入。',
-  exportGuideZipTip: '提示：电脑直接拖进窗口就能导；安卓手机点「选 ZIP 文件立即导入」即可。',
+    '选你平时用的端照着点就行。下载下来的 deepseek_data-*.zip 压缩包不用解压，直接选它就能导入。',
+  exportGuideZipTip: '提示：电脑网页版可以直接把压缩包拖进窗口；安卓手机点下方按钮直接选包导入。',
   exportGuidePickFile: '我已有 ZIP 文件，直接导入',
   exportGuideOpenSettings: '去设置里导入',
-  exportGuideDeepSeekSteps:
-    '1. 打开 DeepSeek 网页或 App（右上角/左下角头像进入「设置」）；\n2. 进入「个人资料 / 数据与隐私 → 导出数据」，确认导出；\n3. 去绑定邮箱或下载列表保存 `deepseek_data-日期.zip` 到本机（不要解压）。',
-  exportGuideChatGptSteps:
-    '1. 打开 ChatGPT（头像 → 设置 Settings → 数据控制 Data Controls）；\n2. 点击「导出数据 Export data」并确认；\n3. 打开邮件里的下载链接保存 `.zip` 压缩包（内含 conversations.json，不要解压）。',
-  exportGuideClaudeSteps:
-    '1. 打开 Claude（左下角账号 → Settings → Account / Privacy）；\n2. 点击「Export data」确认导出聊天数据；\n3. 从邮件下载官方 `.zip` 压缩包保存到手机或电脑（不要解压）。',
+  exportGuideTabApp: '手机 App 怎么导出',
+  exportGuideTabWeb: '电脑网页版怎么导出',
+  exportGuideTabImport: '拿到压缩包后怎么导',
+  exportGuideAppSteps:
+    '1. 打开手机上的 DeepSeek App，点左上角进入侧边栏，再点底部头像进「设置」；\n2. 点击「个人资料 / 数据与隐私 → 导出数据」提交申请；\n3. 按提示保存生成的 deepseek_data-日期.zip 压缩包到手机（不要解压）。',
+  exportGuideWebSteps:
+    '1. 在电脑浏览器打开 DeepSeek 官网（chat.deepseek.com），点左下角头像进「设置」；\n2. 进入「数据与隐私 / 导出数据」，确认导出；\n3. 把下载下来的 deepseek_data-日期.zip 保存在桌面或下载文件夹（不要解压）。',
+  exportGuideImportSteps:
+    '1. 拿到的 .zip 压缩包千万不要解压；\n2. 电脑端直接点下面「我已有 ZIP 文件，直接导入」（或把压缩包拖进网页窗口）；\n3. 安卓手机也可以在系统文件管理器对 .zip 点「分享 / 用其他应用打开」，勾选想保留的对话即可安全导入。',
   contentCaveat: '内容由 AI 生成，请仔细甄别',
   expandSiderbarButton: '打开边栏',
   collapseSiderbarButton: '收起边栏',
@@ -132,7 +134,7 @@ export const zh = {
   historyImportConfirmTitle: '确认导入历史对话？',
   historyImportConfirmDescription: '上传的历史对话会覆盖当前所有对话记录，是否确认导入？',
   historyImportDescription:
-    '支持 DeepSeek 官方（deepseek_data-*.zip）、ChatGPT 与 Claude 官方导出 ZIP（conversations.json），预览目录后可按对话勾选合并导入，保留当前已有对话。',
+    '支持 DeepSeek 官方导出的历史对话压缩包（deepseek_data-*.zip），可预览并勾选对话合并导入，保留当前已有对话。',
   historyImportedOne: '已导入 1 个对话',
   historyImported: '已导入 {count} 个对话',
   historyImportedKeptOnly: '未覆盖本地记录：已保留 {kept} 个同名对话',

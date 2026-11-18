@@ -2,29 +2,32 @@ import type { zh } from './zh.js'
 
 export const en = {
   welcomeMessageChat250808: 'How can I help you?',
-  onboardingBadge: 'AI Chat Migration Assistant · Open Source · Not Official',
-  onboardingTitle: "Your old chats don't have to start over",
+  onboardingBadge: 'DeepSeek Chat Migration Assistant · Open Source · Not Official',
+  onboardingTitle: "Your old DeepSeek chats don't have to start over",
   onboardingSubtitle:
-    'Bring over past chats from DeepSeek, ChatGPT, or Claude to read freely and keep important notes.',
+    'Bring over your past DeepSeek chat history to read freely and keep important notes.',
   onboardingImport: 'Import chats (no key needed)',
   onboardingHowToExport: 'How to export? See guide',
   onboardingConfigure: 'Set up a model to chat',
   onboardingCostNote:
     'Importing and reading local chats is free and requires no API key. Online AI replies require connecting your own provider key billed by usage.',
   onboardingInstallGuide: 'Android App & Help Guide',
-  exportGuideTitle: 'How to export old chats (3 simple steps)',
+  exportGuideTitle: 'How to export your DeepSeek chats (3 steps)',
   exportGuideIntro:
-    'Pick the app you used before and follow the steps below. Keep the downloaded .zip file zipped and select it directly.',
+    'Pick the app you used below and follow the steps. Keep the downloaded deepseek_data-*.zip file zipped and select it directly.',
   exportGuideZipTip:
     'Tip: Drag and drop the .zip onto the desktop window, or tap below to pick it.',
   exportGuidePickFile: 'I have a .zip file, import now',
   exportGuideOpenSettings: 'Open Data settings',
-  exportGuideDeepSeekSteps:
-    '1. Open DeepSeek Web or App -> tap avatar -> Settings;\n2. Go to Profile / Data & Privacy -> Export Data and confirm;\n3. Save the deepseek_data-*.zip from your email or downloads without unzipping.',
-  exportGuideChatGptSteps:
-    '1. Open ChatGPT -> Settings -> Data Controls;\n2. Click Export Data and confirm;\n3. Download the .zip archive from your email without unzipping.',
-  exportGuideClaudeSteps:
-    '1. Open Claude -> Settings -> Account / Privacy;\n2. Click Export Data to request your archive;\n3. Save the official .zip archive to your device without unzipping.',
+  exportGuideTabApp: 'DeepSeek App',
+  exportGuideTabWeb: 'DeepSeek Web',
+  exportGuideTabImport: 'How to Import',
+  exportGuideAppSteps:
+    '1. Open the DeepSeek app -> open the sidebar -> tap avatar -> Settings;\n2. Go to Profile / Data & Privacy -> Export Data and confirm;\n3. Save the generated deepseek_data-*.zip archive on your phone without unzipping.',
+  exportGuideWebSteps:
+    '1. Open chat.deepseek.com in your browser -> click avatar -> Settings;\n2. Go to Data & Privacy -> Export Data and confirm;\n3. Save the downloaded deepseek_data-*.zip archive without unzipping.',
+  exportGuideImportSteps:
+    '1. Keep the downloaded .zip file zipped (do not extract it);\n2. Click "I have a .zip file, import now" below or drag and drop it onto this window;\n3. On Android, tap Share / Open with -> DeepSeek Chat BYOK on the .zip file, then check the chats you want to keep.',
   contentCaveat: 'AI-generated, for reference only',
   expandSiderbarButton: 'Open sidebar',
   collapseSiderbarButton: 'Close sidebar',
@@ -139,7 +142,7 @@ export const en = {
   historyImportConfirmDescription:
     'The uploaded chat history will replace all your current chats. Import anyway?',
   historyImportDescription:
-    'Supports DeepSeek (deepseek_data-*.zip), ChatGPT, and Claude official export ZIPs (conversations.json). Preview the index first to merge selected chats without overwriting existing ones.',
+    'Supports DeepSeek official export ZIP archives (deepseek_data-*.zip). Preview sessions and selectively merge without overwriting existing chats.',
   historyImportedOne: 'Imported 1 chat',
   historyImported: 'Imported {count} chats',
   historyImportedKeptOnly: 'No overwrite: kept {kept} existing conflicting chat(s)',

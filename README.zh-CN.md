@@ -7,7 +7,7 @@
 
 [English](README.md) | 简体中文
 
-> **DeepSeek Chat BYOK 是一个独立、免费、开源的 DeepSeek 聊天客户端，支持导入官方导出的聊天记录、本地记忆卡和自带 API Key 对话。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。**（基于 MIT 协议从 [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo) 独立扩展，同时支持 DeepSeek、ChatGPT、Claude 官方导出 ZIP 迁移。）
+> **DeepSeek Chat BYOK 是一个独立、免费、开源的 DeepSeek 聊天客户端，支持导入官方导出的聊天记录、本地记忆卡和自带 API Key 对话。它不是 DeepSeek 官方产品，也不是 Harness 插件集合。**（基于 MIT 协议从 [`deepseek-ai/chat-demo`](https://github.com/deepseek-ai/chat-demo) 独立扩展，面向习惯直接使用 DeepSeek 网页或 App 的日常对话与写作用户。）
 
 关键词：DeepSeek 聊天记录迁移 · DeepSeek 聊天记录导入 · DeepSeek 本地聊天客户端 · 免费开源 · 自带密钥（BYOK）
 
@@ -23,7 +23,7 @@
 | **Android 独立 APK（手机首选）**    | 在 [新手引导与直达下载页](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html) 直接下载 **`*-android-release.apk`**（GitHub Pages 校验镜像优先；[GitHub Releases](https://github.com/kamanager2012/deepseek-chat-byok/releases/latest) 备选） | 内置 `127.0.0.1:18787` 桥接 | 手机日常高频聊天/写作、系统「分享/打开方式」导 ZIP、SAF 导出             |
 | **电脑便携版（进阶，需 Node 22+）** | 在 [新手页进阶下载区](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html) 下载 **`*-portable.zip`**（需本机先装 Node.js 22+ LTS；解压双击 `Start-Windows.bat` / `Start-macOS.command`）                                                      | 内置 Node 22 `/_proxy`      | 需本地 CORS 转发、连接本地 Ollama 等进阶场景（普通用户推荐直接用网页版） |
 
-1. **三步导入旧聊天（免 Key 启动）**：内置 DeepSeek / ChatGPT / Claude 分步导出教程，支持桌面端直接拖入 `.zip` 或 Android 文件管理器 **「分享 / 用其他应用打开」** 导入，默认安全合并保留本地已有会话与记忆卡。
+1. **三步导入旧聊天（免 Key 启动）**：内置 DeepSeek 手机 App 与网页版分步导出教程，支持桌面端直接拖入 `.zip` 或 Android 文件管理器 **「分享 / 用其他应用打开」** 导入，默认安全合并保留本地已有会话与记忆卡。
 2. **多服务商自带密钥（BYOK + Android Keystore）**：内置 DeepSeek 官方（含取 Key 引导）、DeepSeek OpenAI、OpenCode Go / Zen、Anthropic、硅基流动 SiliconFlow、OpenRouter、本地 Ollama 及自定义端点；Android 端使用 `AndroidKeyStore` 管理加密密钥（导出备份包永不携带）。
 3. **保存重要内容与人民币费用参考**：支持钉住 **记忆卡**（长文背景/设定不丢失）、按轮数控制携带上下文，并提供人民币参考花费（`预计约 ¥... 元`）与缓存命中省流显示。
 
@@ -49,7 +49,7 @@
 
 > **普通用户建议先打开 [独立产品证据与下载引导页](https://kamanager2012.github.io/deepseek-chat-byok/get-started.html)**：导入和查看本地历史对话**完全免费且不需要 API Key**；让在线 AI 生成新回复才需要自备 Key（按服务商实际价格计费）。
 
-1. **导出官方历史包（可选）**：在 DeepSeek 官网/App（「设置 → 个人资料 / 数据导出」获取 `deepseek_data-YYYY-MM-DD.zip`），或从 ChatGPT / Claude 导出包含 `conversations.json` 的官方 ZIP。
+1. **导出官方历史包（可选）**：在 DeepSeek 官网或 App（「设置 → 个人资料 / 数据导出」获取 `deepseek_data-YYYY-MM-DD.zip`）。
 2. **免 API Key 直接导入并阅读**：
    - 在线网页版 / 桌面端可直接把 `.zip` 拖入窗口，或打开 **设置 → 数据管理** 选取文件；
    - Android 版可在系统文件管理器直接选 `.zip` 点击 **「分享 / 用其他应用打开 → DeepSeek Chat BYOK」**；
@@ -84,7 +84,7 @@ pnpm start
 
 使用过程中遇到问题或有体验建议，欢迎通过 [脱敏反馈表单](https://github.com/kamanager2012/deepseek-chat-byok/issues/new?template=pilot-feedback.yml)（或 [GitHub Issues](https://github.com/kamanager2012/deepseek-chat-byok/issues)）提交，建议附带：
 
-1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android Release APK `v0.4.1`）
+1. 使用端与版本（在线 GitHub Pages / 电脑便携版 / Android Release APK `v0.4.2`）
 2. 所选接口预设与协议（DeepSeek 官方 / OpenCode Go / SiliconFlow / Ollama / 自定义等）
 3. `deepseek_data-*.zip` 导入体积、会话数量与选择性合并情况
 4. 复现步骤或脱敏后的报错信息（**严禁上传 API Key 或个人原始聊天导出包**）
