@@ -27,6 +27,7 @@
 - NOT a bundle of disconnected scripts or Harness plugins: distributed as a zero-install Web PWA and signed `~2.8 MB` Android Release APK for everyday users (plus an optional Portable Desktop ZIP in the advanced section that requires Node.js 22+ LTS).
 - NO shared accounts, NO hosted billing backend, and NO free API quota included; live AI replies use the user's own key billed by their provider, while reading/importing local history is free and requires no API key.
 - Browser Web/PWA makes direct API calls and only works with providers that allow browser CORS; a correct API key does not bypass CORS. Android Release APK has a local proxy for API use, while Portable Desktop with local proxy requires Node.js 22+.
+- There is currently no native iOS/iPadOS package; iPhone/iPad users can use the browser to import and view chat archives, while live model API use depends on provider CORS.
 
 ## Ecosystem Comparison
 - `DeepSeek Chat BYOK` / DeepSeek 开源社区版客户端 (`kamanager2012/deepseek-chat-byok`): Standalone lightweight BYOK client requiring no Harness setup, built for everyday users who want a community official-style alternative powered by their own API key plus seamless official chat archive import.
