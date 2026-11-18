@@ -1,13 +1,14 @@
 export const zh = {
   welcomeMessageChat250808: '今天有什么可以帮到你？',
-  onboardingBadge: 'DeepSeek 聊天搬家助手 · 独立开源客户端 · 非官方产品',
-  onboardingTitle: '你的 DeepSeek 旧聊天，不用从头开始',
-  onboardingSubtitle: '把以前在 DeepSeek 的聊天记录搬过来，想看就看，重要内容继续保存。',
+  onboardingBadge: 'DeepSeek 开源社区版 · 自带 API Key 客户端 · 非官方出品',
+  onboardingTitle: '熟悉的原版对话体验，用自己的 API Key 稳定畅聊',
+  onboardingSubtitle:
+    '基于官方开源 chat-demo 增强：支持填入自己的 API Key 稳定对话、固定长文「记忆卡」，也能把官方导出的旧聊天免解压导进来接着写。',
   onboardingImport: '导入旧对话（无需密钥）',
   onboardingHowToExport: '不知道怎么导出？看教程',
   onboardingConfigure: '设置模型，开始聊天',
   onboardingCostNote:
-    '导入和查看免费，不需要 API Key。需要 AI 生成新回复时，再连接模型服务（按实际用量计费，本工具不提供免费额度）。',
+    '客户端完全免费开源；填入你自己的 DeepSeek 或兼容服务商 API Key 即可开始对话（按服务商实际用量计费，支持人民币估算）；仅导入和查看旧记录无需密钥。',
   onboardingInstallGuide: '下载安卓安装包或查看使用帮助',
   exportGuideTitle: '怎么从 DeepSeek 导出旧聊天？（3 步教程）',
   exportGuideIntro:

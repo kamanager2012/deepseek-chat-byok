@@ -10,7 +10,7 @@ import { ExportGuideModal } from './ExportGuideModal.js'
 import { MobileHeader } from './MobileHeader.js'
 import styles from './Welcome.module.css'
 
-/** 新对话：小白优先卡片先导入旧聊天、看导出教程，需要 AI 续写时再设置模型。 */
+/** 新对话：以「填自己的 API Key 稳定畅聊」为主入口，同时支持免密钥导入官方旧聊天与导出教程。 */
 export const Welcome = () => {
   const t = useTranslate()
   const isMobile = useIsMobile()
@@ -28,14 +28,14 @@ export const Welcome = () => {
             <div className={styles.onboardingTitle}>{t('onboardingTitle')}</div>
             <div className={styles.onboardingSubtitle}>{t('onboardingSubtitle')}</div>
             <div className={styles.actions}>
-              <Button size="m" onClick={() => openSettings('data')}>
+              <Button size="m" onClick={() => openSettings('api')}>
+                {t('onboardingConfigure')}
+              </Button>
+              <Button variant="outlined" size="m" onClick={() => openSettings('data')}>
                 {t('onboardingImport')}
               </Button>
               <Button variant="outlined" size="m" onClick={() => setGuideOpen(true)}>
                 {t('onboardingHowToExport')}
-              </Button>
-              <Button variant="outlined" size="m" onClick={() => openSettings('api')}>
-                {t('onboardingConfigure')}
               </Button>
             </div>
             <div className={styles.note}>{t('onboardingCostNote')}</div>
