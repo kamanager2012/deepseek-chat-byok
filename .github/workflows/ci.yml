@@ -39,6 +39,16 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Report exact files with formatting drift
+        if: failure()
+        run: |
+          pnpm exec oxfmt --write .
+          git diff --name-only -- . | while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            echo "::error file=${path}::Source differs from oxfmt canonical formatting; run pnpm format."
+          done
+          git diff --no-ext-diff -- .
+
       - name: Check types
         run: pnpm type
 
@@ -47,6 +57,9 @@ jobs:
 
       - name: Build production bundle
         run: pnpm build
+
+      - name: Verify public discovery, truthful identity and site map
+        run: node scripts/verify-public-discovery.mjs
 
       - name: Unit, IndexedDB, Node & Android Bridge Tests
         run: pnpm test

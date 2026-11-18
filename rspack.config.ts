@@ -150,6 +150,11 @@ export const createConfig = ({
           to: 'llms.txt',
           toType: 'file',
         },
+        {
+          from: path.resolve(root, 'public/sitemap.xml'),
+          to: 'sitemap.xml',
+          toType: 'file',
+        },
       ],
     }),
   ],

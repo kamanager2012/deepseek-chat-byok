@@ -101,7 +101,7 @@
       if (releaseTagEl && typeof release.tag_name === 'string') {
         releaseTagEl.textContent = `${release.tag_name}（GitHub API 在线查询）`
       }
-      status.textContent = '已找到最新官方安卓正式版安装包。'
+      status.textContent = '已找到本项目最新正式签名的安卓 APK（GitHub Release）。'
     } catch {
       android.href = releasePage
       desktop.href = releasePage

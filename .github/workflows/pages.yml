@@ -68,6 +68,9 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Verify public discovery, truthful identity and site map
+        run: node scripts/verify-public-discovery.mjs
+
       - name: Mirror checksum-verified Release downloads
         env:
           GH_TOKEN: ${{ github.token }}
