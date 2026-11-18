@@ -28,7 +28,14 @@ const root = 'https://example.org/deepseek-chat-byok/'
 const liveGuideHtml = readFileSync(new URL('../public/get-started.html', import.meta.url), 'utf8')
 
 const fakeFetch =
-  (options: { corruptZip?: boolean; corruptDigest?: boolean; missingApk?: boolean; missingGuide?: boolean } = {}) =>
+  (
+    options: {
+      corruptZip?: boolean
+      corruptDigest?: boolean
+      missingApk?: boolean
+      missingGuide?: boolean
+    } = {}
+  ) =>
   async (input: URL | RequestInfo) => {
     const url = String(input)
     if (url.endsWith('/downloads/manifest.json')) {
@@ -75,7 +82,11 @@ describe('Public Pages download post-deploy acceptance', () => {
 
   it('rejects an HTML landing page with missing actual download controls', async () => {
     await expect(
-      verifyLiveDownloads(root, 'kamanager2012/deepseek-chat-byok', fakeFetch({ missingGuide: true }))
+      verifyLiveDownloads(
+        root,
+        'kamanager2012/deepseek-chat-byok',
+        fakeFetch({ missingGuide: true })
+      )
     ).rejects.toThrow('Live landing page lacks the expected download flow')
   })
 
